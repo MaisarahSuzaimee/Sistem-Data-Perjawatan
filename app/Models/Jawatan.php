@@ -11,4 +11,10 @@ class Jawatan extends Model
         'kod_jawatan',
         'desc_jawatan',
     ];
+
+    public function greds()
+{
+    return $this->belongsToMany(Gred::class, 'jawatan__greds')
+        ->distinct();
+}
 }

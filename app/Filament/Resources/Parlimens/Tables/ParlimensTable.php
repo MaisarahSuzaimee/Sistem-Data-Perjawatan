@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Jawatans\Tables;
+namespace App\Filament\Resources\Parlimens\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -9,9 +9,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Pest\Support\View;
 
-class JawatansTable
+class ParlimensTable
 {
     public static function configure(Table $table): Table
     {
@@ -20,18 +19,13 @@ class JawatansTable
                 TextColumn::make('no')
                     ->label('Bil')
                     ->rowIndex(),
-                TextColumn::make('desc_jawatan')
-                    ->label('Jawatan')
+                TextColumn::make('nama_parlimen')
+                    ->label('Parlimen')
                     ->sortable()
                     ->searchable(),
-                TextColumn::make('kod_jawatan')
-                    ->label('Kod Jawatan')
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('greds.kod_gred')
-                    ->label('Gred')
-                    ->formatStateUsing(fn($state) => collect($state)->unique()->implode(' / '))
-                    ->searchable(),
+                TextColumn::make('duns.nama_dun')
+                    ->label('Dun')
+                    ->listWithLineBreaks()
 
             ])
             ->filters([
@@ -39,18 +33,16 @@ class JawatansTable
             ])
             ->recordActions([
                 ViewAction::make()
-                    ->modal()
-                    ->label('')
-                    ->tooltip('View')
-                    ->color('info'),
+                    ->color("info")
+                    ->label("")
+                    ->tooltip("View"),
                 EditAction::make()
                     ->modal()
-                    ->label('')
-                    ->tooltip('Edit'),
+                    ->label("")
+                    ->tooltip("Edit"),
                 DeleteAction::make()
-                    ->modal()
-                    ->label('')
-                    ->tooltip('Delete'),
+                    ->label("")
+                    ->tooltip("Delete"),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

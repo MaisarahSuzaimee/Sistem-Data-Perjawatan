@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Jawatans\Pages;
+namespace App\Filament\Resources\Greds\Pages;
 
-use App\Filament\Resources\Jawatans\JawatanResource;
-use Filament\Actions\Action;
+use App\Filament\Resources\Greds\GredResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
-class ListJawatans extends ListRecords
+class ListGreds extends ListRecords
 {
-    protected static string $resource = JawatanResource::class;
+    protected static string $resource = GredResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -17,7 +16,6 @@ class ListJawatans extends ListRecords
             CreateAction::make()
             ->modal()
             ->createAnother(false),
-           
         ];
     }
 }

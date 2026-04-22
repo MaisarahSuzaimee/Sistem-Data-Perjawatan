@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Jawatans\Tables;
+namespace App\Filament\Resources\Greds\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -9,9 +9,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Pest\Support\View;
 
-class JawatansTable
+class GredsTable
 {
     public static function configure(Table $table): Table
     {
@@ -20,37 +19,27 @@ class JawatansTable
                 TextColumn::make('no')
                     ->label('Bil')
                     ->rowIndex(),
-                TextColumn::make('desc_jawatan')
-                    ->label('Jawatan')
+                TextColumn::make('kod_gred')
+                    ->label('Kod')
                     ->sortable()
                     ->searchable(),
-                TextColumn::make('kod_jawatan')
-                    ->label('Kod Jawatan')
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('greds.kod_gred')
+                TextColumn::make('desc_gred')
                     ->label('Gred')
-                    ->formatStateUsing(fn($state) => collect($state)->unique()->implode(' / '))
+                    ->sortable()
                     ->searchable(),
-
             ])
             ->filters([
                 //
             ])
             ->recordActions([
                 ViewAction::make()
-                    ->modal()
                     ->label('')
-                    ->tooltip('View')
                     ->color('info'),
                 EditAction::make()
                     ->modal()
-                    ->label('')
-                    ->tooltip('Edit'),
+                    ->label(''),
                 DeleteAction::make()
-                    ->modal()
-                    ->label('')
-                    ->tooltip('Delete'),
+                    ->label(''),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
