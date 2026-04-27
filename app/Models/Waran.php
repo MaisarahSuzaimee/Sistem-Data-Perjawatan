@@ -12,4 +12,9 @@ class Waran extends Model
         'jik',
         'catatan'
     ];
+
+    public function ptj()
+    {
+        return $this->hasMany(Ptj::class);
+    }
 }
