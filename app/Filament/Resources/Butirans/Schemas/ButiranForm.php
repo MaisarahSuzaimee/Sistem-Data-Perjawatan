@@ -30,7 +30,7 @@ class ButiranForm
                                         ->mapWithKeys(function ($aktiviti) {
                                             return [
                                                 $aktiviti->id =>
-                                                    $aktiviti->no_aktivit . ' - ' . $aktiviti->nama_aktiviti,
+                                                $aktiviti->no_aktivit . ' - ' . $aktiviti->nama_aktiviti,
                                             ];
                                         })
                                         ->toArray(),
@@ -39,16 +39,31 @@ class ButiranForm
                             ->toArray();
                     }),
 
-    //                Repeater::make('butiran')
-    // ->relationship()
-    // ->label('Butiran')
-    // ->schema([
-    //     TextInput::make('butiran')
-    //         ->required(),
+                // Repeater::make('butiran')
+                //     // ->relationship()
+                //     ->label('Butiran')
+                //     ->schema([
+                //         TextInput::make('butiran')
+                //             ->required(),
 
-        // TextInput::make('catatan')
-        //     ->columnSpanFull(),
-    // ])
+
+                //     ])
+                //     ->defaultItems(1)
+                //     ->addActionLabel('Tambah Butiran')
+                //     ->reorderable()
+                //     ->cloneable()
+                //     ->collapsible()
+                //     ->mutateRelationshipDataBeforeCreateUsing(function (array $data, callable $get) {
+                //         $data['aktiviti_id'] = $get('aktiviti_id');
+                //         return $data;
+                //     })
+
+                Repeater::make('butiran')
+    // ->relationship('butiran')
+    ->schema([
+        TextInput::make('butiran')->required(),
+        TextInput::make('catatan'),
+    ])
             ]);
     }
 }

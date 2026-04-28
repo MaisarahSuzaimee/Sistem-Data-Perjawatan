@@ -49,10 +49,17 @@ class WaranForm
                             ->schema([
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    // ->relationship()
                                     ->required()
-                                    ->columnSpanFull(),
-                                Select::make('aktiviti')
+                                    ->columnSpanFull()
+                                    ->searchable()
+                                    ->preload()
+                                    ->options(
+                                        \App\Models\Ptj::orderBy('nama_ptj')
+                                            ->pluck('nama_ptj', 'id')
+                                            ->toArray()
+                                    ),
+
+                                Select::make('aktiviti_id')
                                     ->label('Aktiviti')
                                     ->required()
                                     ->searchable()
@@ -69,9 +76,23 @@ class WaranForm
                                             })
                                             ->toArray();
                                     }),
-                                Select::make('no_butiran')
-                                    ->label('Butiran')
-                                    ->required(),
+                                Select::make('butiran_id')
+    ->label('Butiran')
+    ->required()
+    ->searchable()
+    ->options(function (callable $get) {
+
+        $aktivitiId = $get('aktiviti_id');
+
+        if (! $aktivitiId) {
+            return [];
+        }
+
+        return \App\Models\Butiran::where('aktiviti_id', $aktivitiId)
+            ->orderBy('butiran')
+            ->pluck('butiran', 'id')
+            ->toArray();
+    }),
                                 Select::make('Jawatan')
                                     ->label('Jawatan'),
                                 Select::make('Gred')

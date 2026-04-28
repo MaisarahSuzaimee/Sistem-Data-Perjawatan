@@ -25,7 +25,7 @@ class SubunitForm
                     ->preload(),
                 TextInput::make('nama_subunit')
                     ->label('Sub Unit')
-                    ->required()
+                    // ->required()
                     ->dehydrateStateUsing(fn(string $state): string => strtoupper($state))
                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                     ->columnSpanFull(),

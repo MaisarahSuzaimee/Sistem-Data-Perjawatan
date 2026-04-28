@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProgramResource extends Resource
 {
@@ -46,5 +47,12 @@ class ProgramResource extends Resource
             'create' => CreateProgram::route('/create'),
             'edit' => EditProgram::route('/{record}/edit'),
         ];
+    }
+
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['aktiviti.butiran']);
     }
 }

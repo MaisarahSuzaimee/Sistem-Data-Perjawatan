@@ -36,23 +36,22 @@ class ProgramForm
                             ->label('Nama Aktiviti')
                             ->dehydrateStateUsing(fn($state) => $state ? strtoupper($state) : null)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                        // Textarea::make('desc_aktiviti')
-                        //     ->label('Butiran Aktiviti')
-                        //     ->dehydrateStateUsing(fn($state) => $state ? strtoupper($state) : null)
-                        //     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                        //     ->columnSpanFull(),
-                            Repeater::make('Butiran')
-                    ->label('Butiran')
-                    ->addActionLabel('Tambah No Butiran')
-                    ->schema([
-                        TextInput::make('no_butiran')
-                            ->required(),
+
+                        Repeater::make('butiran') // ✅ lowercase MUST match relationship
+                            ->relationship('butiran') // 🔥 THIS IS THE KEY
+                            ->label('Butiran')
+                            ->addActionLabel('Tambah No Butiran')
+                            ->schema([
+                                TextInput::make('butiran')
+                                    ->required(),
+                            ])
+                            ->itemLabel(fn(array $state): ?string => $state['butiran'] ?? null)
+                            ->collapsed()
+                            ->columnSpanFull()
                     ])
-                    ->itemLabel(fn(array $state): ?string => $state['no_butiran'] ?? null)
-                    ->collapsed()
-                    ])
-                    ->itemLabel(fn(array $state): ?string => $state['nama_aktiviti'] ?? null)
-                    ->collapsed()
+                    ->itemLabel(
+                        fn(array $state): ?string => ($state['no_aktivit'] ?? '') . ' - ' . ($state['nama_aktiviti'] ?? '')
+                    )->collapsed()
 
 
             ]);
