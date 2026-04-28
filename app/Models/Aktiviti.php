@@ -17,4 +17,9 @@ class Aktiviti extends Model
     {
         return $this->belongsTo(Program::class, 'program_id');
     }
+
+    public function butiran()
+    {
+        return $this->hasMany(Butiran::class, 'aktiviti_id');
+    }
 }

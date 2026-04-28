@@ -49,27 +49,36 @@ class WaranForm
                             ->schema([
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    ->relationship()
-                                    ->required(),
-                                Select::make('bahagian')
-                                    ->label('Bahagian')
-                                    ->required(),
-                                Select::make('unit')
-                                    ->label('Unit')
-                                    ->required(),
-                                Select::make('subunit')
-                                    ->label('Sub Unit')
-                                    ->required(),
-                                Select::make('program')
-                                    ->label('Program')
-                                    ->required(),
-                                Select::make('aktiviti')
-                                    ->label('Aktiviti')
-                                    ->required(),
-                                Select::make('pegawai')
-                                    ->label('Pegawai')
+                                    // ->relationship()
                                     ->required()
                                     ->columnSpanFull(),
+                                Select::make('aktiviti')
+                                    ->label('Aktiviti')
+                                    ->required()
+                                    ->searchable()
+                                    ->options(function () {
+                                        return \App\Models\Program::with('aktiviti')
+                                            ->orderBy('nama_program')
+                                            ->get()
+                                            ->mapWithKeys(function ($program) {
+                                                return [
+                                                    $program->nama_program => $program->aktiviti
+                                                        ->pluck('nama_aktiviti', 'id')
+                                                        ->toArray(),
+                                                ];
+                                            })
+                                            ->toArray();
+                                    }),
+                                Select::make('no_butiran')
+                                    ->label('Butiran')
+                                    ->required(),
+                                Select::make('Jawatan')
+                                    ->label('Jawatan'),
+                                Select::make('Gred')
+                                    ->label('Gred'),
+                                Select::make('pegawai_id')
+                                    ->label('Nama Pegawai')
+                                    ->columnSpanFull()
 
                             ])
                             ->columns(2)
