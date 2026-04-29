@@ -1,28 +1,26 @@
 <?php
 
-namespace App\Filament\Resources\Butirans\Schemas;
+namespace App\Filament\Resources\ButiranJawatans\Schemas;
 
 use App\Models\Butiran;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
-class ButiranForm
+class ButiranJawatanForm
 {
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Select::make('butiran_id')
-                    ->label('Butiran')
-                    ->options(
-                        Butiran::pluck('butiran', 'id')
-                    )
-                    ->searchable()
-                    ->required(),
+                // Select::make('butiran_id')
+                //     ->label('Butiran')
+                //     ->options(
+                //         Butiran::pluck('butiran', 'id')
+                //     )
+                //     ->searchable()
+                //     ->required(),
 
-                // Select::make('jawatanGred')
+                // Select::make('jawatan_gred_id')
                 //     ->label('Jawatan')
                 //     ->multiple()
                 //     ->relationship(
@@ -42,14 +40,23 @@ class ButiranForm
                 //         'greds.kod_gred'
                 //     ])
                 //     ->preload()
-                Select::make('jawatanGred')
-    ->multiple()
-    ->relationship('jawatanGred', 'id')
-    ->getOptionLabelFromRecordUsing(fn ($record) =>
-        $record->jawatan->desc_jawatan . ' (' . $record->gred->kod_gred . ')'
-    )
-    ->searchable()
-    ->preload()
+                Select::make('butiran_id')
+                    ->label('Butiran')
+                    ->relationship('butiran', 'butiran')
+                    ->required()
+                    ->searchable()
+                    ->preload(),
+
+                Select::make('jawatan_gred_id')
+                    ->label('Jawatan')
+                    ->multiple()
+                    ->relationship('jawatanGred', 'id')
+                    ->getOptionLabelFromRecordUsing(
+                        fn($record) =>
+                        $record->jawatan->desc_jawatan . ' (' . $record->gred->kod_gred . ')'
+                    )
+                    ->searchable()
+                    ->preload()
             ]);
     }
 }

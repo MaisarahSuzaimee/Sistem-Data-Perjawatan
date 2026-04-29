@@ -22,4 +22,21 @@ class Jawatan_Gred extends Model
     {
         return $this->belongsTo(Gred::class, 'gred_id');
     }
+
+    public function butiran()
+    {
+        return $this->belongsToMany(
+            Butiran::class,
+            'butiran__jawatans',
+            'jawatan_gred_id',
+            'butiran_id'
+        );
+    }
+
+    protected $appends = ['display_name'];
+
+public function getDisplayNameAttribute()
+{
+    return $this->jawatan->desc_jawatan . ' (' . $this->gred->kod_gred . ')';
+}
 }
