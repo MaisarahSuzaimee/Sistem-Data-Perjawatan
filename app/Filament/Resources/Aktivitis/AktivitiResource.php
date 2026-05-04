@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AktivitiResource extends Resource
 {
+    protected static ?string $navigationLabel = 'Aktiviti';        // 👈 sidebar label
+    
     protected static ?string $model = Aktiviti::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
