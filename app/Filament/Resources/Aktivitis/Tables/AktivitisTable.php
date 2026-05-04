@@ -7,6 +7,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 
 class AktivitisTable
@@ -16,17 +17,11 @@ class AktivitisTable
         return $table
             ->columns([
 
-                TextColumn::make('program.nama_program')
-                    ->label('Program')
-                    ->sortable()
-                    ->searchable()
-                    ->badge()
-                    ->color('primary'),
-
                 TextColumn::make('no_aktivit')
                     ->label('No. Aktiviti')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->width('150px'),
 
                 TextColumn::make('nama_aktiviti')
                     ->label('Nama Aktiviti')
@@ -36,7 +31,21 @@ class AktivitisTable
 
             ])
 
-            ->defaultSort('program_id', 'asc')
+            ->groups([
+                Group::make('program.nama_program')
+                    ->label('Program')
+                    ->collapsible()
+                    ->titlePrefixedWithLabel(false)
+                    ->orderQueryUsing(fn ($query, $direction) =>
+                        $query->join('programs', 'aktivitis.program_id', '=', 'programs.id')
+                              ->orderBy('programs.id', $direction)
+                    ),
+            ])
+
+            ->defaultGroup('program.nama_program')
+            ->groupingSettingsHidden()
+            ->defaultPaginationPageOption(100)
+            ->defaultSort('no_aktivit', 'asc')
 
             ->recordActions([
                 EditAction::make()->modal(),
