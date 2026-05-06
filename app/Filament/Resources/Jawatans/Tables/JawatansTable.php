@@ -23,15 +23,20 @@ class JawatansTable
                 TextColumn::make('desc_jawatan')
                     ->label('Jawatan')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->wrap(),
                 TextColumn::make('kod_jawatan')
                     ->label('Kod Jawatan')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->badge(),
                 TextColumn::make('greds.kod_gred')
                     ->label('Gred')
                     ->formatStateUsing(fn($state) => collect($state)->unique()->implode(' / '))
-                    ->searchable(),
+                    ->searchable()
+                    ->wrap()
+                    ->badge()
+                    ->color(''),
 
             ])
             ->filters([

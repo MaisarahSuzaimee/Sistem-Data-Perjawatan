@@ -21,25 +21,25 @@ class WaranForm
                         TextInput::make('no_waran')
                             ->label('No Waran'),
                         TextInput::make('jik')
-    ->label('Jumlah Jawatan')
-    ->numeric()
-    ->reactive()
-    ->afterStateUpdated(function ($state, callable $set) {
+                            ->label('Jumlah Jawatan')
+                            ->numeric()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set) {
 
-        $items = [];
+                                $items = [];
 
-        for ($i = 0; $i < (int) $state; $i++) {
-            $items[] = [
-                'ptj_id' => null,
-                'aktiviti_id' => null,
-                'butiran' => null,
-                'jawatan_gred_id' => null,
-                'pegawai_id' => null,
-            ];
-        }
+                                for ($i = 0; $i < (int) $state; $i++) {
+                                    $items[] = [
+                                        'ptj_id' => null,
+                                        'aktiviti_id' => null,
+                                        'butiran' => null,
+                                        'jawatan_gred_id' => null,
+                                        'pegawai_id' => null,
+                                    ];
+                                }
 
-        $set('waranJawatan', $items);
-    }),
+                                $set('waranJawatan', $items);
+                            }),
                         Textarea::make('catatan')
                             ->label('Catatan')
                             ->columnSpanFull()
@@ -50,9 +50,9 @@ class WaranForm
                 Section::make('Maklumat Jawatan')
                     ->schema([
                         Repeater::make('waranJawatan')
-                        ->relationship()
-    ->addable(false)
-    ->deletable(false)
+                            ->relationship()
+                            ->addable(false)
+                            ->deletable(false)
                             ->label('Butiran Jawatan')
                             ->schema([
                                 Select::make('ptj_id')
@@ -117,7 +117,7 @@ class WaranForm
                             ->columns(2)
                             ->columns(2)
                             ->itemLabel(function (array $state) {
-                                if (! $state['ptj_id']) {
+                                if (!$state['ptj_id']) {
                                     return 'Tambah Jawatan';
                                 }
 

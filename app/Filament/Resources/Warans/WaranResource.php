@@ -22,6 +22,14 @@ class WaranResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'no_waran';
 
+    protected static ?string $navigationLabel = 'Waran';
+
+    protected static ?string $modelLabel = 'Waran';
+
+    protected static ?string $pluralModelLabel = 'Waran';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Buku Waran';
+
     public static function form(Schema $schema): Schema
     {
         return WaranForm::configure($schema);

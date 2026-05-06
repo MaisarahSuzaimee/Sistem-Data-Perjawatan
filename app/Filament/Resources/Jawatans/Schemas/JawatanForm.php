@@ -16,13 +16,18 @@ class JawatanForm
                 TextInput::make('kod_jawatan')
                     ->label('Kod Jawatan')
                     ->required()
-                    ->columnSpan(1),
+                    ->columnSpan(1)
+                    ->dehydrateStateUsing(fn(string $state): string => strtoupper($state))
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                 TextInput::make('desc_jawatan')
                     ->label('Jawatan')
                     ->required()
-                    ->columnSpan(2),
+                    ->columnSpan(2)
+                    ->dehydrateStateUsing(fn(string $state): string => strtoupper($state))
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                    ->unique(),
                 Select::make('gred_id')
-                ->label('Gred')
+                    ->label('Gred')
                     ->multiple()
                     ->relationship('greds', 'kod_gred')
                     ->preload()
