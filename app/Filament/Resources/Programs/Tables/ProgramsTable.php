@@ -74,7 +74,8 @@ class ProgramsTable
                                 $q->where('no_aktivit', 'like', "%{$search}%")
                                     ->orWhere('nama_aktiviti', 'like', "%{$search}%");
                             });
-                    }),
+                    })
+                        ,
                 // ->defaultSort('nama_program'),
 
 

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Warans\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -52,16 +53,19 @@ class WaransTable
                             ->unique()
                             ->join('<br>')
                     )
-                    ->html(),
+                    ->html()
+                    ->wrap(),
 
                 TextColumn::make('penempatan_list')
                     ->label('Penempatan')
-                    ->html(),
-              
+                    ->html()
+                    ->wrap(),
+
             ])
 
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make(),
             ])
 
             ->toolbarActions([
