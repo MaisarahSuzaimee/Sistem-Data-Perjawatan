@@ -14,5 +14,9 @@
         "laravel-vite-plugin": "^3.0.0",
         "tailwindcss": "^4.2.4",
         "vite": "^8.0.0"
+    },
+    "dependencies": {
+        "@popperjs/core": "^2.11.8",
+        "bootstrap": "^5.3.8"
     }
 }

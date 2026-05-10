@@ -1,0 +1,247 @@
+/* =============================================
+   Custom Dark Mode for Sneat Free
+   ============================================= */
+
+html.dark-style {
+    --bs-body-bg: #232333;
+    --bs-body-color: #cdd6f4;
+    --bs-card-bg: #2a2a3d;
+    --bs-border-color: #3b3b5c;
+}
+
+/* Body */
+html.dark-style body {
+    background-color: #232333 !important;
+    color: #cdd6f4 !important;
+}
+
+/* Sidebar */
+html.dark-style .layout-menu {
+    background-color: #2a2a3d !important;
+    border-right: 1px solid #3b3b5c !important;
+}
+
+html.dark-style .menu-inner .menu-item .menu-link {
+    color: #a6adc8 !important;
+}
+
+html.dark-style .menu-inner .menu-item.active .menu-link,
+html.dark-style .menu-inner .menu-item .menu-link:hover {
+    color: #7c7fff !important;
+    background-color: rgba(124, 127, 255, 0.1) !important;
+}
+
+html.dark-style .menu-header-text {
+    color: #6b7280 !important;
+}
+
+html.dark-style .app-brand-text {
+    color: #cdd6f4 !important;
+}
+
+html.dark-style .menu-divider {
+    border-color: #3b3b5c !important;
+}
+
+/* Navbar */
+html.dark-style .layout-navbar {
+    background-color: #2a2a3d !important;
+    border-bottom: 1px solid #3b3b5c !important;
+}
+
+html.dark-style .navbar-nav .nav-link {
+    color: #a6adc8 !important;
+}
+
+/* Cards */
+html.dark-style .card {
+    background-color: #2a2a3d !important;
+    border-color: #3b3b5c !important;
+    color: #cdd6f4 !important;
+}
+
+html.dark-style .card-header {
+    background-color: #2a2a3d !important;
+    border-bottom-color: #3b3b5c !important;
+    color: #cdd6f4 !important;
+}
+
+html.dark-style .card-footer {
+    background-color: #2a2a3d !important;
+    border-top-color: #3b3b5c !important;
+}
+
+/* Tables */
+html.dark-style .table {
+    color: #cdd6f4 !important;
+    border-color: #3b3b5c !important;
+}
+
+html.dark-style .table thead th,
+html.dark-style .table-light th {
+    background-color: #1e1e2e !important;
+    color: #a6adc8 !important;
+    border-color: #3b3b5c !important;
+}
+
+html.dark-style .table tbody tr {
+    border-color: #3b3b5c !important;
+}
+
+html.dark-style .table-hover tbody tr:hover {
+    background-color: rgba(124, 127, 255, 0.05) !important;
+    color: #cdd6f4 !important;
+}
+
+html.dark-style .table td {
+    color: #cdd6f4 !important;
+    border-color: #3b3b5c !important;
+}
+
+/* Text */
+html.dark-style .text-muted {
+    color: #6b7280 !important;
+}
+
+html.dark-style h1, html.dark-style h2,
+html.dark-style h3, html.dark-style h4,
+html.dark-style h5, html.dark-style h6 {
+    color: #cdd6f4 !important;
+}
+
+/* Buttons */
+html.dark-style .btn-text-warning {
+    color: #f9c74f !important;
+}
+
+html.dark-style .btn-text-danger {
+    color: #f38ba8 !important;
+}
+
+html.dark-style .btn-text-info {
+    color: #89dceb !important;
+}
+
+html.dark-style .btn-text-secondary {
+    color: #a6adc8 !important;
+}
+
+/* Dropdown */
+html.dark-style .dropdown-menu {
+    background-color: #2a2a3d !important;
+    border-color: #3b3b5c !important;
+}
+
+html.dark-style .dropdown-item {
+    color: #cdd6f4 !important;
+}
+
+html.dark-style .dropdown-item:hover {
+    background-color: rgba(124, 127, 255, 0.1) !important;
+    color: #7c7fff !important;
+}
+
+html.dark-style .dropdown-divider {
+    border-color: #3b3b5c !important;
+}
+
+/* Avatar */
+html.dark-style .avatar-initial {
+    color: #fff !important;
+}
+
+/* Content wrapper */
+html.dark-style .content-wrapper {
+    background-color: #232333 !important;
+}
+
+/* Layout page */
+html.dark-style .layout-page {
+    background-color: #232333 !important;
+}
+
+/* Alerts */
+html.dark-style .alert-success {
+    background-color: rgba(166, 227, 161, 0.1) !important;
+    border-color: #a6e3a1 !important;
+    color: #a6e3a1 !important;
+}
+
+html.dark-style .alert-danger {
+    background-color: rgba(243, 139, 168, 0.1) !important;
+    border-color: #f38ba8 !important;
+    color: #f38ba8 !important;
+}
+
+/* Forms */
+html.dark-style .form-control {
+    background-color: #1e1e2e !important;
+    border-color: #3b3b5c !important;
+    color: #cdd6f4 !important;
+}
+
+html.dark-style .form-control:focus {
+    background-color: #1e1e2e !important;
+    border-color: #7c7fff !important;
+    color: #cdd6f4 !important;
+    box-shadow: 0 0 0 0.2rem rgba(124, 127, 255, 0.25) !important;
+}
+
+html.dark-style .form-label {
+    color: #cdd6f4 !important;
+}
+
+html.dark-style .form-select {
+    background-color: #1e1e2e !important;
+    border-color: #3b3b5c !important;
+    color: #cdd6f4 !important;
+}
+
+/* Input group */
+html.dark-style .input-group-text {
+    background-color: #1e1e2e !important;
+    border-color: #3b3b5c !important;
+    color: #a6adc8 !important;
+}
+
+/* Pagination */
+html.dark-style .page-link {
+    background-color: #2a2a3d !important;
+    border-color: #3b3b5c !important;
+    color: #a6adc8 !important;
+}
+
+html.dark-style .page-link:hover {
+    background-color: rgba(124, 127, 255, 0.1) !important;
+    color: #7c7fff !important;
+}
+
+html.dark-style .page-item.active .page-link {
+    background-color: #7c7fff !important;
+    border-color: #7c7fff !important;
+    color: #fff !important;
+}
+
+/* Scrollbar */
+html.dark-style ::-webkit-scrollbar {
+    width: 6px;
+}
+
+html.dark-style ::-webkit-scrollbar-track {
+    background: #1e1e2e;
+}
+
+html.dark-style ::-webkit-scrollbar-thumb {
+    background: #3b3b5c;
+    border-radius: 3px;
+}
+
+/* App brand in dark */
+html.dark-style .bg-menu-theme {
+    background-color: #2a2a3d !important;
+}
+
+/* Overlay */
+html.dark-style .layout-overlay {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+}
