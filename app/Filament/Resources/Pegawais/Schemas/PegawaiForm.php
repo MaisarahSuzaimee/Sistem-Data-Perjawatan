@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -55,14 +56,14 @@ class PegawaiForm
                                     // invalid IC → ignore
                                 }
                             }),
-                        DatePicker::make('tarikh_lahir')
-                            ->label('Tarikh Lahir')
-                            ->native(false)
-                            ->displayFormat('d F Y')
-                            ->dehydrated(false),
-                            TextInput::make('emel')
-                            ->label('E-mel')
-                            ->email(),
+                        // DatePicker::make('tarikh_lahir')
+                        //     ->label('Tarikh Lahir')
+                        //     ->native(false)
+                        //     ->displayFormat('d F Y')
+                        //     ->dehydrated(false),
+                        //     TextInput::make('emel')
+                        //     ->label('E-mel')
+                        //     ->email(),
                         Select::make('jantina')
                             ->label('Jantina')
                             ->required()
@@ -92,7 +93,8 @@ class PegawaiForm
                                     ->pluck('nama_bahagian', 'id');
                             })
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->columnSpanFull(),
 
                         Select::make('unit_id')
                             ->label('Unit')
@@ -145,15 +147,49 @@ class PegawaiForm
                             ])
                             ->preload(),
 
+                        Select::make('gred_id')
+                            ->label('Gred')
+                            ->searchable()
+                            ->preload(),
+
                         Checkbox::make('is_kontrak')
                             ->label('KONTRAK')
-                            ->reactive(),
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, $set, $get) {
+                                if ($state) {
+                                    $set('is_tetap', false);
+                                    $set('is_kontrak_interim', false);
+                                }
+                            }),
                         Checkbox::make('is_kup')
-                            ->label('KUP'),
+                            ->label('KHAS UNTUK PENYANDANG (KUP)'),
+
+                        Checkbox::make('is_tetap')
+                            ->label('TETAP')
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, $set, $get) {
+                                if ($state) {
+                                    $set('is_kontrak', false);
+                                    $set('is_kontrak_interim', false);
+                                }
+                            }),
+
+
                         Checkbox::make('is_kupj')
                             ->label('KUPJ'),
+
+                        Checkbox::make('is_kontrak_interim')
+                            ->label('KONTRAK INTERIM')
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, $set, $get) {
+                                if ($state) {
+                                    $set('is_kontrak', false);
+                                    $set('is_tetap', false);
+                                }
+                            }),
+
                         Checkbox::make('is_jtw')
-                            ->label('JTW'),
+                            ->label('JAWATAN TANPA WARAN (JTW)'),
 
                     ]),
                 Section::make('Maklumat Lantikan')

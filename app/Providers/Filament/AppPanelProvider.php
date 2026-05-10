@@ -27,7 +27,7 @@ class AppPanelProvider extends PanelProvider
             ->default()
             ->id('app')
             ->path('app')
-            ->brandName('Sistem Data Perjawatan')
+            ->brandName('e-SDaP')
             ->viteTheme('resources/css/filament/app/theme.css')
             ->login()
             ->colors([
