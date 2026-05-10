@@ -31,16 +31,39 @@ class JawatansTable
                 TextColumn::make('kod_jawatan')
                     ->label('Kod Jawatan')
                     ->sortable()
-                    ->searchable()
-                    ->badge(),
+                    ->searchable(),
+                // ->badge(),
+                // TextColumn::make('greds.kod_gred')
+                //     ->label('Gred')
+                //     ->formatStateUsing(fn($state) => collect($state)->unique()->implode(' / '))
+                //     ->searchable()
+                //     ->wrap()
+                //     ->badge()
+                //    ->colors([
+                //         1 => 'danger',
+                //         2 => 'info',
+                //         3 => 'success',
+                //         4 => 'primary',
+                //         5 => 'gray'
+                //     ]),
                 TextColumn::make('greds.kod_gred')
                     ->label('Gred')
                     ->formatStateUsing(fn($state) => collect($state)->unique()->implode(' / '))
-                    ->searchable()
-                    ->wrap()
                     ->badge()
-                    ->color(''),
-                
+                    ->wrap()
+                    ->color(function ($record) {
+
+                        $kumpulanId = $record->greds->first()?->pivot?->kumpulan_id;
+
+                        return match ($kumpulanId) {
+                            1 => 'danger',
+                            2 => 'info',
+                            3 => 'tertiary',
+                            4 => 'primary',
+                            5 => 'secondary',
+                            default => 'gray',
+                        };
+                    })
 
             ])
             ->filters([
@@ -57,7 +80,7 @@ class JawatansTable
                 //         ->icon(Heroicon::Trash)
                 //         ->hiddenLabel(),
                 // ])
-                    // ->buttonGroup(),
+                // ->buttonGroup(),
                 ViewAction::make()
                     ->modal()
                     ->label('')

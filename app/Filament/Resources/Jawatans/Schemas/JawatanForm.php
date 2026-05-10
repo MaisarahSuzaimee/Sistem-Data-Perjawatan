@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\Jawatans\Schemas;
 
 use App\Models\Kumpulan;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Radio;
+// use Filament\Actions\Action;
+// use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
@@ -35,20 +35,19 @@ class JawatanForm
                     ->multiple()
                     ->relationship('greds', 'kod_gred')
                     ->preload()
+                    ->saveRelationshipsUsing(function ($component, $state, $record, $get) {
+
+                        $syncData = [];
+
+                        foreach ($state as $gredId) {
+                            $syncData[$gredId] = [
+                                'kumpulan_id' => $get('kumpulan_id'),
+                            ];
+                        }
+
+                        $record->greds()->sync($syncData);
+                    })
                     ->columnSpanFull(),
-                // ToggleButtons::make('type')
-                //     // ->options([
-                //     //     'P&P' => 'P&P',
-                //     //     'Pelaksana' => 'Pelaksana',
-                //     // ])
-                //     // ->colors([
-                //     //     'P&P' => 'info',
-                //     //     'Pelaksana' => 'success',
-                //     // ])
-                //     ->options(Kumpulan::class)
-                //     ->inline()
-                //     ->required()
-                //     ->columnSpanFull(),
 
                 ToggleButtons::make('kumpulan_id')
                     ->label('Kumpulan')
@@ -58,12 +57,23 @@ class JawatanForm
                     ->colors([
                         1 => 'danger',
                         2 => 'info',
-                        3 => 'success',
+                        3 => 'tertiary',
                         4 => 'primary',
-                        5 => 'gray'
+                        5 => 'secondary'
                     ])
                     ->inline()
-                    // ->required()
+                    ->afterStateHydrated(function ($component, $record) {
+
+                        if (!$record) {
+                            return;
+                        }
+
+                        $pivot = $record->greds->first()?->pivot;
+
+                        if ($pivot) {
+                            $component->state($pivot->kumpulan_id);
+                        }
+                    })
                     ->columnSpanFull(),
             ]);
     }
