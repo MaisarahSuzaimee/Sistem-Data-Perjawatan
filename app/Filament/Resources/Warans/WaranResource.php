@@ -55,4 +55,19 @@ class WaranResource extends Resource
             'edit' => EditWaran::route('/{record}/edit'),
         ];
     }
+
+    protected function getListeners(): array
+{
+    return [
+        'setWaran' => 'setWaran',
+    ];
+}
+
+public function setWaran($id): void
+{
+    $this->form()->fill([
+        'selected_waran_id' => $id,
+        'catatan' => Waran::find($id)?->catatan,
+    ]);
+}
 }

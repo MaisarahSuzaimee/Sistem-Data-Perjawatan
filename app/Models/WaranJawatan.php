@@ -12,7 +12,8 @@ class WaranJawatan extends Model
         'aktiviti_id',
         'pegawai_id',
         'jawatan_gred_id',
-        'butiran'
+        'butiran',
+        'catatan_jawatan'
     ];
 
     public function waran()
@@ -33,6 +34,16 @@ class WaranJawatan extends Model
     public function pegawai()
     {
         return $this->belongsTo(Pegawai::class, 'pegawai_id');
+    }
+
+    public function jawatan()
+    {
+        return $this->belongsTo(Jawatan::class);
+    }
+
+    public function gred()
+    {
+        return $this->belongsTo(Gred::class);
     }
 
     public function jawatanGred()

@@ -31,7 +31,5 @@
 
         </x-filament::card>
 
-        
-
     </div>
 </x-filament-widgets::widget>

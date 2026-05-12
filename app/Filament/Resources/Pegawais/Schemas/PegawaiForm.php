@@ -27,7 +27,9 @@ class PegawaiForm
                         TextInput::make('nama')
                             ->label('Nama')
                             ->columnSpanFull()
-                            ->required(),
+                            ->required()
+                             ->dehydrateStateUsing(fn(string $state): string => strtoupper($state))
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                         TextInput::make('nokp')
                             ->label('No Kad Pengenalan')
                             ->required()

@@ -19,9 +19,11 @@ class WaransTable
             ->modifyQueryUsing(
                 fn($query) =>
                 $query->with([
-                    'waranJawatan.ptj',
-                    'waranJawatan.aktiviti',
+                    'waranJawatans.ptj',
+                    'waranJawatans.aktiviti',
+                    'children.waranJawatans',
                 ])
+                ->whereNull('parent_id')
             )
 
             ->columns([
@@ -39,6 +41,22 @@ class WaransTable
                         '<strong>' . $record->no_waran . '</strong><br>Jawatan: ' . $record->jik
                     )
                     ->html(),
+               TextColumn::make('waran_tambahan')
+    ->label('Waran Tambahan')
+    ->formatStateUsing(function ($record) {
+
+        $children = $record->children;
+
+        if ($children->isEmpty()) {
+            return '-';
+        }
+
+        return $children
+            ->map(fn ($c) => $c->no_waran)
+            ->join('<br>')
+            . "<br><span class='text-gray-500'>(".$children->count()." waran)</span>";
+    })
+    ->html(),
                 TextColumn::make('butiran_list')
                     ->label('Butiran')
                     ->html(),
@@ -47,7 +65,7 @@ class WaransTable
                     ->label('Aktiviti')
                     ->formatStateUsing(
                         fn($record) =>
-                        $record->waranJawatan
+                        $record->waranJawatans
                             ->map(fn($wj) => $wj->aktiviti?->no_aktivit . ' - ' . $wj->aktiviti?->nama_aktiviti)
                             ->filter()
                             ->unique()
