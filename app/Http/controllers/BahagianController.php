@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bahagian;
 use Illuminate\Http\Request;
+use App\Models\Ptj;
 
 class BahagianController extends Controller
 {
@@ -13,9 +14,10 @@ class BahagianController extends Controller
         return view('bahagian.index', compact('items'));
     }
 
-    public function create()
+       public function create()
     {
-        return view('bahagian.create');
+        $ptjs = Ptj::all();
+        return view('bahagian.create', compact('ptjs'));
     }
 
     public function store(Request $request)
@@ -30,9 +32,20 @@ class BahagianController extends Controller
         return view('bahagian.show', compact('bahagian'));
     }
 
+    // public function edit(Bahagian $bahagian)
+    // {
+    //     return view('bahagian.edit', compact('bahagian'));
+    // }
+
     public function edit(Bahagian $bahagian)
     {
-        return view('bahagian.edit', compact('bahagian'));
+        $ptjs = Ptj::all();
+        return view('bahagian.edit', compact('bahagian', 'ptjs'));
+        // compact tu sama ja cara tulis dia macam bawah ni cuma dia pendekkan 
+        // return view('bahagian.edit', [
+        //     'bahagian' => $bahagian,
+        //     'ptjs' => $ptjs,
+        // ]);
     }
 
     public function update(Request $request, Bahagian $bahagian)
@@ -40,6 +53,19 @@ class BahagianController extends Controller
         $data = $request->except(['_token', '_method']);
         $bahagian->update($data);
         return redirect()->route('bahagian.index')->with('success', 'Bahagian berjaya dikemaskini!');
+
+        {
+            $search = $request->get('search');
+            $items = Bahagian::with('ptj')
+                ->when($search, function($q) use ($search) {
+                    $q->where('nama_bahagian', 'like', "%$search%")
+                    ->orWhereHas('ptj', fn($q) => $q->where('nama_ptj', 'like', "%$search%"));
+                })
+                ->paginate(20)
+                ->withQueryString();
+
+            return view('bahagian.index', compact('items', 'search'));
+        }
     }
 
     public function destroy(Bahagian $bahagian)
@@ -47,4 +73,5 @@ class BahagianController extends Controller
         $bahagian->delete();
         return redirect()->route('bahagian.index')->with('success', 'Bahagian berjaya dipadam!');
     }
+    
 }

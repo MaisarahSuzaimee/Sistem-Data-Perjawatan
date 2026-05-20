@@ -8,6 +8,7 @@ use App\Models\Bahagian;
 use App\Models\Unit;
 use App\Models\Subunit;
 use App\Models\Jawatan_Gred;
+use App\Models\Jawatan;
 use App\Models\OpsyenPencen;
 use Illuminate\Http\Request;
 
@@ -25,9 +26,12 @@ class PegawaiController extends Controller
         $bahagians = Bahagian::all();
         $units = Unit::all();
         $subunits = Subunit::all();
-        $jawatan_greds = Jawatan_Gred::with(['jawatan', 'gred'])->get();
+        // $jawatan_greds = Jawatan_Gred::with(['jawatan', 'gred'])->get();
+        $jawatans = Jawatan::with('greds')
+                            ->orderBy('desc_jawatan')
+                            ->get();
         $opsyen_pencens = OpsyenPencen::all();
-        return view('pegawai.create', compact('ptjs','bahagians','units','subunits','jawatan_greds','opsyen_pencens'));
+        return view('pegawai.create', compact('ptjs','bahagians','units','subunits','jawatans','opsyen_pencens'));
     }
 
     public function store(Request $request)
@@ -54,9 +58,10 @@ class PegawaiController extends Controller
         $bahagians = Bahagian::all();
         $units = Unit::all();
         $subunits = Subunit::all();
-        $jawatan_greds = Jawatan_Gred::with(['jawatan', 'gred'])->get();
+        // $jawatan_greds = Jawatan_Gred::with(['jawatan', 'gred'])->get();
+        $jawatans = Jawatan::with('greds')->orderBy('desc_jawatan')->get();
         $opsyen_pencens = OpsyenPencen::all();
-        return view('pegawai.edit', compact('pegawai','ptjs','bahagians','units','subunits','jawatan_greds','opsyen_pencens'));
+        return view('pegawai.edit', compact('pegawai','ptjs','bahagians','units','subunits','jawatans','opsyen_pencens'));
     }
 
     public function update(Request $request, Pegawai $pegawai)

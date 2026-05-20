@@ -3,19 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Unit;
+use App\Models\Bahagian;
 use Illuminate\Http\Request;
 
 class UnitController extends Controller
 {
-    public function index()
+        public function index(Request $request)
     {
-        $items = Unit::paginate(20);
-        return view('unit.index', compact('items'));
-    }
+        $search = $request->get('search');
+        $items = Unit::with('bahagian')
+            ->when($search, function($q) use ($search) {
+                $q->where('nama_unit', 'like', "%$search%")
+                ->orWhereHas('bahagian', fn($q) => $q->where('nama_bahagian', 'like', "%$search%"));
+            })
+            ->paginate(20)
+            ->withQueryString();
 
-    public function create()
-    {
-        return view('unit.create');
+        return view('unit.index', compact('items', 'search'));
     }
 
     public function store(Request $request)
@@ -23,6 +27,17 @@ class UnitController extends Controller
         $data = $request->except('_token');
         Unit::create($data);
         return redirect()->route('unit.index')->with('success', 'Unit berjaya ditambah!');
+
+        $search = $request->get('search');
+        $items = Unit::with('bahagian')
+            ->when($search, function($q) use ($search) {
+                $q->where('nama_unit', 'like', "%$search%")
+                ->orWhereHas('bahagian', fn($q) => $q->where('nama_bahagian', 'like', "%$search%"));
+            })
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('unit.index', compact('items', 'search'));
     }
 
     public function show(Unit $unit)
@@ -30,9 +45,14 @@ class UnitController extends Controller
         return view('unit.show', compact('unit'));
     }
 
+    // public function edit(Unit $unit)
+    // {
+    //     return view('unit.edit', compact('unit'));
+    // }
     public function edit(Unit $unit)
     {
-        return view('unit.edit', compact('unit'));
+        $bahagians = Bahagian::all();
+        return view('unit.edit', compact('unit', 'bahagians'));
     }
 
     public function update(Request $request, Unit $unit)
@@ -47,4 +67,13 @@ class UnitController extends Controller
         $unit->delete();
         return redirect()->route('unit.index')->with('success', 'Unit berjaya dipadam!');
     }
+    
+
+    public function create()
+    {
+        $bahagians = Bahagian::all();
+        return view('unit.create', compact('bahagians'));
+    }
+
+    
 }

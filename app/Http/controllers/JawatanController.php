@@ -7,10 +7,21 @@ use Illuminate\Http\Request;
 
 class JawatanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = Jawatan::paginate(20);
-        return view('jawatan.index', compact('items'));
+        $search = $request->get('search');
+
+        $items = Jawatan::with('greds')
+            ->when($search, function($q) use ($search) {
+                $q->where('desc_jawatan', 'like', "%$search%")
+                // ->orWhere('kod_jawatan', 'like', "%$search%")
+                ->orWhere('kod_jawatan', $search)
+                ->orWhereHas('greds', fn($q) => $q->where('kod_gred', 'like', "%$search%"));
+            })
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('jawatan-gred.index', compact('items', 'search'));
     }
 
     public function create()

@@ -24,6 +24,7 @@ class BahagianResource extends Resource
 
     protected static ?string $navigationLabel = 'Bahagian';
     protected static ?string $modelLabel = 'Bahagian';
+    // protected static ?string $modelLabel = 'Bahagian Baru';
 
     protected static ?string $pluralModelLabel = 'Bahagian';
 

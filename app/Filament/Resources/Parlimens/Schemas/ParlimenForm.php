@@ -22,6 +22,7 @@ class ParlimenForm
                 Repeater::make('duns')
                     ->label('Dun')
                     ->relationship('duns')
+                    ->addActionLabel('Tambah Dun')
                     ->schema([
                         TextInput::make('nama_dun')
                             ->required()

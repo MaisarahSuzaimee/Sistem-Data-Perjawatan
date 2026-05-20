@@ -109,16 +109,32 @@
                     </select>
                 </div>
 
+
+                {{-- Dropdown pilih Jawatan - boleh dicari dengan Select2 --}}
                 <div class="col-md-6">
-                    <label class="form-label">Jawatan & Gred</label>
-                    <select name="jawatan_gred_id" class="form-select">
+                    <label class="form-label fs-6">Jawatan</label>
+                    <select id="jawatan_select" class="form-select">
                         <option value="">-- Pilih Jawatan --</option>
-                        @foreach($jawatan_greds as $jg)
-                            <option value="{{ $jg->id }}" {{ old('jawatan_gred_id', $pegawai->jawatan_gred_id) == $jg->id ? 'selected' : '' }}>
-                                {{ $jg->jawatan->desc_jawatan ?? '-' }} ({{ $jg->gred->kod_gred ?? '-' }})
-                            </option>
+                        @foreach($jawatans as $jawatan)
+                        <option value="{{ $jawatan->id }}"
+                            data-greds="{{ $jawatan->greds->map(fn($g) => ['id' => $g->pivot->id, 'kod' => $g->kod_gred])->toJson() }}"
+                            {{-- Semak jika jawatan ini adalah jawatan pegawai semasa --}}
+                            {{ old('jawatan_id', $pegawai->jawatan_gred->jawatan_id ?? '') == $jawatan->id ? 'selected' : '' }}>
+                            {{ $jawatan->desc_jawatan }} ({{ $jawatan->kod_jawatan }})
+                        </option>
                         @endforeach
                     </select>
+                </div>
+
+                {{-- Gred badges - klik untuk pilih --}}
+                <div class="col-md-6">
+                    <label class="form-label fs-6">Gred</label>
+                    <div id="gred_badges" class="d-flex flex-wrap gap-2">
+                        <span class="text-muted fst-italic">-- Pilih Jawatan dahulu --</span>
+                    </div>
+                    <input type="hidden" name="jawatan_gred_id" id="gred_selected_value"
+                        value="{{ old('jawatan_gred_id', $pegawai->jawatan_gred_id) }}">
+                    @error('jawatan_gred_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="col-12">
@@ -224,6 +240,10 @@
 
 @push('scripts')
 <script>
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
     // Auto-fill tarikh_lahir from nokp
     document.getElementById('nokp').addEventListener('input', function() {
         const nokp = this.value.replace(/-/g, '');
@@ -254,5 +274,59 @@
 
     kontrakCheck.addEventListener('change', toggleSections);
     toggleSections(); // run on load
+
+    // Select2 JS
+    $.getScript('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', function() {
+
+        $('#jawatan_select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: '-- Pilih Jawatan --',
+            allowClear: true
+        });
+
+        $('#jawatan_select').on('change', function() {
+            const selectedOption = $(this).find(':selected');
+            const gredsData = selectedOption.attr('data-greds');
+            const badgesContainer = $('#gred_badges');
+
+            badgesContainer.html('');
+
+            if (!gredsData) {
+                badgesContainer.html('<span class="text-muted fst-italic">-- Pilih Jawatan dahulu --</span>');
+                return;
+            }
+
+            const currentGredId = $('#gred_selected_value').val();
+            const greds = JSON.parse(gredsData);
+
+            if (greds.length === 0) {
+                badgesContainer.html('<span class="text-muted fst-italic">Tiada gred untuk jawatan ini</span>');
+                return;
+            }
+
+            greds.forEach(function(gred) {
+                const isSelected = currentGredId == gred.id;
+                const badge = $('<span>')
+                    .addClass('badge px-3 py-2 ' + (isSelected ? 'bg-primary' : 'bg-label-primary'))
+                    .css('cursor', 'pointer')
+                    .attr('data-id', gred.id)
+                    .text(gred.kod)
+                    .on('click', function() {
+                        badgesContainer.find('.badge').removeClass('bg-primary').addClass('bg-label-primary');
+                        $(this).removeClass('bg-label-primary').addClass('bg-primary');
+                        $('#gred_selected_value').val(gred.id);
+                    });
+
+                badgesContainer.append(badge);
+            });
+        });
+
+        // Trigger on load to show existing jawatan gred
+        const existingJawatan = '{{ $pegawai->jawatan_gred->jawatan_id ?? "" }}';
+        if (existingJawatan) {
+            $('#jawatan_select').val(existingJawatan).trigger('change');
+        }
+    });
 </script>
 @endpush

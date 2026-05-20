@@ -10,6 +10,7 @@ class Jawatan extends Model
     protected $fillable = [
         'kod_jawatan',
         'desc_jawatan',
+        'skim',
     ];
 
     public function greds()

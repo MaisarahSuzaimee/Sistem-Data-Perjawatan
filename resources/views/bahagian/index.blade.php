@@ -1,6 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Senarai Bahagian')
 @section('content')
+
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold mb-0">Senarai Bahagian</h4>
     <a href="{{ route('bahagian.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> Tambah</a>
@@ -23,9 +25,14 @@
                     <td>{{ $item->ptj->nama_ptj ?? '-' }}</td>
                     <td>
                         <a href="{{ route('bahagian.edit', $item) }}" class="btn btn-sm btn-icon btn-text-warning"><i class="bx bx-edit"></i></a>
-                        <form action="{{ route('bahagian.destroy', $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Padam?')">@csrf @method('DELETE')
+                        <!-- <form action="{{ route('bahagian.destroy', $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Padam?')">@csrf @method('DELETE')
                             <button class="btn btn-sm btn-icon btn-text-danger"><i class="bx bx-trash"></i></button>
-                        </form>
+                        </form> -->
+                        <button type="button" class="btn btn-sm btn-icon btn-text-danger"
+                            onclick="confirmDelete('{{ route('bahagian.destroy', $item) }}', 'Bahagian')">
+                            <i class="bx bx-trash"></i>
+                        </button>
+
                     </td>
                 </tr>
                 @empty

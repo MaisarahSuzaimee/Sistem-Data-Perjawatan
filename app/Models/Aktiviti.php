@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use App\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 
 class Aktiviti extends Model

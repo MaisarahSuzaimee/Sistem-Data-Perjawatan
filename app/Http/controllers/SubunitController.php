@@ -4,19 +4,45 @@ namespace App\Http\Controllers;
 
 use App\Models\Subunit;
 use Illuminate\Http\Request;
+use App\Models\Unit;
+use App\Models\Dun;
 
 class SubunitController extends Controller
 {
-    public function index()
+    // public function index()
+    // {
+    //     $items = Subunit::paginate(20);
+    //     return view('subunit.index', compact('items'));
+    // }
+        public function index(Request $request)
     {
-        $items = Subunit::paginate(20);
-        return view('subunit.index', compact('items'));
+        $search = $request->get('search');
+        $items = Subunit::with(['unit', 'dun'])
+            ->when($search, function($q) use ($search) {
+                $q->where('nama_subunit', 'like', "%$search%")
+                ->orWhereHas('unit', fn($q) => $q->where('nama_unit', 'like', "%$search%"));
+            })
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('subunit.index', compact('items', 'search'));
     }
 
     public function create()
     {
-        return view('subunit.create');
+        $units = Unit::all();
+        $duns = Dun::all();
+        return view('subunit.create', compact('units', 'duns'));
     }
+
+    public function edit(Subunit $subunit)
+    {
+        $units = Unit::all();
+        $duns = Dun::all();
+        return view('subunit.edit', compact('subunit', 'units', 'duns'));
+    }
+
+    
 
     public function store(Request $request)
     {
@@ -28,11 +54,6 @@ class SubunitController extends Controller
     public function show(Subunit $subunit)
     {
         return view('subunit.show', compact('subunit'));
-    }
-
-    public function edit(Subunit $subunit)
-    {
-        return view('subunit.edit', compact('subunit'));
     }
 
     public function update(Request $request, Subunit $subunit)

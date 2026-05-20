@@ -32,6 +32,7 @@ class BahagianForm
                 Repeater::make('units')
                 ->label('Unit')
                     ->relationship()
+                    ->addActionLabel('Tambah Unit')
                     ->schema([
                         TextInput::make('nama_unit')
                             ->required()

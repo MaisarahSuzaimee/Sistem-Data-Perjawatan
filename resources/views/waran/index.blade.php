@@ -13,7 +13,7 @@
     <div class="table-responsive">
         <table class="table table-hover">
             <thead class="table-light">
-                <tr><th>#</th><th>No. Waran</th><th>Punca Kuasa</th><th>JIK</th><th>Catatan</th><th>Tindakan</th></tr>
+                <tr><th>Bil</th><th>No. Waran</th><th>Punca Kuasa</th><th>JIK</th><th>Catatan</th><th>Tindakan</th></tr>
             </thead>
             <tbody>
                 @forelse($items as $item)

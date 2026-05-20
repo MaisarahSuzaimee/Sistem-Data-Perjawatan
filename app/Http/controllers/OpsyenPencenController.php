@@ -25,26 +25,26 @@ class OpsyenPencenController extends Controller
         return redirect()->route('opsyen-pencen.index')->with('success', 'OpsyenPencen berjaya ditambah!');
     }
 
-    public function show(OpsyenPencen $opsyen-pencen)
+    public function show(OpsyenPencen $opsyenPencen)
     {
-        return view('opsyen-pencen.show', compact('opsyen-pencen'));
+        return view('opsyen-pencen.show', compact('opsyenPencen'));
     }
 
-    public function edit(OpsyenPencen $opsyen-pencen)
+    public function edit(OpsyenPencen $opsyenPencen)
     {
-        return view('opsyen-pencen.edit', compact('opsyen-pencen'));
+        return view('opsyen-pencen.edit', compact('opsyenPencen'));
     }
 
-    public function update(Request $request, OpsyenPencen $opsyen-pencen)
+    public function update(Request $request, OpsyenPencen $opsyenPencen)
     {
         $data = $request->except(['_token', '_method']);
-        $opsyen-pencen->update($data);
+        $opsyenPencen->update($data);
         return redirect()->route('opsyen-pencen.index')->with('success', 'OpsyenPencen berjaya dikemaskini!');
     }
 
-    public function destroy(OpsyenPencen $opsyen-pencen)
+    public function destroy(OpsyenPencen $opsyenPencen)
     {
-        $opsyen-pencen->delete();
+        $opsyenPencen->delete();
         return redirect()->route('opsyen-pencen.index')->with('success', 'OpsyenPencen berjaya dipadam!');
     }
 }

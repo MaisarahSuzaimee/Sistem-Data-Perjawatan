@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 
 class PegawaiKontrakController extends Controller
 {
-    public function index()
+        public function index()
     {
-        $items = PegawaiKontrak::paginate(20);
+        $items = PegawaiKontrak::with('pegawai')->paginate(20);
         return view('pegawai-kontrak.index', compact('items'));
     }
 

@@ -18,6 +18,7 @@ use App\Http\Controllers\OpsyenPencenController;
 use App\Http\Controllers\ParlimenController;
 use App\Http\Controllers\DunController;
 use App\Http\Controllers\PenggunaController;
+use App\Http\Controllers\JawatanGredController;
 
 // Redirect root to login
 Route::get('/', function () {
@@ -88,5 +89,5 @@ Route::middleware('auth')->group(function () {
 
     // Sistem
     Route::resource('pengguna', PenggunaController::class);
-
+    Route::resource('jawatan-gred', JawatanGredController::class);
 });
