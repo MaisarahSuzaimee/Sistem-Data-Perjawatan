@@ -11,10 +11,41 @@ use Illuminate\Http\Request;
 
 class WaranController extends Controller
 {
-    public function index()
+    // Replace your index() method in WaranController with this:
+
+    public function index(Request $request)
     {
-        $items = Waran::with(['waranJawatan'])->paginate(20);
-        return view('waran.index', compact('items'));
+        $search = $request->get('search');
+        $status = $request->get('status');
+
+        $query = Waran::with(['waranJawatan']);
+
+        // Search by no_waran
+        if ($search) {
+            $query->where('no_waran', 'like', "%$search%");
+        }
+
+        $items = $query->paginate(20)->withQueryString();
+
+        // Filter by status (after paginate to get accurate stats)
+        $allWarans = Waran::with(['waranJawatan'])->get();
+        $stats = [
+            'lebih'    => $allWarans->filter(fn($w) => $w->status_jik === 'Lebih')->count(),
+            'kurang'   => $allWarans->filter(fn($w) => $w->status_jik === 'Kurang')->count(),
+            'seimbang' => $allWarans->filter(fn($w) => $w->status_jik === 'Seimbang')->count(),
+        ];
+
+        // Apply status filter after getting stats
+        if ($status) {
+            $filteredIds = $allWarans->filter(fn($w) => $w->status_jik === $status)->pluck('id');
+            $query2 = Waran::with(['waranJawatan'])->whereIn('id', $filteredIds);
+            if ($search) {
+                $query2->where('no_waran', 'like', "%$search%");
+            }
+            $items = $query2->paginate(20)->withQueryString();
+        }
+
+        return view('waran.index', compact('items', 'stats', 'search', 'status'));
     }
 
     public function create()

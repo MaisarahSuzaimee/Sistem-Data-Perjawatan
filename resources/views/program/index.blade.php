@@ -41,26 +41,25 @@ $colors = [
                         </span>
                         <h6 class="mb-0">{{ $program->desc_program }}</h6>
                     </div>
-                    <div class="d-flex gap-1 ms-2" onclick="event.stopPropagation()">
+                    <!-- {{-- <div class="d-flex gap-1 ms-2" onclick="event.stopPropagation()">
                         <a href="{{ route('program.edit', $program) }}" class="btn btn-sm btn-icon btn-text-warning" title="Edit">
                             <i class="bx bx-edit"></i>
                         </a>
-                        <form action="{{ route('program.destroy', $program) }}" method="POST" class="d-inline"
-                            onsubmit="return confirm('Padam program ini?')">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-icon btn-text-danger" title="Padam">
-                                <i class="bx bx-trash"></i>
-                            </button>
-                        </form>
-                    </div>
+                        <button class="btn btn-sm btn-icon btn-text-danger" title="Padam"
+                            onclick="confirmDelete('{{ route('program.destroy', $program) }}', 'Program')">
+                            <i class="bx bx-trash"></i>
+                        </button>
+                    </div> --}} for now commentkan dulu nnti baru buat roleaccesibility since benda ni dh tetap mmg xdk tambah2 dah  -->
                 </div>
             </div>
-            <div class="card-footer d-flex justify-content-between align-items-center">
-                <small class="text-muted">
-                    <i class="bx bx-list-ul me-1"></i>
+            <div class="card-footer d-flex justify-content-between align-items-center py-2">
+                <small class="text-muted d-flex align-items-center gap-1">
+                    <i class="bx bx-list-ul"></i>
                     {{ $program->aktiviti_count }} aktiviti
                 </small>
-                <small class="text-primary">Lihat aktiviti →</small>
+                <a href="{{ route('program.show', $program->id) }}" class="btn btn-sm btn-primary">
+                    <i class="bx bx-right-arrow-alt me-1"></i> Lihat Aktiviti
+                </a>
             </div>
         </div>
     </div>
