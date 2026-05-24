@@ -29,7 +29,7 @@ class BahagianResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
-        protected static ?int $navigationSort = 12;
+        protected static ?int $navigationSort = 22;
 
 
     public static function form(Schema $schema): Schema

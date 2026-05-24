@@ -23,7 +23,7 @@ class ParlimenResource extends Resource
     protected static ?string $recordTitleAttribute = 'nama_parlimen';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
-    protected static ?int $navigationSort = 18;
+    protected static ?int $navigationSort = 29;
 
     public static function form(Schema $schema): Schema
     {
