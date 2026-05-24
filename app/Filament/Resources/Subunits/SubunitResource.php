@@ -23,7 +23,7 @@ class SubunitResource extends Resource
     protected static ?string $recordTitleAttribute = 'nama_subunit';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
-    protected static ?int $navigationSort = 14;
+    protected static ?int $navigationSort = 24;
 
     public static function form(Schema $schema): Schema
     {

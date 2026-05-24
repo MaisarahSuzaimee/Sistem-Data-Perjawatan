@@ -28,7 +28,7 @@ class KumpulanResource extends Resource
     protected static ?string $navigationLabel ='Kumpulan';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
-        protected static ?int $navigationSort = 17;
+        protected static ?int $navigationSort = 25;
 
 
     public static function form(Schema $schema): Schema

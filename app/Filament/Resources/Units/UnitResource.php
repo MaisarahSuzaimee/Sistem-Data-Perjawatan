@@ -26,7 +26,7 @@ class UnitResource extends Resource
     protected static ?string $pluralModelLabel = 'Unit';
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
-    protected static ?int $navigationSort = 13;
+    protected static ?int $navigationSort = 23;
 
     public static function form(Schema $schema): Schema
     {

@@ -24,11 +24,11 @@ class PegawaiResource extends Resource
 
     protected static ?string $modelLabel = 'Pegawai';
     protected static ?string $pluralModelLabel = 'Pegawai';
-    protected static ?string $navigationLabel = 'Pegawai';
+    protected static ?string $navigationLabel = 'Senarai Pegawai';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Buku Waran';
+    protected static string|\UnitEnum|null $navigationGroup = 'Pegawai';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 11;
 
     public static function form(Schema $schema): Schema
     {
