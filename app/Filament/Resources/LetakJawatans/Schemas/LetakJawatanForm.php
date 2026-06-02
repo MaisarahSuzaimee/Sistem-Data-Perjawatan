@@ -126,11 +126,6 @@ class LetakJawatanForm
                         Hidden::make('ptj_id')
                             ->dehydrated(),
 
-                        // TextInput::make('tempat_bertugas')
-                        // ->label('Temoat Bertugas')
-                        // ->disabled()
-                        // ->dehydrated(),
-
                         TextInput::make('lantikan')
                             ->label('Lantikan')
                             ->disabled()
@@ -212,9 +207,6 @@ class LetakJawatanForm
                         Textarea::make('alasan')
                             ->label('Alasan')
                             ->columnSpanFull()
-
-
-
 
                     ])
                     ->columnSpanFull()
