@@ -32,13 +32,13 @@ class PegawaisTable
 
                         return
                             '<strong>' . ($record->nama ?? '-') . '</strong><br>' .
-                            ($record->nokp ?? '-') . '<br>' .
+                            // ($record->nokp ?? '-') . '<br>' .
                             ($record->jawatan_gred
                                 ? $record->jawatan_gred->jawatan->desc_jawatan .
                                 ' (' . $record->jawatan_gred->gred->kod_gred . ')'
                                 : '-') .
-                            '<br>'
-                            . ($lantikan[0]);
+                            '<br>';
+                            // . ($lantikan[0]);
                     })
                     ->html(),
 
@@ -47,34 +47,13 @@ class PegawaisTable
                     ->formatStateUsing(
                         fn($record) =>
                         '<strong>' . ($record->ptj?->nama_ptj ?? '') . '</strong><br>' .
-                        ($record->bahagian?->nama_bahagian ?? '') . '<br>' .
-                        ($record->unit?->nama_unit ?? '') . '<br>' .
-                        ($record->subunit?->nama_subunit ?? '')
+                        ($record->bahagian?->nama_bahagian ?? '') . '<br>'
+                        // .
+                        // ($record->unit?->nama_unit ?? '') . '<br>' .
+                        // ($record->subunit?->nama_subunit ?? '')
                     )
 
                     ->html(),
-
-                // TextColumn::make('lantikan')
-                //     ->label('Lantikan')
-                //     ->badge()
-                //     ->getStateUsing(function ($record) {
-
-                //         return match (true) {
-                //             $record->is_tetap == 1 => 'Tetap',
-                //             $record->is_kontrak == 1 => 'Kontrak',
-                //             $record->is_kontrak_interim == 1 => 'Kontrak Interim',
-                //             default => '-',
-                //         };
-                //     })
-                //     ->color(function ($state) {
-
-                //         return match ($state) {
-                //             'Tetap' => 'success',
-                //             'Kontrak' => 'warning',
-                //             'Kontrak Interim' => 'info',
-                //             default => 'gray',
-                //         };
-                //     }),
 
                 TextColumn::make('waran')
                     ->label('Waran')
