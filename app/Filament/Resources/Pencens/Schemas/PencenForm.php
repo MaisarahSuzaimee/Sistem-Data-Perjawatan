@@ -109,11 +109,11 @@ class PencenForm
 
                                     $jenisLantikan = match (true) {
 
-                                        $pegawai?->is_tetap == 1 => 'tetap',
+                                        $pegawai?->is_tetap == 1 => 'Tetap',
 
-                                        $pegawai?->is_kontrak_interim == 1 => 'kontrak interim',
+                                        $pegawai?->is_kontrak_interim == 1 => 'Kontrak Interim',
 
-                                        $pegawai?->is_kontrak == 1 => 'kontrak',
+                                        $pegawai?->is_kontrak == 1 => 'Kontrak',
 
                                         default => null,
                                     };
@@ -237,6 +237,7 @@ class PencenForm
                             //     ]),
 
                             Select::make('jenis_pencen_id')
+                            ->label('Jenis Penamatan Perkhidmatan')
                                 ->options(
                                     JenisPencen::orderBy('jenis')->pluck('jenis', 'id')
                                 )
