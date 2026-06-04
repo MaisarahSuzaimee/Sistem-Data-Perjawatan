@@ -10,7 +10,9 @@ class Unit extends Model
      use SoftDeletes;
     protected $fillable = [
         'bahagian_id',
-        'nama_unit'
+        'nama_unit',
+        'parlimen_id',
+        'dun_id',
     ];
 
     public function bahagian()
@@ -19,5 +21,15 @@ class Unit extends Model
 
     }
 
+        public function parlimen()
+    {
+        return $this->belongsTo(Parlimen::class);
+    }
 
+    public function dun()
+    {
+        return $this->belongsTo(Dun::class);
+    }
+
+   
 }
