@@ -29,9 +29,9 @@ class ProgramResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Program & Aktiviti';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Buku Waran';
+    protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
-        protected static ?int $navigationSort = 2;
+        protected static ?int $navigationSort = 19;
 
 
     public static function form(Schema $schema): Schema

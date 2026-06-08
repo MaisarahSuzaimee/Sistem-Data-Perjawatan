@@ -16,8 +16,14 @@ class ListPegawais extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+            ->label('Tambah Pegawai'),
         ];
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return 'Senarai';
     }
 
     public function getTabs(): array

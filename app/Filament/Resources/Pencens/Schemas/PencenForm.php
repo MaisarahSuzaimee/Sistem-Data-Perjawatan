@@ -237,7 +237,7 @@ class PencenForm
                             //     ]),
 
                             Select::make('jenis_pencen_id')
-                            ->label('Jenis Penamatan Perkhidmatan')
+                                ->label('Jenis Penamatan Perkhidmatan')
                                 ->options(
                                     JenisPencen::orderBy('jenis')->pluck('jenis', 'id')
                                 )
@@ -350,13 +350,15 @@ class PencenForm
                 ])
                     ->columns(2)
                     ->columnSpanFull()
+                    ->nextAction(fn($action) => $action->label('Seterusnya'))
+                    ->previousAction(fn($action) => $action->label('Kembali'))
                     ->submitAction(new HtmlString(\Illuminate\Support\Facades\Blade::render(<<<'BLADE'
                         <div class="flex gap-2 justify-end">
                             <x-filament::button
                                 type="submit"
                                 size="sm"
                             >
-                                Submit
+                                Simpan
                             </x-filament::button>
                         </div>
                     BLADE)))

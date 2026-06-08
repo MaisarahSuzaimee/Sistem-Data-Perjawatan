@@ -22,6 +22,10 @@ class SubunitResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama_subunit';
 
+    protected static ?string $navigationLabel = 'Sub Unit';
+    protected static ?string $modelLabel = 'Sub Unit';
+    protected static ?string $pluralModelLabel = 'Sub Unit';
+
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
     protected static ?int $navigationSort = 24;
 

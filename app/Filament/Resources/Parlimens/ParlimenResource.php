@@ -21,7 +21,11 @@ class ParlimenResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'nama_parlimen';
+    protected static ?string $modelLabel = 'Parlimen';
 
+    protected static ?string $pluralModelLabel = 'Parlimen';
+
+    protected static ?string $navigationLabel = 'Parlimen';
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
     protected static ?int $navigationSort = 29;
 

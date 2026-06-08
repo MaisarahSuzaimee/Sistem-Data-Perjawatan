@@ -56,7 +56,7 @@ class JawatanResource extends Resource
         return [
             'index' => ListJawatans::route('/'),
             'create' => CreateJawatan::route('/create'),
-            'edit' => EditJawatan::route('/{record}/edit'),
+            // 'edit' => EditJawatan::route('/{record}/edit'),
         ];
     }
 // public static function getEloquentQuery(): Builder

@@ -13,7 +13,13 @@ class ListPencens extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+            ->label('Tambah Penamatan Perkhidmatan'),
         ];
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return 'Senarai';
     }
 }

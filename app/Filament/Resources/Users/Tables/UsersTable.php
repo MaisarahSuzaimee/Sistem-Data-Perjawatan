@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -31,13 +32,13 @@ class UsersTable
                 //     ->searchable()
                 //     ->sortable(),
                 TextColumn::make('name')
-                ->label('Nama')
-                ->sortable()
-                ->searchable(),
-                 TextColumn::make('email')
-                ->label('Email')
-                ->sortable()
-                ->searchable(),
+                    ->label('Nama')
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('ptj.nama_ptj')
                     ->label('Ptj')
                     ->searchable()
@@ -47,17 +48,17 @@ class UsersTable
                 //
             ])
             ->recordActions([
-                ViewAction::make()
-                    ->color("info")
-                    ->label("")
-                    ->tooltip("View"),
-                EditAction::make()
-                    ->modal()
-                    ->label("")
-                    ->tooltip("Edit"),
-                DeleteAction::make()
-                    ->label("")
-                    ->tooltip("Delete"),
+                ActionGroup::make([
+                    // ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make()
+                        ->label('Padam')
+                        ->modalHeading(fn($record) => "Padam {$record->name}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
+                ])
+
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

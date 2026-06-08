@@ -50,9 +50,9 @@ class WaransTable
             //         );
             // })
 
-//             ->modifyQueryUsing(function ($query) {
+            //             ->modifyQueryUsing(function ($query) {
 
-//     $query->with([
+            //     $query->with([
 //         'waranJawatan.aktiviti.program',
 //     ]);
 // })
@@ -84,7 +84,7 @@ class WaransTable
                 TextColumn::make('butiran_list')
                     ->label('Butiran')
                     ->html()
-                   ->searchable(query: function ($query, $search) {
+                    ->searchable(query: function ($query, $search) {
                         $query->whereHas('waranJawatan', function ($q) use ($search) {
                             $q->where('butiran', 'like', "%{$search}%");
                         });
@@ -242,8 +242,13 @@ class WaransTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                EditAction::make(),
-                DeleteAction::make()
+                    EditAction::make(),
+                    DeleteAction::make()
+                        ->label('Padam')
+                        ->modalHeading(fn($record) => "Padam {$record->no_waran}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
                 ])
                 // DeleteAction::make(),
             ])

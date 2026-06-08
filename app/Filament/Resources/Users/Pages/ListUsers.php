@@ -14,8 +14,14 @@ class ListUsers extends ListRecords
     {
         return [
             CreateAction::make()
-            ->modal()
-            ->createAnother(false),
+            ->label('Tambah Pengguna')
+            // ->modal()
+            // ->createAnother(false),
         ];
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return 'Senarai';
     }
 }
