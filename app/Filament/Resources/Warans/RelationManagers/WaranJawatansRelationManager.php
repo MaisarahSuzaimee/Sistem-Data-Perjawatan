@@ -84,18 +84,18 @@ class WaranJawatansRelationManager extends RelationManager
                     ->columns(1)
                     ->disabled(
                         fn() =>
-                        ! auth()->user()?->isSuperadmin()
-                            && ! auth()->user()?->isAdmin()
+                        !auth()->user()?->isSuperadmin()
+                        && !auth()->user()?->isAdmin()
                     ),
 
                 TextInput::make('butiran')
                     ->required()
                     ->maxLength(255)
                     ->readonly(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
+                        fn() =>
+                        !auth()->user()?->isSuperadmin()
+                        && !auth()->user()?->isAdmin()
+                    ),
 
                 Select::make('jawatan_ids')
                     ->label('Jawatan')
@@ -109,10 +109,10 @@ class WaranJawatansRelationManager extends RelationManager
                     ->preload()
                     ->live()
                     ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
+                        fn() =>
+                        !auth()->user()?->isSuperadmin()
+                        && !auth()->user()?->isAdmin()
+                    ),
                 Select::make('gred_ids')
                     ->label('Gred')
                     ->multiple()
@@ -148,10 +148,10 @@ class WaranJawatansRelationManager extends RelationManager
                     ->required()
                     ->columnSpanFull()
                     ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
+                        fn() =>
+                        !auth()->user()?->isSuperadmin()
+                        && !auth()->user()?->isAdmin()
+                    ),
 
                 Select::make('bahagian_id')
                     ->label('Bahagian')
@@ -194,10 +194,10 @@ class WaranJawatansRelationManager extends RelationManager
                     ->live()
                     ->preload()
                     ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
+                        fn() =>
+                        !auth()->user()?->isSuperadmin()
+                        && !auth()->user()?->isAdmin()
+                    ),
 
                 Select::make('subunit_id')
                     ->label('Subunit')
@@ -217,10 +217,10 @@ class WaranJawatansRelationManager extends RelationManager
                     ->searchable()
                     ->preload()
                     ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
+                        fn() =>
+                        !auth()->user()?->isSuperadmin()
+                        && !auth()->user()?->isAdmin()
+                    ),
 
                 Select::make('pegawai_id')
                     ->label('Pegawai')
@@ -254,12 +254,12 @@ class WaranJawatansRelationManager extends RelationManager
                     ->preload()
                     ->columnSpanFull()
                     ->formatStateUsing(
-                                    fn($get) =>
-                                    WaranJawatan::with('pegawai')
-                                        ->find($get('id'))
-                                        ?->ptj?->nama
-                                ),
-                    
+                        fn($get) =>
+                        WaranJawatan::with('pegawai')
+                            ->find($get('id'))
+                            ?->ptj?->nama
+                    ),
+
 
                 Checkbox::make('is_kup')
                     ->label('Khas Untuk Penyandang (KUP)'),
@@ -392,7 +392,7 @@ class WaranJawatansRelationManager extends RelationManager
                                         ->mapWithKeys(function ($aktiviti) {
                                             return [
                                                 $aktiviti->id =>
-                                                $aktiviti->no_aktivit . ' - ' . $aktiviti->nama_aktiviti
+                                                    $aktiviti->no_aktivit . ' - ' . $aktiviti->nama_aktiviti
                                             ];
                                         })
                                         ->toArray(),
@@ -423,13 +423,17 @@ class WaranJawatansRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Tambah Jawatan')
+                    ->modalHeading('Tambah Jawatan')
+                    ->modalSubmitActionLabel('Tambah')
+                    ->modalCancelActionLabel('Batal')
+                    ->createAnother(false)
                     ->visible(
                         fn() =>
                         $this->getOwnerRecord()->jenis === 'tambah'
-                            && (
-                                auth()->user()?->isSuperadmin()
-                                || auth()->user()?->isAdmin()
-                            )
+                        && (
+                            auth()->user()?->isSuperadmin()
+                            || auth()->user()?->isAdmin()
+                        )
                     ),
 
                 // Action::make('active')
@@ -476,22 +480,32 @@ class WaranJawatansRelationManager extends RelationManager
                 ActionGroup::make([
 
                     ViewAction::make('view')
-                        ->color('info'),
+                        ->label('Paparan')
+                        ->color('info')
+                        ->modalHeading('Paparan'),
+                    // ->modalCloseButton(false),
+
                     EditAction::make()
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalCancelActionLabel('Batal')
                         ->visible(
                             fn($record) =>
                             $this->getOwnerRecord()->jenis === 'tambah'
-                                && $record->status === 'active'
+                            && $record->status === 'active'
                         ),
                     Action::make('delete')
-                        ->label('Delete')
+                        ->label('Padam')
                         ->icon('heroicon-o-trash')
                         ->color('danger')
                         ->requiresConfirmation()
+                        ->modalHeading(fn($record) => "Padam")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
                         ->visible(
                             fn($record) =>
                             $this->getOwnerRecord()->jenis === 'tambah'
-                                && $record->status === 'active'
+                            && $record->status === 'active'
                         )
                         ->action(function ($record) {
 
@@ -502,13 +516,17 @@ class WaranJawatansRelationManager extends RelationManager
                         }),
                     Action::make('remove')
                         ->label('Buang Jawatan')
+                        ->modalHeading(fn($record) => "Buang Jawatan")
+                        ->modalDescription('Adakah anda pasti mahu membuang rekod ini?')
+                        ->modalSubmitActionLabel('Ya, Buang Jawatan')
+                        ->modalCancelActionLabel('Batal')
                         ->icon('heroicon-o-trash')
                         ->color('danger')
                         ->requiresConfirmation()
                         ->visible(
                             fn($record) =>
                             $this->getOwnerRecord()->jenis === 'tolak'
-                                && $record->status === 'active'
+                            && $record->status === 'active'
                         )
                         ->action(function ($record) {
 
@@ -523,13 +541,17 @@ class WaranJawatansRelationManager extends RelationManager
                         }),
                     Action::make('restore')
                         ->label('Undo Buang')
+                        ->modalHeading(fn($record) => "Undo Buang Jawatan")
+                        ->modalDescription('Adakah anda pasti mahu kembalikan rekod ini?')
+                        ->modalSubmitActionLabel('Ya')
+                        ->modalCancelActionLabel('Batal')
                         ->icon('heroicon-o-arrow-uturn-left')
                         ->color('success')
                         ->requiresConfirmation()
                         ->visible(
                             fn($record) =>
                             $this->getOwnerRecord()->jenis === 'tolak'
-                                && $record->status === 'removed'
+                            && $record->status === 'removed'
                         )
                         ->action(function ($record) {
 

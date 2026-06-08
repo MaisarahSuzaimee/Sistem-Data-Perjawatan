@@ -13,7 +13,11 @@ class EditWaran extends EditRecord
 {
     protected static string $resource = WaranResource::class;
 
-
+    protected function getCancelFormAction(): Action
+    {
+        return parent::getCancelFormAction()
+            ->label('Batal');
+    }
 
     protected function getListeners(): array
     {

@@ -53,7 +53,7 @@ class GredResource extends Resource
         return [
             'index' => ListGreds::route('/'),
             'create' => CreateGred::route('/create'),
-            'edit' => EditGred::route('/{record}/edit'),
+            // 'edit' => EditGred::route('/{record}/edit'),
         ];
     }
 }

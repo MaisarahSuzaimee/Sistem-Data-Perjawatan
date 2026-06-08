@@ -53,7 +53,7 @@ class KumpulanResource extends Resource
         return [
             'index' => ListKumpulans::route('/'),
             'create' => CreateKumpulan::route('/create'),
-            'edit' => EditKumpulan::route('/{record}/edit'),
+            // 'edit' => EditKumpulan::route('/{record}/edit'),
         ];
     }
 }

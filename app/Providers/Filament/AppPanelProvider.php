@@ -29,7 +29,7 @@ class AppPanelProvider extends PanelProvider
             ->id('app')
             ->path('app')
             // ->homeUrl('/app/dashboard')
-            ->brandName('e-SDaP')
+            ->brandName('Sistem Perjawatan')
             ->viteTheme('resources/css/filament/app/theme.css')
             ->login()
             ->colors([

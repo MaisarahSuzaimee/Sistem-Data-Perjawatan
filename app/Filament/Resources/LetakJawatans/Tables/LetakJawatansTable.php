@@ -69,6 +69,11 @@ class LetakJawatansTable
                 ActionGroup::make([
                     EditAction::make(),
                     DeleteAction::make()
+                        ->label('Padam')
+                        ->modalHeading(fn($record) => "Padam {$record->nama}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
                 ])
 
             ])

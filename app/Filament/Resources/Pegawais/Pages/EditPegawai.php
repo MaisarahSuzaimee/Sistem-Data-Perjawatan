@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Pegawais\Pages;
 
 use App\Filament\Resources\Pegawais\PegawaiResource;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -10,6 +11,17 @@ class EditPegawai extends EditRecord
 {
     protected static string $resource = PegawaiResource::class;
 
+    protected function getSaveFormAction(): Action
+    {
+        return parent::getSaveFormAction()
+            ->label('Simpan');
+    }
+
+    protected function getCancelFormAction(): Action
+    {
+        return parent::getCancelFormAction()
+            ->label('Batal');
+    }
     protected function afterSave(): void
     {
         if ($this->data['is_kontrak']) {

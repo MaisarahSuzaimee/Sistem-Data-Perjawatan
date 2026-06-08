@@ -24,7 +24,7 @@ class EditPencen extends EditRecord
     {
         return [
         Action::make('cancel')
-            ->label('Cancel')
+            ->label('Batal')
             ->color('gray')
             ->url($this->getResource()::getUrl('index')),
     ];

@@ -10,13 +10,31 @@ class CreatePencen extends CreateRecord
 {
     protected static string $resource = PencenResource::class;
 
-    protected function getFormActions(): array
+    protected function getCancelFormAction(): Action
     {
-        return [
-        Action::make('cancel')
-            ->label('Cancel')
-            ->color('gray')
-            ->url($this->getResource()::getUrl('index')),
-    ];
+        return parent::getCancelFormAction()
+            ->label('Batal');
+    }
+
+    protected function getCreateFormAction(): Action
+    {
+        return parent::getCreateFormAction()
+            ->hidden();
+    }
+
+    protected function getCreateAnotherFormAction(): Action
+    {
+        return parent::getCreateAnotherFormAction()
+            ->hidden();
+    }
+
+    public function getBreadcrumb() : string
+    {
+        return ('Tambah');
+    }
+
+    public function getTitle() : string
+    {
+        return ('Tambah Penamatan Perkhidmatan');
     }
 }

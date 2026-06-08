@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Ptjs\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -49,14 +50,11 @@ class PtjsTable
                 //
             ])
             ->recordActions([
-                ViewAction::make()
-                ->label("")
-                ->color("info"),
-                EditAction::make()
-                ->label("")
-                ->modal(),
-                DeleteAction::make()
-                ->label(""),
+                ActionGroup::make([
+                    // ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make()
+                ])
 
             ])
             ->toolbarActions([

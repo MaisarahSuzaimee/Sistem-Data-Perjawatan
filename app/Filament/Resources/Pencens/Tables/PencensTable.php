@@ -60,7 +60,7 @@ class PencensTable
                         $query->whereHas('ptj', function ($q) use ($search) {
                             $q->where('nama_ptj', 'like', "%{$search}%");
                         })
-                        ->orWhere('jenis_lantikan', 'like', "%{$search}%");
+                            ->orWhere('jenis_lantikan', 'like', "%{$search}%");
                     }),
 
                 TextColumn::make('jenisPencen.jenis')
@@ -100,8 +100,13 @@ class PencensTable
             ->recordActions([
                 ActionGroup::make([
                     //  ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make()
+                    EditAction::make(),
+                    DeleteAction::make()
+                        ->label('Padam')
+                        ->modalHeading(fn($record) => "Padam {$record->nama}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
                 ])
 
             ])

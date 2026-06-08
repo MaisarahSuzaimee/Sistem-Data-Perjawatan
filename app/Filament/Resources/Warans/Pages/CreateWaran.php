@@ -11,6 +11,15 @@ class CreateWaran extends CreateRecord
 
     protected static bool $canCreateAnother = false;
 
+    public function getTitle(): string
+    {
+        return 'Tambah Waran';
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return 'Tambah';
+    }
     protected function getFormActions(): array
     {
         return [
