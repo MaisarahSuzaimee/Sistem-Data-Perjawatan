@@ -26,6 +26,7 @@ class ListLetakJawatans extends ListRecords
             Action::make('export')
                 ->label('Export Excel')
                 ->icon('heroicon-o-arrow-down-tray')
+                ->color('tertiary')
                 ->form([
                     Grid::make(2)
                         ->schema([
