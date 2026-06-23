@@ -9,6 +9,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ActionGroup;
 
+use Filament\Actions\ViewAction;
 use Filament\Support\View\Components\BadgeComponent;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -19,6 +20,8 @@ class PegawaisTable
     public static function configure(Table $table): Table
     {
         return $table
+        // ->recordAction(null)
+        ->recordUrl(null)
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')
@@ -224,6 +227,10 @@ class PegawaisTable
             ])
             ->recordActions([
                 ActionGroup::make([
+                    ViewAction::make()
+                    ->label('Papar')
+                    ->modal()
+                    ->modalHeading(fn($record) => "{$record->nama}"),
                     EditAction::make(),
                     DeleteAction::make()
                         ->label('Padam')

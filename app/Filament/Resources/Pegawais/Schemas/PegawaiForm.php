@@ -72,8 +72,8 @@ class PegawaiForm
                                     ->label('Jantina')
                                     ->required()
                                     ->options([
-                                        'lelaki' => 'Lelaki',
-                                        'perempuan' => 'Perempuan'
+                                        'Lelaki' => 'Lelaki',
+                                        'Perempuan' => 'Perempuan'
                                     ]),
                                 Select::make('jawatan_id')
                                     ->label('Jawatan')
@@ -259,7 +259,14 @@ class PegawaiForm
                                         }
                                     }),
                                 Checkbox::make('is_kup')
-                                    ->label('KHAS UNTUK PENYANDANG (KUP)'),
+                                    ->label('KHAS UNTUK PENYANDANG (KUP)')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        if ($state) {
+                                            $set('is_kupj', false);
+                                            $set('is_jtw', false);
+                                        }
+                                    }),
 
                                 Checkbox::make('is_tetap')
                                     ->label('TETAP')
@@ -272,7 +279,14 @@ class PegawaiForm
                                     }),
 
                                 Checkbox::make('is_kupj')
-                                    ->label('KUPJ'),
+                                    ->label('KHAS UNTUK PENYANDANG JAWATAN (KUPJ)')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        if ($state) {
+                                            $set('is_kup', false);
+                                            $set('is_jtw', false);
+                                        }
+                                    }),
 
                                 Checkbox::make('is_kontrak_interim')
                                     ->label('KONTRAK INTERIM')
@@ -285,7 +299,14 @@ class PegawaiForm
                                     }),
 
                                 Checkbox::make('is_jtw')
-                                    ->label('JAWATAN TANPA WARAN (JTW)'),
+                                    ->label('JAWATAN TANPA WARAN (JTW)')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        if ($state) {
+                                            $set('is_kup', false);
+                                            $set('is_kupj', false);
+                                        }
+                                    }),
 
                                 Section::make('Maklumat Lantikan')
                                     ->columns(2)
