@@ -72,7 +72,7 @@ class Pegawai extends Model
 
     public function opsyenPencen()
     {
-        return $this->belongsTo(OpsyenPencen::class, 'bahagian_id');
+        return $this->belongsTo(OpsyenPencen::class, 'opsyen_pencen_id');
     }
 
     public function pegawaiKontrak()
