@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Pegawais\Tables;
 
+use App\Filament\Resources\Pegawais\PegawaiResource;
 use App\Models\Pegawai;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -20,8 +22,8 @@ class PegawaisTable
     public static function configure(Table $table): Table
     {
         return $table
-        // ->recordAction(null)
-        ->recordUrl(null)
+            // ->recordAction(null)
+            ->recordUrl(null)
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')
@@ -228,9 +230,17 @@ class PegawaisTable
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make()
-                    ->label('Papar')
-                    ->modal()
-                    ->modalHeading(fn($record) => "{$record->nama}"),
+                        ->label('Papar')
+                        ->modal()
+                        ->modalHeading(fn($record) => $record->nama)
+                        ->extraModalFooterActions([
+                            Action::make('edit')
+                                ->label('Edit')
+                                ->url(fn($record) => PegawaiResource::getUrl('edit', [
+                                    'record' => $record,
+                                ])),
+                        ]),
+
                     EditAction::make(),
                     DeleteAction::make()
                         ->label('Padam')
