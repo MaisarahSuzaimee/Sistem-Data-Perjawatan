@@ -43,6 +43,7 @@ class PegawaiForm
                                     ->label('No Kad Pengenalan')
                                     ->required()
                                     ->reactive()
+                                    ->unique()
                                     ->afterStateUpdated(function ($state, callable $set) {
 
                                         if (!$state || strlen($state) < 6)
@@ -243,7 +244,6 @@ class PegawaiForm
                                             ->label('Tiada Subunit')
                                             ->live()
                                             ->columnSpan(1)
-
                                     ])
                             ]),
 

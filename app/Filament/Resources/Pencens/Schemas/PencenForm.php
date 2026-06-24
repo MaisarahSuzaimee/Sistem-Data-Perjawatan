@@ -291,12 +291,25 @@ class PencenForm
                                     );
                                 }),
 
+                            // TextInput::make('tempoh_perkhidmatan')
+                            //     ->label('Tempoh Perkhidmatan')
+                            //     ->visible(
+                            //         fn(callable $get) =>
+                            //         optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Paksa'
+                            //     ),
+
                             TextInput::make('tempoh_perkhidmatan')
                                 ->label('Tempoh Perkhidmatan')
+                                ->disabled()
+                                ->dehydrated()
                                 ->visible(
                                     fn(callable $get) =>
                                     optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Paksa'
-                                ),
+                                )
+                                ->extraInputAttributes([
+                                    'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',
+                                    'style' => 'color: black; -webkit-text-fill-color: black;',
+                                ]),
 
                             DatePicker::make('tarikh_kuatkuasa')
                                 ->label('Tarikh Kuatkuasa')
@@ -314,12 +327,8 @@ class PencenForm
 
                                     $diff = $lantikan->diff($kuatkuasa);
 
-                                    $set(
-                                        'tempoh_perkhidmatan',
-                                        $diff->y . ' tahun, ' .
-                                        $diff->m . ' bulan, ' .
-                                        $diff->d . ' hari'
-                                    );
+                                    $set('tempoh_perkhidmatan', null); // reset dulu (optional)
+                                    $set('tempoh_perkhidmatan', $diff->y . ' tahun, ' . $diff->m . ' bulan, ' . $diff->d . ' hari');
 
                                     $set(
                                         'tempoh_perkhidmatan2',
@@ -329,13 +338,14 @@ class PencenForm
                                     );
                                 }),
 
-                            TextInput::make('tempoh_perkhidmatan2')
+                            TextInput::make('tempoh_perkhidmatan')
                                 ->label('Tempoh Perkhidmatan')
                                 ->disabled()
                                 ->dehydrated()
                                 ->visible(
                                     fn(callable $get) =>
-                                    optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Pilihan'
+                                    $get('tarikh_kuatkuasa') !== null
+                                    && optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Pilihan'
                                 )
                                 ->extraInputAttributes([
                                     'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',

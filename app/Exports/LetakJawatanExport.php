@@ -123,10 +123,10 @@ class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, Wi
                         'color' => ['rgb' => '000000'],
 
                     ],
-                    'fill' => [
-                        'fillType' => 'solid',
-                        'startColor' => ['rgb' => 'FFFFFF'],
-                    ],
+                    // 'fill' => [
+                    //     'fillType' => 'solid',
+                    //     'startColor' => ['rgb' => 'FFFFFF'],
+                    // ],
                     'alignment' => [
                         'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                         'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
@@ -147,10 +147,10 @@ class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, Wi
                         'color' => ['rgb' => '000000'],
 
                     ],
-                    'fill' => [
-                        'fillType' => 'solid',
-                        'startColor' => ['rgb' => 'FFFFFF'],
-                    ],
+                    // 'fill' => [
+                    //     'fillType' => 'solid',
+                    //     'startColor' => ['rgb' => 'FFFFFF'],
+                    // ],
                     'alignment' => [
                         'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                         'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
@@ -208,10 +208,10 @@ class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, Wi
 
 
                     ],
-                    'fill' => [
-                        'fillType' => 'solid',
-                        'startColor' => ['rgb' => 'FFFFFF'],
-                    ],
+                    // 'fill' => [
+                    //     'fillType' => 'solid',
+                    //     'startColor' => ['rgb' => 'FFFFFF'],
+                    // ],
                     'alignment' => [
                         'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                         'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
