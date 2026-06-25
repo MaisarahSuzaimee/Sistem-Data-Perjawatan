@@ -6,8 +6,10 @@ use App\Filament\Resources\Warans\Pages\CreateWaran;
 use App\Filament\Resources\Warans\Pages\CustomTable;
 use App\Filament\Resources\Warans\Pages\EditWaran;
 use App\Filament\Resources\Warans\Pages\ListWarans;
+use App\Filament\Resources\Warans\Pages\ViewWaran;
 use App\Filament\Resources\Warans\RelationManagers\WaranJawatansRelationManager;
 use App\Filament\Resources\Warans\Schemas\WaranForm;
+use App\Filament\Resources\Warans\Schemas\WaranInfolist;
 use App\Filament\Resources\Warans\Tables\WaransTable;
 use App\Filament\Resources\Warans\Widgets\WaranStats;
 use App\Models\Waran;
@@ -16,6 +18,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class WaranResource extends Resource
 {
@@ -59,7 +62,7 @@ class WaranResource extends Resource
             )
             ->count();
 
-        return $count > 0 ? 'danger': null;
+        return $count > 0 ? 'danger' : null;
     }
 
     public static function form(Schema $schema): Schema
@@ -67,6 +70,10 @@ class WaranResource extends Resource
         return WaranForm::configure($schema);
     }
 
+    // public static function infolist(Schema $schema): Schema
+    // {
+    //     return WaranInfolist::configure($schema);
+    // }
     public static function table(Table $table): Table
     {
         return WaransTable::configure($table);
@@ -85,6 +92,8 @@ class WaranResource extends Resource
             'custom' => CustomTable::route('/custom'),
             'index' => ListWarans::route('/'),
             'create' => CreateWaran::route('/create'),
+            // 'view' => ViewWaran::route('/{record}'),
+
             'edit' => EditWaran::route('/{record}/edit'),
         ];
     }
@@ -115,4 +124,14 @@ class WaranResource extends Resource
     {
         return [];
     }
+
+    // public static function canEdit(Model $record): bool
+    // {
+    //     return auth()->user()->isAdmin();
+    // }
+
+    // public static function canView(Model $record): bool
+    // {
+    //     return true;
+    // }
 }

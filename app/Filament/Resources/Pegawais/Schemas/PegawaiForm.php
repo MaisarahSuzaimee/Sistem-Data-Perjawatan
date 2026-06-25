@@ -43,7 +43,7 @@ class PegawaiForm
                                     ->label('No Kad Pengenalan')
                                     ->required()
                                     ->reactive()
-                                    ->unique()
+                                    // ->unique(ignoreRecord: true, column: 'nokp')
                                     ->afterStateUpdated(function ($state, callable $set) {
 
                                         if (!$state || strlen($state) < 6)

@@ -30,11 +30,11 @@ class WaranJawatanResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Nama Penyandang';
 
-protected static ?string $navigationLabel = 'Nama Penyandang';
+    protected static ?string $navigationLabel = 'Nama Penyandang';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Buku Waran';
 
-        protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {

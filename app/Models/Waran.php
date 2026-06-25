@@ -107,7 +107,7 @@ class Waran extends Model
     protected static function booted()
     {
         static::deleting(function ($waran) {
-            $waran->waranJawatan()->delete();
+            $waran->waranJawatan()->forcedelete();
         });
 
         // static::saved(function ($waran) {

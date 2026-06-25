@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Warans\RelationManagers;
 
 use App\Filament\Resources\WaranJawatans\WaranJawatanResource;
+use App\Filament\Resources\Warans\WaranResource;
 use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
@@ -12,6 +13,7 @@ use App\Models\Program;
 use App\Models\Ptj;
 use App\Models\Subunit;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\WaranJawatan;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -32,6 +34,7 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -46,11 +49,15 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Reactive;
+use Filament\Infolists\Infolist;
 
 class WaranJawatansRelationManager extends RelationManager
 {
     protected static string $relationship = 'waranJawatan';
+
+    protected static ?string $title = 'Penempatan';
     public ?int $aktivitiFilter = null;
     public ?string $butiranFilter = null;
 
@@ -282,8 +289,12 @@ class WaranJawatansRelationManager extends RelationManager
             ->modifyQueryUsing(function (Builder $query) {
 
                 $waran = $this->getOwnerRecord();
+                $user = auth()->user();
 
                 $query = WaranJawatan::query()->withoutGlobalScopes();
+                if ($user?->role == 3) {
+                    $query->where('ptj_id', $user->ptj_id);
+                }
 
                 if ($waran->jenis !== 'tolak') {
 
@@ -438,36 +449,47 @@ class WaranJawatansRelationManager extends RelationManager
                     ->createAnother(false)
                     ->visible(
                         fn() =>
-                        $this->getOwnerRecord()->jenis === 'tambah'
-                        && (
-                            auth()->user()?->isSuperadmin()
-                            || auth()->user()?->isAdmin()
-                        )
-                    ),
+                        $this->getOwnerRecord()?->jenis === 'Tambah'
+                        && (auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin())
+                    )
+                    ->after(function ($record) {
+                        Log::info('Penempatan Waran Added', [
+                            'waran_jawatan_id' => $record->id,
+                            'user_id' => auth()->id(),
+                        ]);
+                        $waranJawatan = $record;
 
-                // Action::make('active')
-                //     ->label('Aktif')
-                //     ->color(fn() => $this->viewMode === 'active' ? 'primary' : 'gray')
-                //     ->action(fn($livewire) => $livewire->viewMode = 'active')
-                //     ->button()
-                //     ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                        $noWaran = $this->getOwnerRecord()->no_waran;
 
-                // Action::make('inactive')
-                //     ->label('Dibuang')
-                //     ->color(fn() => $this->viewMode === 'inactive' ? 'danger' : 'gray')
-                //     ->action(fn($livewire) => $livewire->viewMode = 'inactive')
-                //     ->button()
-                //     ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                        $recipients = User::where('role', 3)
+                            ->where('ptj_id', $waranJawatan->ptj_id)
+                            ->get();
+
+                        Notification::make()
+                            ->title('Waran Diterima')
+                            ->body("Waran {$noWaran} telah diterima")
+                            ->success()
+                            ->actions([
+                                Action::make('view')
+                                    ->label('Lihat Waran')
+                                    ->url(
+                                        WaranResource::getUrl('edit', [
+                                            'record' => $waranJawatan->waran_id,
+                                        ])
+                                    )
+                                    ->markAsRead(),
+                            ])
+                            ->sendToDatabase($recipients);
+                    }),
 
                 Action::make('viewModeTabs')
                     ->label('')
                     ->view('filament.custom.warans.view-mode-tabs', [
                         'viewMode' => fn($livewire) => $livewire->viewMode,
                     ])
-                    ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                    ->visible(fn() => $this->getOwnerRecord()->jenis === 'Tolak'),
 
             ])
-
 
             ->recordActions([
                 EditAction::make()
@@ -491,8 +513,11 @@ class WaranJawatansRelationManager extends RelationManager
                     ViewAction::make('view')
                         ->label('Paparan')
                         ->color('info')
-                        ->modalHeading('Paparan'),
-                    // ->modalCloseButton(false),
+                        // ->url(fn($record) => WaranJawatanResource::getUrl('view', [
+                        //     'record' => $record,
+                        // ])),
+                        ->modalHeading('Paparan')
+                        ->modalCloseButton(false),
 
                     EditAction::make()
                         // ->modalSubmitActionLabel('Simpan')
@@ -502,7 +527,7 @@ class WaranJawatansRelationManager extends RelationManager
                         ]))
                         ->visible(
                             fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tambah'
+                            $this->getOwnerRecord()->jenis === 'Tambah'
                             && $record->status === 'active'
                         ),
                     Action::make('delete')
@@ -516,15 +541,31 @@ class WaranJawatansRelationManager extends RelationManager
                         ->modalCancelActionLabel('Batal')
                         ->visible(
                             fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tambah'
+                            $this->getOwnerRecord()->jenis === 'Tambah'
                             && $record->status === 'active'
                         )
                         ->action(function ($record) {
 
-                            $record->update([
-                                'status' => 'deleted',
+                            $record->forcedelete();
+                        })
+                        ->after(function ($record) {
+                            Log::info('Penempatan deleted', [
+                                'waran_jawatan_id' => $record->id,
+                                'user_id' => auth()->id(),
                             ]);
-                            $record->delete();
+
+                            $creator = auth()->user();
+
+                            $noWaran = $this->getOwnerRecord()->no_waran;
+
+                            $recipients = User::whereIN('role', [1,2])->get();
+
+                            Notification::make()
+                            ->title('Penempatan Deleted')
+                            ->body("Penempatan for Waran {$noWaran} deleted by {$creator->name}")
+                            ->danger()
+                            ->sendToDatabase($recipients);
+
                         }),
                     Action::make('remove')
                         ->label('Buang Jawatan')
@@ -537,7 +578,7 @@ class WaranJawatansRelationManager extends RelationManager
                         ->requiresConfirmation()
                         ->visible(
                             fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tolak'
+                            $this->getOwnerRecord()->jenis === 'Tolak'
                             && $record->status === 'active'
                         )
                         ->action(function ($record) {
@@ -562,7 +603,7 @@ class WaranJawatansRelationManager extends RelationManager
                         ->requiresConfirmation()
                         ->visible(
                             fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tolak'
+                            $this->getOwnerRecord()->jenis === 'Tolak'
                             && $record->status === 'removed'
                         )
                         ->action(function ($record) {
@@ -626,5 +667,17 @@ class WaranJawatansRelationManager extends RelationManager
 
 
             ]);
+
+
     }
+    //     public static function infolist(Infolist $infolist): Infolist
+// {
+//     return $infolist
+//         ->schema([
+//             TextEntry::make('jawatan.nama')->label('Jawatan'),
+//             TextEntry::make('kuota'),
+//             TextEntry::make('catatan')
+//                 ->visible(fn ($record) => filled($record->catatan)),
+//         ]);
+// }
 }

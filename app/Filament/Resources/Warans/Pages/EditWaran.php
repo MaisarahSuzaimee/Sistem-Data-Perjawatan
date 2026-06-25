@@ -110,9 +110,9 @@ class EditWaran extends EditRecord
     }
 
     public function hasCombinedRelationManagerTabsWithContent(): bool
-{
-    return true;
-}
+    {
+        return true;
+    }
 
 
 }

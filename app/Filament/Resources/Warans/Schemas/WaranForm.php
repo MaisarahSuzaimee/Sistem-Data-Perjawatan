@@ -48,12 +48,12 @@ class WaranForm
                         Radio::make('jenis')
                             ->label('Jenis Waran')
                             ->options([
-                                'tambah' => 'Tambah Jawatan',
-                                'tolak' => 'Tolak Jawatan',
+                                'Tambah' => 'Tambah Jawatan',
+                                'Tolak' => 'Tolak Jawatan',
                             ])
                             ->descriptions([
-                                'tambah' => 'Menambah jawatan baru.',
-                                'tolak' => 'Mengurangkan jawatan sedia ada.'
+                                'Tambah' => 'Menambah jawatan baru.',
+                                'Tolak' => 'Mengurangkan jawatan sedia ada.'
                             ])
                             ->disabled(
                                 fn(string $operation) =>

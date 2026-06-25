@@ -2,18 +2,23 @@
 
 namespace App\Filament\Resources\Warans\Tables;
 
+use App\Filament\Resources\Warans\WaranResource;
 use App\Models\Program;
+use App\Models\User;
 use App\Models\WaranJawatan;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 
 class WaransTable
 {
@@ -249,8 +254,26 @@ class WaransTable
                         ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Padam')
                         ->modalCancelActionLabel('Batal')
+                        ->after(function ($record) {
+                            Log::info('Waran Deleted', [
+                                'waran_id' => $record->id,
+                                'user_id' => auth()->id(),
+                            ]);
+
+                            $creator = auth()->user();
+
+                            $no_waran = $record->no_waran;
+
+                            $superadmin = User::whereIn('role', [1, 2])->get();
+
+                            Notification::make()
+                                ->title('Waran Dipadam')
+                                ->body("Waran {$no_waran} telah dipadam oleh {$creator->name}")
+                                ->danger()
+                                ->sendToDatabase($superadmin);
+
+                        })
                 ])
-                // DeleteAction::make(),
             ])
 
             ->toolbarActions([

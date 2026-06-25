@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -76,11 +77,30 @@ class WaranJawatan extends Model
             ->implode('/');
     }
 
+
     public function getJawatanListAttribute()
     {
         return Jawatan::whereIn('id', $this->jawatan_ids ?? [])
             ->pluck('desc_jawatan')
             ->implode(', ');
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope('ptj_access', function (Builder $query) {
+
+            $user = auth()->user();
+
+            // superadmin & admin can see all
+            if (in_array($user->role, [1, 2])) {
+                return;
+            }
+
+            // normal user → filter by PTJ
+            $query->where('ptj_id', $user->ptj_id);
+
+            // });
+        });
     }
 
 }

@@ -3,8 +3,13 @@
 namespace App\Filament\Resources\Pegawais\Pages;
 
 use App\Filament\Resources\Pegawais\PegawaiResource;
+use App\Models\Pegawai;
+use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Log;
+use function Illuminate\Log\log;
 
 class CreatePegawai extends CreateRecord
 {
@@ -38,6 +43,32 @@ class CreatePegawai extends CreateRecord
                 'tarikh_tamat5' => $this->data['tarikh_tamat5'] ?? null,
             ]);
         }
+
+        Log::info('Pegawai Created', [
+        'pegawai_id' => $this->record->id,
+        'user_id' => auth()->id(),
+    ]);
+
+        $creator = auth()->user();
+        $pegawai = $this->record;
+
+        $recipients = User::whereIn('role', [1, 2])->get();
+
+        Notification::make()
+            ->title('Pegawai Baru Ditambah')
+            ->body("Pegawai baru telah ditambah oleh {$creator->name}")
+            ->success()
+            ->actions([
+                Action::make('view')
+                    ->label('Lihat Pegawai')
+                    ->url(
+                        PegawaiResource::getUrl('view', [
+                            'record' => $pegawai,
+                        ])
+                    )
+                    ->markAsRead(),
+            ])
+            ->sendToDatabase($recipients);
     }
 
     protected function getCancelFormAction(): Action
