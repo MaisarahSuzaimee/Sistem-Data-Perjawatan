@@ -4,10 +4,14 @@ namespace App\Filament\Resources\Pegawais\Pages;
 
 use App\Filament\Resources\Pegawais\PegawaiResource;
 use App\Models\Pegawai;
+use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 class ListPegawais extends ListRecords
 {
@@ -53,4 +57,36 @@ class ListPegawais extends ListRecords
 
         ];
     }
+
+    // protected function afterDelete(): void
+    // {
+    //     Log::info('Pegawai Deleted', [
+    //     'pegawai_id' => $this->record->id,
+    //     'user_id' => auth()->id(),
+    //     ]);
+
+    //      $creator = auth()->user();
+    //     $pegawai = $this->record;
+
+    //     $recipients = User::whereIn('role', [1, 2])->get();
+
+    //     Notification::make()
+    //         ->title('Pegawai Telah Dipadam')
+    //         ->body("Pegawai telah dipadam oleh {$creator->name}")
+    //         ->danger()
+    //         ->actions([
+    //             Action::make('view')
+    //                 ->label('Lihat Pegawai')
+    //                 ->url(
+    //                     PegawaiResource::getUrl('view', [
+    //                         'record' => $pegawai,
+    //                     ])
+    //                 )
+    //                 ->markAsRead(),
+    //         ])
+    //         ->sendToDatabase($recipients);
+    // }
+
+
+
 }

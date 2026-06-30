@@ -6,6 +6,7 @@ use App\Filament\Resources\Pegawais\PegawaiResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Log;
 
 class EditPegawai extends EditRecord
 {
@@ -13,8 +14,13 @@ class EditPegawai extends EditRecord
 
     protected function getSaveFormAction(): Action
     {
-        return parent::getSaveFormAction()
-            ->label('Simpan');
+        return Action::make('save')
+            ->label('Simpan')
+            ->color('primary')
+            ->requiresConfirmation()
+            ->modalHeading('Pengesahan')
+            ->modalDescription('Adakah anda pasti mahu simpan perubahan ini?')
+            ->action(fn() => $this->save());
     }
 
     protected function getCancelFormAction(): Action
@@ -44,6 +50,12 @@ class EditPegawai extends EditRecord
         } else {
             \App\Models\PegawaiKontrak::where('pegawai_id', $this->record->id)->delete();
         }
+
+        Log::info('Pegawai updated', [
+            'pegawai_id' => $this->record->id,
+            'user_id' => auth()->id(),
+            'changes' => $this->record->getChanges(),
+        ]);
     }
 
     protected function mutateFormDataBeforeFill(array $data): array
@@ -62,4 +74,6 @@ class EditPegawai extends EditRecord
             // DeleteAction::make(),
         ];
     }
+
+
 }

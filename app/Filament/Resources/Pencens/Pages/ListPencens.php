@@ -29,7 +29,7 @@ class ListPencens extends ListRecords
                         ->label('Jenis Penamapatan Perkhidmatan')
                         // ->relationship('jenisPencen', 'jenis')
                         ->multiple()
-    ->options(\App\Models\JenisPencen::pluck('jenis', 'id'))
+                        ->options(\App\Models\JenisPencen::pluck('jenis', 'id'))
                 ])
                 ->action(function (array $data) {
                     return redirect()->route('export.penamatanPerkhidmatan', [

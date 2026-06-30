@@ -9,6 +9,8 @@ use App\Filament\Resources\WaranJawatans\Pages\ViewWaranJawatan;
 use App\Filament\Resources\WaranJawatans\Schemas\WaranJawatanForm;
 use App\Filament\Resources\WaranJawatans\Schemas\WaranJawatanInfolist;
 use App\Filament\Resources\WaranJawatans\Tables\WaranJawatansTable;
+use App\Filament\Resources\WaranJawatans\Widgets\NamaPenyandang;
+use App\Filament\Resources\WaranJawatans\Widgets\WaranJawatanStats;
 use App\Models\WaranJawatan;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,11 +32,11 @@ class WaranJawatanResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Nama Penyandang';
 
-protected static ?string $navigationLabel = 'Nama Penyandang';
+    protected static ?string $navigationLabel = 'Nama Penyandang';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Buku Waran';
 
-        protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {
@@ -68,6 +70,13 @@ protected static ?string $navigationLabel = 'Nama Penyandang';
         ];
     }
 
+    public static function getWidgets(): array
+    {
+        return [
+            WaranJawatanStats::class,
+        ];
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         return parent::getRecordRouteBindingEloquentQuery()
@@ -75,4 +84,5 @@ protected static ?string $navigationLabel = 'Nama Penyandang';
                 SoftDeletingScope::class,
             ]);
     }
+
 }
