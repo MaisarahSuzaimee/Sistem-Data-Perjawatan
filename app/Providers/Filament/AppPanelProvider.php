@@ -8,10 +8,10 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Filament\Widgets\StatsOverviewWidget;
@@ -30,13 +30,19 @@ class AppPanelProvider extends PanelProvider
             ->default()
             ->id('app')
             ->path('app')
-            ->homeUrl('/app/dashboard')
-            // ->brandLogo(asset('images/logo2.png'))
+            ->homeUrl('/app')
+            ->brandLogo(view('filament.brand-logo'))
+            ->brandLogoHeight('auto')
             ->brandName('MySTAFF')
+            ->favicon(asset('images/mystaff-logo-clean.png'))
             ->viteTheme('resources/css/filament/app/theme.css')
-            ->login()
+            ->font('Public Sans')
+            ->darkMode(true)
+            ->spa()
+            // ->login()
+            ->login(\App\Filament\Pages\Auth\Login::class)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Teal,
                 'secondary' => Color::Violet,
                 'tertiary' => Color::Lime,
                 'quartenary' => Color::Slate,
@@ -45,9 +51,6 @@ class AppPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
-            ->pages([
-                Dashboard::class,
-            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 // NamaPenyandang::class
@@ -72,7 +75,11 @@ class AppPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->databaseNotifications()
-             ->databaseNotificationsPolling('30s');
+            ->databaseNotificationsPolling('30s');
+            // ->renderHook(
+            //     PanelsRenderHook::TOPBAR_END,
+            //     fn (): \Illuminate\Contracts\View\View => view('filament.topbar.dark-toggle'),
+            // );
 
     }
 }

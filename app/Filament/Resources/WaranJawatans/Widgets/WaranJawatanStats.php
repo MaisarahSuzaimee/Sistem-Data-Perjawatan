@@ -5,48 +5,42 @@ namespace App\Filament\Resources\WaranJawatans\Widgets;
 use App\Models\WaranJawatan;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class WaranJawatanStats extends StatsOverviewWidget
 {
-    protected function getStats(): array
+    protected string $view = 'filament.widgets.waran-jawatan-stats';
+
+    public int $currentTotal = 0;
+
+    public int $pengisian = 0;
+
+    public int $kekosongan = 0;
+
+    public float $pengisianPct = 0;
+
+    public float $kekosonganPct = 0;
+
+    public ?float $yoyChangePct = null;
+
+    public int $previousYear = 0;
+
+    public function mount(): void
     {
         $currentYear = Carbon::now()->year;
-        $previousYear = $currentYear - 1;
+        $this->previousYear = $currentYear - 1;
 
-        $currentTotal = WaranJawatan::whereYear('created_at', $currentYear)->count();
-        $previousTotal = WaranJawatan::whereYear('created_at', $previousYear)->count();
+        $this->currentTotal = WaranJawatan::whereYear('created_at', $currentYear)->count();
+        $previousTotal = WaranJawatan::whereYear('created_at', $this->previousYear)->count();
         $total = WaranJawatan::count();
-        $pengisian = WaranJawatan::whereNotNull('pegawai_id')->count();
-        $kekosongan = $total - $pengisian;
 
-        return [
-            Stat::make('Jumlah Penempatan', $currentTotal)
-                // ->description("vs {$previousYear}: {$previousTotal}")
-                ->description(
-                    $previousTotal
-                    ? round((($currentTotal - $previousTotal) / $previousTotal) * 100, 1)
-                    . '% berbanding tahun ' . $previousYear
-                    : 'Tiada data tahun ' . $previousYear
-                )
-                ->chart([$previousTotal, $currentTotal]),
+        $this->pengisian = WaranJawatan::whereNotNull('pegawai_id')->count();
+        $this->kekosongan = $total - $this->pengisian;
 
-            Stat::make('Pengisian', $pengisian)
-                ->description(
-                    $total
-                    ? round(($pengisian / $total) * 100, 1) . '% dari keseluruhan' : '0%'
-                )
-                ->chart([$total, $pengisian])
-                ->color('success'),
+        $this->yoyChangePct = $previousTotal
+            ? round((($this->currentTotal - $previousTotal) / $previousTotal) * 100, 1)
+            : null;
 
-            Stat::make('Kekosongan', $kekosongan)
-                ->description(
-                    $total
-                    ? round(($kekosongan / $total) * 100, 1) . '% dari keseluruhan' : '0%'
-                )
-                ->chart([$pengisian, $kekosongan])
-                ->color('danger')
-
-        ];
+        $this->pengisianPct = $total ? round(($this->pengisian / $total) * 100, 1) : 0;
+        $this->kekosonganPct = $total ? round(($this->kekosongan / $total) * 100, 1) : 0;
     }
 }
