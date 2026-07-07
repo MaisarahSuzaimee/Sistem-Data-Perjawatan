@@ -83,10 +83,16 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
                 $ptjRows[] = $currentRow;
 
                 $ptj = $ptjItems->first()->ptj;
+                $bahagian = $ptjItems->first()->bahagian;
+
+                $nama = $ptj->nama_ptj === 'JABATAN KESIHATAN NEGERI KEDAH'
+                    ? $bahagian?->nama_bahagian
+                    : $ptj->nama_ptj;
 
                 $rows->push([
                     $index, // BIL
-                    $ptj->nama_ptj,
+                    // $ptj->nama_ptj,
+                    $nama,
                     $perjawatanTetap,
                     $pengisianTetap,
                     $kosongTetap,
@@ -106,7 +112,7 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
             $jumlahRow = $currentRow;
 
             $jumlahperjawatanTetap = $ptjs->sum(function ($ptjItems) {
-                return $ptjItems->count() ? : '0';
+                return $ptjItems->count() ?: '0';
             });
             $jumlahPengisianTetap = $ptjs->sum(function ($ptjItems) {
                 return $ptjItems->filter(function ($item) {
@@ -116,17 +122,17 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
                         $pegawai->is_tetap ||
                         $pegawai->is_kontrak_interim
                     );
-                })->count() ? : '0';
+                })->count() ?: '0';
             });
 
-            $jumlahKosongTetap = ($jumlahperjawatanTetap - $jumlahPengisianTetap) ? : '0';
+            $jumlahKosongTetap = ($jumlahperjawatanTetap - $jumlahPengisianTetap) ?: '0';
             $jumlahPeratusPengisianTetap = $jumlahperjawatanTetap > 0 ? round(($jumlahPengisianTetap / $jumlahperjawatanTetap) * 100, 2) . '%' : '0%';
             $jumlahKontrak = Pegawai::whereIn(
                 'ptj_id',
                 $items->pluck('ptj_id')->unique()
             )
                 ->where('is_kontrak', true)
-                ->count() ? : '0';
+                ->count() ?: '0';
 
             $rows->push([
                 'JUMLAH',
@@ -172,14 +178,25 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
             })->count();
         });
 
-        $jkKosongTetap = ($jkPerjawatanTetap - $jkIsiTetap) ? : '0';
+        $jkKosongTetap = ($jkPerjawatanTetap - $jkIsiTetap) ?: '0';
 
         $jkPeratusPengisianTetap = $jkPerjawatanTetap > 0 ? round(($jkIsiTetap / $jkPerjawatanTetap) * 100, 2) . '%' : '0%';
 
-        $jkIsiKontrak = Pegawai::addBinding($programs->pluck('ptj_id')->flatten()->unique())
-            ->whereIn('ptj_id', $programs->pluck('ptj_id')->flatten()->unique())
+        // $jkIsiKontrak = Pegawai::addBinding($programs->pluck('ptj_id')->flatten()->unique())
+        //     ->whereIn('ptj_id', $programs->pluck('ptj_id')->flatten()->unique())
+        //     ->where('is_kontrak', true)
+        //     ->count() ? : '0';
+
+        $ptjIds = $programs->pluck('ptj_id')
+            ->flatten()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $jkIsiKontrak = Pegawai::query()
+            ->whereIn('ptj_id', $ptjIds)
             ->where('is_kontrak', true)
-            ->count() ? : '0';
+            ->count() ?: '0';
 
         $rows->push([
             'JUMLAH KESELURUHAN',

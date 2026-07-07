@@ -45,7 +45,6 @@ class Waran extends Model
             $query->where('ptj_id', $user->ptj_id);
         }
 
-
         $items = $this->jenis === 'Tolak'
             ? $query->where('waran_tolak_id', $this->id)->get()
             : $query->where('waran_id', $this->id)->get();
@@ -158,47 +157,7 @@ class Waran extends Model
             $waran->waranJawatan()->forcedelete();
         });
 
-        // static::saved(function ($waran) {
 
-        //     if (! $waran->jik) return;
-
-        //     $count = $waran->waranJawatan()->count();
-
-        //     if ($waran->jik > $count) {
-
-        //         for ($i = $count; $i < $waran->jik; $i++) {
-        //             $waran->waranJawatan()->create([]);
-        //         }
-        //     }
-
-        //     if ($waran->jik < $count) {
-
-        //         $waran->waranJawatan()
-        //             ->latest()
-        //             ->take($count - $waran->jik)
-        //             ->delete();
-        //     }
-        // });
-
-        //  static::created(function ($waran) {
-
-        //     // only generate rows for ANY waran (parent or child)
-        //     $count = $waran->jik ?? 0;
-
-        //     for ($i = 0; $i < $count; $i++) {
-        //         $waran->waranJawatan()->create([
-        //             'ptj_id' => null,
-        //             'aktiviti_id' => null,
-        //             'butiran' => null,
-        //             'jawatan_id' => null,
-        //             'gred_id' => null,
-        //             'jawatan_gred_id' => null,
-        //             'pegawai_id' => null,
-        //             'catatan_jawatan' => null,
-        //         ]);
-        //     }
-
-        // });
         static::addGlobalScope('ptj_access', function (Builder $query) {
 
             $user = auth()->user();
@@ -232,43 +191,63 @@ class Waran extends Model
     // }
 
     private function waranJawatanQuery()
-{
-    $user = auth()->user();
-
-    return \App\Models\WaranJawatan::query()
-        ->when(!$user->isSuperadmin() && !$user->isAdmin(), function ($q) use ($user) {
-            $q->where('ptj_id', $user->ptj_id);
-        });
-}
-
-    public function allWaranIds(): array
     {
-        return collect([$this->id])
-            ->merge($this->children->pluck('id'))
-            ->toArray();
+        $user = auth()->user();
+
+        return \App\Models\WaranJawatan::query()
+            ->when(!$user->isSuperadmin() && !$user->isAdmin(), function ($q) use ($user) {
+                $q->where('ptj_id', $user->ptj_id);
+            });
     }
 
-    public function getIsiCountAttribute()
-{
-    $query = $this->waranJawatanQuery();
+    // public function allWaranIds(): array
+    // {
+    //     return collect([$this->id])
+    //         ->merge($this->children->pluck('id'))
+    //         ->toArray();
+    // }
 
-    if ($this->jenis === 'Tolak') {
+    public function getJikCountAttribute()
+    {
+        $user = auth()->user();
+        $query = $this->waranJawatanQuery();
+
+        if ($user->isUser()) {
+            return $query
+                ->where('ptj_id', $user->ptj_id)
+                ->count();
+        } elseif ($user->isSuperadmin() || $user->isAdmin()) {
+            return $this->jik;
+        }
+    }
+    public function getIsiCountAttribute()
+    {
+        $user = auth()->user();
+        $query = $this->waranJawatanQuery();
+        $query2 = $this->waranJawatanQuery()->withTrashed();
+
+        if ($user->isUser()) {
+            $query->where('ptj_id', $user->ptj_id);
+        }
+
+        if ($this->jenis === 'Tolak') {
+            return $query2
+                ->where('waran_tolak_id', $this->id)
+                // ->whereNotNull('pegawai_id')
+                ->where('status', 'removed')
+                ->count();
+        }
+
         return $query
-            ->where('waran_tolak_id', $this->id)
-            ->where('status', 'removed')
+            ->where('waran_id', $this->id)
+            ->whereNotNull('pegawai_id')
+            ->where('status', 'active')
             ->count();
     }
 
-    return $query
-        ->where('waran_id', $this->id)
-        ->whereNotNull('pegawai_id')
-        ->where('status', 'active')
-        ->count();
-}
-
     public function getKosongCountAttribute()
     {
-        return (int) $this->jik - (int) $this->isi_count;
+        return (int) $this->jik_count - (int) $this->isi_count;
     }
 
     public function getStatusJikAttribute()

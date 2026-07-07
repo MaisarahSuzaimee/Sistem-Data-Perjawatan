@@ -136,7 +136,7 @@ class WaransTable
                         });
                     }),
 
-                TextColumn::make('jik')
+                TextColumn::make('jik_count')
                     ->label('J')
                     ->formatStateUsing(function ($state, $record) {
 
