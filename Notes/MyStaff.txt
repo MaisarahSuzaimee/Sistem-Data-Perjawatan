@@ -17,10 +17,12 @@ Update (by 30.6.2026)
 7. Tambah Modul Nama penyandang
 8. Tambah table senarai report.
 
+Next Task
+1. Report data keseluruhan
+2. View page penamatan perkhidmatan
 
-
-Soalan (6/7/2026)
-Dari meeting 8/6
-1. Laman hebahan tu dashboard atau satu section untuk admin uplad notis, nota etc.
-2. ptj tak boleh ubah nama pegawai yang admin masukkan. (ptj perlu click khas untuk penyandang untuk lock)
-3. Ptj mohon pindaan pegawai pindah. (admin kena luluskan ka mcamana?)
+------------------------------------------------------------------------------------------------------------
+Design to do(2/7/2026)
+1. letak gap dekat widget/card dalam nama penyandang 
+2. betulkan topbar, samakan width dengan center card
+3. make header row for all table at the center not left side  
