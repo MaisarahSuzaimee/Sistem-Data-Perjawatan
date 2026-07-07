@@ -12,45 +12,35 @@ class WaranStats extends StatsOverviewWidget
 {
     protected function getStats(): array
     {
+ $allWarans = Waran::with(['waranJawatan'])->get();
 
-        $total = WaranJawatan::count();
-        $seimbang = Waran::leftJoin('waran_jawatans', function ($join) {
-            $join->on('warans.id', '=', 'waran_jawatans.waran_id')
-                ->whereNotNull('waran_jawatans.pegawai_id');
-        })
-            ->select(
-                'warans.id',
-                'warans.jik',
-                DB::raw('COUNT(waran_jawatans.id) as jumlah_isi')
-            )
-            ->groupBy('warans.id', 'warans.jik')
-            ->havingRaw('COUNT(waran_jawatans.id) = warans.jik')
-            ->count();
-
-        $tidak_seimbang = $total - $seimbang;
+        $totalWaran    = $allWarans->count();
+        $totalLebih    = $allWarans->filter(fn($w) => $w->status_jik === 'Lebih')->count();
+        $totalKurang   = $allWarans->filter(fn($w) => $w->status_jik === 'Kurang')->count();
+        $totalSeimbang = $allWarans->filter(fn($w) => $w->status_jik === 'Seimbang')->count();
 
         return [
             Stat::make('Jumlah Waran', Waran::count())
                 ->chart([10, 12, 9, 14, Waran::count(), Waran::count() + 2, Waran::count() + 1]),
 
-            Stat::make('Waran Seimbang', $seimbang)
+            Stat::make('Waran Seimbang', $totalSeimbang)
                 ->description(
-                    $total
-                    ? round(($seimbang / $total) * 100, 1) . '% dari keseluruhan'
+                    $totalWaran
+                    ? round(($totalSeimbang / $totalWaran) * 100, 1) . '% dari keseluruhan'
                     : '0%'
                 )
                 // ->descriptionIcon('heroicon-m-arrow-trending-down')
-                ->chart([10, 12, 9, 14, $seimbang, $seimbang + 2, $seimbang + 1])
+                ->chart([10, 12, 9, 14, $totalSeimbang, $totalSeimbang + 2, $totalSeimbang + 1])
                 ->color('success'),
 
-            Stat::make('Waran Tidak Seimbang', $tidak_seimbang)
+            Stat::make('Waran Tidak Seimbang', $totalKurang)
                 ->description(
-                    $total
-                    ? round(($tidak_seimbang / $total) * 100, 1) . '% dari keseluruhan'
+                    $totalWaran
+                    ? round(($totalKurang / $totalWaran) * 100, 1) . '% dari keseluruhan'
                     : '0%'
                 )
                 // ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->chart([5, 8, 10, 12, $tidak_seimbang, $tidak_seimbang + 1, $tidak_seimbang + 3])
+                ->chart([5, 8, 10, 12, $totalKurang, $totalKurang + 1, $totalKurang + 3])
                 ->color('danger'),
 
         ];

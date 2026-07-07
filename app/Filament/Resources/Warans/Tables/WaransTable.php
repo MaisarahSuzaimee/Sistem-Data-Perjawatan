@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Warans\Tables;
 
+use App\Filament\Resources\Warans\Pages\ViewWaran;
 use App\Filament\Resources\Warans\WaranResource;
 use App\Models\Program;
 use App\Models\User;
+use App\Models\Waran;
 use App\Models\WaranJawatan;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -25,8 +27,10 @@ class WaransTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(fn($record) => route('filament.app.resources.warans.view', [
+                'record' => $record,
+            ]))
 
-            // ✅ ONE correct eager load only
             ->modifyQueryUsing(
                 fn($query) =>
                 $query->with([
@@ -34,33 +38,6 @@ class WaransTable
                     'waranJawatan.aktiviti',
                 ])
             )
-
-            // ->modifyQueryUsing(function ($query) {
-
-            //     $query
-            //         ->leftJoin('waran_jawatans', 'waran_jawatans.waran_id', '=', 'warans.id')
-            //         ->leftJoin('aktivitis', 'aktivitis.id', '=', 'waran_jawatans.aktiviti_id')
-            //         ->leftJoin('programs', 'programs.id', '=', 'aktivitis.program_id')
-
-            //         ->select([
-            //             'warans.*',
-            //             'programs.id as grouped_program_id',
-            //             'programs.nama_program',
-            //         ])
-
-            //         ->groupBy(
-            //             'warans.id',
-            //             'programs.id',
-            //             'programs.nama_program'
-            //         );
-            // })
-
-            //             ->modifyQueryUsing(function ($query) {
-
-            //     $query->with([
-//         'waranJawatan.aktiviti.program',
-//     ]);
-// })
 
             ->columns([
 
@@ -72,18 +49,6 @@ class WaransTable
                 // Waran Info
                 TextColumn::make('no_waran')
                     ->label('Maklumat Waran')
-                    // ->formatStateUsing(function ($record) {
-
-                    //     // $symbol = match ($record->jenis) {
-                    //     //     'tambah' => '+',
-                    //     //     'tolak' => '-',
-                    //     //     default => '',
-                    //     // };
-
-                    //     // return '<strong>' . $record->no_waran . '</strong><br>'
-                    //     //     . 'Jawatan: ' . $symbol . '' . $record->jik;
-                    // })
-                    // ->html()
                     ->searchable(),
 
                 TextColumn::make('butiran_list')
@@ -98,26 +63,26 @@ class WaransTable
                 // Aktiviti (unique, no repeat)
                 TextColumn::make('aktiviti_list')
                     ->label('Aktiviti')
-                    ->formatStateUsing(function ($record) {
+                    // ->formatStateUsing(function ($record) {
 
-                        $items = $record->jenis === 'tolak'
-                            ? WaranJawatan::withTrashed()
-                                ->where('waran_tolak_id', $record->id)
-                                ->with('aktiviti')
-                                ->get()
-                            : $record->waranJawatan;
+                    //     $items = $record->jenis === 'Tolak'
+                    //         ? WaranJawatan::withTrashed()
+                    //             ->where('waran_tolak_id', $record->id)
+                    //             ->with('aktiviti')
+                    //             ->get()
+                    //         : $record->waranJawatan;
 
-                        return $items
-                            ->map(
-                                fn($wj) =>
-                                $wj->aktiviti
-                                ? $wj->aktiviti->no_aktivit . ' - ' . $wj->aktiviti->nama_aktiviti
-                                : null
-                            )
-                            ->filter()
-                            ->unique()
-                            ->join('<br>');
-                    })
+                    //     return $items
+                    //         ->map(
+                    //             fn($wj) =>
+                    //             $wj->aktiviti
+                    //             ? $wj->aktiviti->no_aktivit . ' - ' . $wj->aktiviti->nama_aktiviti
+                    //             : null
+                    //         )
+                    //         ->filter()
+                    //         ->unique()
+                    //         ->join('<br>');
+                    // })
                     ->html()
                     ->wrap()
                     ->searchable(query: function ($query, $search) {
@@ -175,7 +140,7 @@ class WaransTable
                     ->label('J')
                     ->formatStateUsing(function ($state, $record) {
 
-                        return $record->jenis === 'tolak'
+                        return $record->jenis === 'Tolak'
                             ? '-' . $state
                             : '+' . $state;
                     }),

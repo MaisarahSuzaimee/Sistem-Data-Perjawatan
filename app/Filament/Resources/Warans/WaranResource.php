@@ -71,10 +71,10 @@ class WaranResource extends Resource
         return WaranForm::configure($schema);
     }
 
-    // public static function infolist(Schema $schema): Schema
-    // {
-    //     return WaranInfolist::configure($schema);
-    // }
+    public static function infolist(Schema $schema): Schema
+    {
+        return WaranInfolist::configure($schema);
+    }
     public static function table(Table $table): Table
     {
         return WaransTable::configure($table);
@@ -82,6 +82,10 @@ class WaranResource extends Resource
 
     public static function getRelations(): array
     {
+        // if (request()->routeIs('filament.app.resources.warans.view')) {
+        //     return [];
+        // }
+
         return [
             WaranJawatansRelationManager::class,
         ];
@@ -94,7 +98,6 @@ class WaranResource extends Resource
             'index' => ListWarans::route('/'),
             'create' => CreateWaran::route('/create'),
             'view' => ViewWaran::route('/{record}'),
-
             'edit' => EditWaran::route('/{record}/edit'),
             // 'penempatan' => WaranJawatan
         ];

@@ -15,6 +15,7 @@ class WaranForm
         return $schema
 
             ->components([
+               
                 Section::make('Maklumat Waran')
                     ->schema([
                         TextInput::make('no_waran')

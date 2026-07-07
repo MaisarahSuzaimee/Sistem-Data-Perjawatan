@@ -18,8 +18,8 @@ class ListWaranJawatans extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()
-                ->label('Tambah Penyandang'),
+            // CreateAction::make()
+            //     ->label('Tambah Penyandang'),
         ];
     }
 
