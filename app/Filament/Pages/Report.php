@@ -35,7 +35,9 @@ class Report extends Page implements HasTable
         return $table
             ->columns([
                 TextColumn::make('id')
-                ->label('Bil'),
+                    ->label('Bil')
+                    ->extraHeaderAttributes(['style' => 'width: 60px'])
+                    ->extraCellAttributes(['style' => 'width: 60px']),
 
                 TextColumn::make('name')
                     ->label('Nama Laporan')

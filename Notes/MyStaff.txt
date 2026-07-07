@@ -20,3 +20,9 @@ Update (by 30.6.2026)
 Next Task
 1. Report data keseluruhan
 2. View page penamatan perkhidmatan
+
+------------------------------------------------------------------------------------------------------------
+Design to do(2/7/2026)
+1. letak gap dekat widget/card dalam nama penyandang 
+2. betulkan topbar, samakan width dengan center card
+3. make header row for all table at the center not left side  

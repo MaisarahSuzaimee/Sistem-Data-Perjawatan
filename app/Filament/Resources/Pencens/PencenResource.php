@@ -11,14 +11,13 @@ use App\Models\Pencen;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class PencenResource extends Resource
 {
     protected static ?string $model = Pencen::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-left-on-rectangle';
 
     protected static ?string $recordTitleAttribute = 'nama';
     protected static ?string $modelLabel = 'Penamatan Perkhidmatan';
