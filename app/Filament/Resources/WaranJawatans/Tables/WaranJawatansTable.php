@@ -4,7 +4,9 @@ namespace App\Filament\Resources\WaranJawatans\Tables;
 
 use App\Filament\Resources\WaranJawatans\WaranJawatanResource;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
@@ -127,24 +129,38 @@ class WaranJawatansTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                ViewAction::make()
-                    ->label('Papar')
-                    ->modal()
-                    ->modalHeading(function ($record) {
-                        if ($record->pegawai_id == null) {
-                            return 'Tiada Penyandang';
-                        } else {
-                            return $record->pegawai?->nama;
-                        }
-                    })
-                    ->extraModalFooterActions([
-                        Action::make('edit')
-                        ->label('Edit')
-                        ->url(fn($record) => WaranJawatanResource::getUrl('edit', [
-                            'record' => $record,
-                        ]))
-                    ]),
-                EditAction::make(),
+                ActionGroup::make([
+                    ViewAction::make()
+                        ->label('Paparan')
+                        ->modal()
+                        ->color('info')
+                        ->modalHeading(function ($record) {
+                            if ($record->pegawai_id == null) {
+                                return 'Tiada Penyandang';
+                            } else {
+                                return $record->pegawai?->nama;
+                            }
+                        })
+                        ->extraModalFooterActions([
+                            Action::make('edit')
+                                ->label('Edit')
+                                ->url(fn($record) => WaranJawatanResource::getUrl('edit', [
+                                    'record' => $record,
+                                ]))
+                        ]),
+                    EditAction::make(),
+                    Action::make('removePegawai')
+                        ->label('Buang Pegawai')
+                        ->icon('heroicon-o-user-minus')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function ($record) {
+                            $record->update([
+                                'pegawai_id' => null,
+                            ]);
+                        })
+                ])
+
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

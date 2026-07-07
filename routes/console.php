@@ -11,4 +11,4 @@ Schedule::command('pegawai:delete-letak-jawatan')
     ->daily();
 
 Schedule::command('pegawai:delete-tamat-perkhidmatan')
-    ->everyFifteenSeconds();
+    ->daily();

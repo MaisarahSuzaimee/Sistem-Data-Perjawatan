@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Warans\RelationManagers;
 
 use App\Filament\Resources\WaranJawatans\WaranJawatanResource;
+use App\Filament\Resources\Warans\Pages\ViewWaran;
 use App\Filament\Resources\Warans\WaranResource;
 use App\Models\Bahagian;
 use App\Models\Gred;
@@ -255,6 +256,7 @@ class WaranJawatansRelationManager extends RelationManager
                             ->schema([
                                 Select::make('pegawai_id')
                                     ->label('Pegawai')
+                                    ->required(fn(Get $get) => $get('is_kup'))
                                     ->options(function (Get $get, ?WaranJawatan $record) {
 
                                         $jawatanIds = $get('jawatan_ids');
@@ -271,6 +273,10 @@ class WaranJawatansRelationManager extends RelationManager
 
                                         return Pegawai::query()
                                             ->whereIn('jawatan_gred_id', $jawatanGredIds)
+                                            ->where(function ($query) {
+                                                $query->where('is_kontrak', false);
+
+                                            })
                                             ->where(function ($query) use ($record) {
 
                                                 $query->whereNotIn('id', function ($q) use ($record) {
@@ -291,20 +297,36 @@ class WaranJawatansRelationManager extends RelationManager
                                                 if ($record?->pegawai_id) {
                                                     $query->orWhere('id', $record->pegawai_id);
                                                 }
+
+
                                             })
+
                                             ->orderBy('nama')
                                             ->pluck('nama', 'id')
                                             ->toArray();
+
                                     })
                                     ->searchable()
                                     ->live()
                                     ->preload()
                                     ->columnSpanFull()
-                                ,
 
+                                    ->disabled(function (Get $get, ?WaranJawatan $record) {
+                                        // Only applies when editing
+                                        if (!$record) {
+                                            return false;
+                                        }
 
+                                        // Role 3 cannot edit if KUP is checked
+                                        return auth()->user()?->role == 3 && $get('is_kup');
+                                    }),
                                 Checkbox::make('is_kup')
-                                    ->label('Khas Untuk Penyandang (KUP)'),
+                                    ->label('Khas Untuk Penyandang (KUP)')
+                                    ->disabled(
+                                        fn(?WaranJawatan $record) =>
+                                        $record !== null && auth()->user()?->role == 3
+                                    )
+                                    ->dehydrated(fn() => auth()->user()?->role != 3),
 
                                 Textarea::make('catatan_jawatan')
                                     ->label('Catatan')
@@ -343,12 +365,12 @@ class WaranJawatansRelationManager extends RelationManager
                         ->orderBy('id', 'asc');
                 }
 
-                if ($this->viewMode === 'active') {
+                if ($this->viewMode === 'inactive') {
                     return $query->whereNull('deleted_at')
                         ->where('status', '!=', 'deleted');
                 }
 
-                if ($this->viewMode === 'inactive') {
+                if ($this->viewMode === 'active') {
                     return $query
                         ->where('waran_tolak_id', $waran->id)
                         ->whereNotNull('deleted_at')
@@ -459,7 +481,7 @@ class WaranJawatansRelationManager extends RelationManager
                             ->toArray();
                     })
                     ->searchable()
-                    ->visible(fn() => $this->getOwnerRecord()->jenis === 'Tolak'),
+                    ->visible(fn() => $this->getPageClass() !== ViewWaran::class && $this->getOwnerRecord()->jenis === 'Tolak'),
 
                 SelectFilter::make('butiran')
                     ->label('Butiran')
@@ -470,7 +492,7 @@ class WaranJawatansRelationManager extends RelationManager
                             ->toArray()
                     )
                     ->searchable()
-                    ->visible(fn() => $this->getOwnerRecord()->jenis === 'Tolak'),
+                    ->visible(fn() => $this->getPageClass() !== ViewWaran::class && $this->getOwnerRecord()->jenis === 'Tolak'),
 
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(2)
@@ -523,7 +545,7 @@ class WaranJawatansRelationManager extends RelationManager
                 Action::make('viewModeTabs')
                     ->label('')
                     ->view('filament.custom.warans.view-mode-tabs', [
-                        'viewMode' => fn($livewire) => $livewire->viewMode,
+                        'isViewPage' => $this->getPageClass() === ViewWaran::class,
                     ])
                     ->visible(fn() => $this->getOwnerRecord()->jenis === 'Tolak'),
 
@@ -644,6 +666,7 @@ class WaranJawatansRelationManager extends RelationManager
                                                             } else {
                                                                 return $record->pegawai?->nama;
                                                             }
+
                                                         }),
 
                                                     TextEntry::make('is_kup')
@@ -690,33 +713,6 @@ class WaranJawatansRelationManager extends RelationManager
                                         ->action(fn() => $this->save()),
                                 ),
 
-                            // Action::make('status')
-                            //     ->label('Kemaskini Status')
-                            //     ->icon('heroicon-o-pencil-square')
-                            //     ->color('warning')
-                            //     ->form([
-                            //         Select::make('status')
-                            //             ->label('Status')
-                            //             ->required()
-                            //             ->searchable()
-                            //             ->options([
-                            //                 'active' => 'Aktif',
-                            //                 'pindaan nama' => 'Pindaan Nama',
-                            //                 'batal nama' => 'Batal Nama',
-                            //                 'removed' => 'Dibuang',
-                            //             ])
-                            //             ->default(fn($record) => $record->status),
-                            //     ])
-                            //     ->action(function (array $data, $record) {
-                            //         $record->update([
-                            //             'status' => $data['status'],
-                            //         ]);
-                            //     })
-                            //     ->requiresConfirmation()
-                            //     ->modalHeading('Kemaskini Status')
-                            //     ->modalSubmitActionLabel('Simpan')
-                            //     ->modalCancelActionLabel('Batal')
-
                             Action::make('status')
                                 ->label('Buang Jawatan')
                                 ->icon('heroicon-o-trash')
@@ -748,14 +744,14 @@ class WaranJawatansRelationManager extends RelationManager
                             Action::make('restore')
                                 ->label('Aktifkan Jawatan')
                                 ->icon('heroicon-o-trash')
-                                ->visible(fn($record) => $this->getOwnerRecord()->jenis === 'Tolak' && $record->status == 'removed')
+                                ->visible(fn($record) => $this->getPageClass() !== ViewWaran::class && $this->getOwnerRecord()->jenis === 'Tolak' && $record->status == 'removed')
                                 ->color('success')
                                 ->action(function ($record) {
 
                                     $waran = $this->getOwnerRecord();
 
                                     $record->update([
-                                        'waran_tolak_id' => $waran->id,
+                                        'waran_tolak_id' => null,
                                         'status' => 'active',
 
                                     ]);
@@ -781,7 +777,7 @@ class WaranJawatansRelationManager extends RelationManager
                         ->modalCancelActionLabel('Batal')
                         ->modalSubmitAction(
                             fn($action) => $action
-                                ->label('Simpan2')
+                                ->label('Simpan')
                                 ->color('primary')
                                 ->requiresConfirmation()
                                 ->modalHeading('Pengesahan')
@@ -799,8 +795,10 @@ class WaranJawatansRelationManager extends RelationManager
                         ->modalCancelActionLabel('Batal')
                         ->visible(
                             fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'Tambah'
+                            $this->getPageClass() !== ViewWaran::class
+                            && $this->getOwnerRecord()->jenis === 'Tambah'
                             && $record->status === 'active'
+
                         )
                         ->action(function ($record) {
 
@@ -831,7 +829,8 @@ class WaranJawatansRelationManager extends RelationManager
                         ->color('success')
                         ->visible(
                             fn() =>
-                            $this->getOwnerRecord()->jenis === 'Tambah'
+                            $this->getPageClass() !== ViewWaran::class
+                            && $this->getOwnerRecord()->jenis === 'Tambah'
                         )
                         ->form([
                             Select::make('status')
@@ -854,7 +853,40 @@ class WaranJawatansRelationManager extends RelationManager
                         ->modalHeading('Kemaskini Status')
                         ->modalSubmitActionLabel('Simpan')
                         ->modalCancelActionLabel('Batal')
-                ]),
+                        ->after(function ($record) {
+
+                            Log::info('Status Changed', [
+                                'penempatan_id',
+                                $record->id,
+                                'user_id' => auth()->id()
+
+                            ]);
+
+                            $creator = auth()->user();
+
+                            $no_Waran = $this->getOwnerRecord();
+
+
+
+                            $recipients = User::whereIn('role', [1, 2])->get();
+
+                            Notification::make()
+                                ->title('Status Penempatan Telah Dikemaskini')
+                                ->body("Status penempatan di {$record->ptj?->nama_ptj} bagi waran {$no_Waran->no_waran} telah dikemaskini oleh {$creator->name}")
+                                ->success()
+                                ->actions([
+                                    Action::make('view')
+                                        ->label('Lihat Penempatan')
+                                        ->url(
+                                            WaranResource::getUrl('view', [
+                                                'record' => $no_Waran,
+                                            ])
+                                        )
+                                        ->markAsRead(),
+                                ])
+                                ->sendToDatabase($recipients);
+                        })
+                ])
 
 
             ]);

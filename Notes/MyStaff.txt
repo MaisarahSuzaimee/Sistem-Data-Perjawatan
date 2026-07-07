@@ -12,7 +12,7 @@ Update (by 30.6.2026)
 2. auto delete data dari table pegawai untuk modul tamat perkhidmatan
 3. tambah view page untuk letak jawatan
 4. Tambah view page untuk penempatan waran
-5. Tambha kemaskini status untuk batal nama dan pindaan nama
+5. Tambah kemaskini status untuk batal nama dan pindaan nama
 6. Update cara buang jawatan untuk waran tolak dan tambah notification.
 7. Tambah Modul Nama penyandang
 8. Tambah table senarai report.
