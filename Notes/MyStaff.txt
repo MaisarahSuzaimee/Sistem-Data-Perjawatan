@@ -17,12 +17,17 @@ Update (by 30.6.2026)
 7. Tambah Modul Nama penyandang
 8. Tambah table senarai report.
 
-Next Task
+Update (by 7/7/2026)
 1. Report data keseluruhan
 2. View page penamatan perkhidmatan
+3. Notification after user kemaskini status penempatan waran.
+4. remove nama pegawai kontrak dari selection nama penyandang.
+5. Email password ke user lepas create new user
+6. View page untuk waran.
+7. Calculation JIK waran dekat user.
 
 ------------------------------------------------------------------------------------------------------------
 Design to do(2/7/2026)
-1. letak gap dekat widget/card dalam nama penyandang 
+1. letak gap dekat widget/card dalam nama penyandang
 2. betulkan topbar, samakan width dengan center card
-3. make header row for all table at the center not left side  
+3. make header row for all table at the center not left side

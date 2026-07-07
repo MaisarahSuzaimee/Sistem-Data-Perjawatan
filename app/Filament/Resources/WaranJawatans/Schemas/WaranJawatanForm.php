@@ -218,6 +218,10 @@ class WaranJawatanForm
 
                                         return Pegawai::query()
                                             ->whereIn('jawatan_gred_id', $jawatanGredIds)
+                                            ->where(function ($query) {
+                                                $query->where('is_kontrak', false);
+
+                                            })
                                             ->where(function ($query) use ($record) {
 
                                                 $query->whereNotIn('id', function ($q) use ($record) {
