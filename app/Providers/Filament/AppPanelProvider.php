@@ -2,7 +2,12 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\WaranJawatans\Widgets\NamaPenyandang;
+use Filament\Actions\Action;
+use Filament\Auth\Notifications\ResetPassword;
+use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -21,6 +26,8 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+
 
 class AppPanelProvider extends PanelProvider
 {
@@ -42,6 +49,24 @@ class AppPanelProvider extends PanelProvider
             // ->login()
             ->login(\App\Filament\Pages\Auth\Login::class)
             ->passwordReset()
+            ->profile(EditProfile::class)
+            ->userMenuItems([
+                'logout' => Action::make('logout')
+                    ->label('Log Keluar')
+                    ->requiresConfirmation()
+                    ->modalHeading('Pengesahan Log Keluar')
+                    ->modalDescription('Adakah anda pasti mahu log keluar?')
+                    ->modalSubmitActionLabel('Ya, Log Keluar')
+                    ->modalCancelActionLabel('Batal')
+                    ->action(function () {
+                        Filament::auth()->logout();
+
+                        request()->session()->invalidate();
+                        request()->session()->regenerateToken();
+
+                        redirect()->to('/app/login');
+                    }),
+            ])
             ->colors([
                 'primary' => Color::Teal,
                 'secondary' => Color::Violet,
@@ -77,10 +102,10 @@ class AppPanelProvider extends PanelProvider
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s');
-            // ->renderHook(
-            //     PanelsRenderHook::TOPBAR_END,
-            //     fn (): \Illuminate\Contracts\View\View => view('filament.topbar.dark-toggle'),
-            // );
+        // ->renderHook(
+        //     PanelsRenderHook::TOPBAR_END,
+        //     fn (): \Illuminate\Contracts\View\View => view('filament.topbar.dark-toggle'),
+        // );
 
     }
 }

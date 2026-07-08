@@ -31,3 +31,19 @@ Design to do(2/7/2026)
 1. letak gap dekat widget/card dalam nama penyandang
 2. betulkan topbar, samakan width dengan center card
 3. make header row for all table at the center not left side
+
+
+-------------------------------------------------------------------------------------------------------------
+Update (8/7/2026)
+1. forgot password dekat login page (kena run php artisan queue:work)
+setup email:
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=msrhszm@gmail.com
+MAIL_PASSWORD="miar lgbv cftw jhzt"
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=msrhszm@gmail.com
+MAIL_FROM_NAME="${APP_NAME}"
+
+2. tambah profile page - boleh reset password
