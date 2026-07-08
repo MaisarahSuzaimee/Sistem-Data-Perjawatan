@@ -22,6 +22,7 @@ class EditPegawai extends EditRecord
             ->modalDescription('Adakah anda pasti mahu simpan perubahan ini?')
             ->action(fn() => $this->save());
     }
+    
 
     protected function getCancelFormAction(): Action
     {

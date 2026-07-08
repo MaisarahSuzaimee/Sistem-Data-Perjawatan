@@ -51,6 +51,15 @@ class PegawaisTable
                                 : '-') .
                             '<br>';
                         // . ($lantikan[0]);
+
+                        // return
+                        //     '<div><strong>' . ($record->nama ?? '-') . '</strong></div>' .
+                        //     '<div style="margin-top: 2px;">' .
+                        //     ($record->jawatan_gred
+                        //         ? $record->jawatan_gred->jawatan->desc_jawatan .
+                        //         ' (' . $record->jawatan_gred->gred->kod_gred . ')'
+                        //         : '-') .
+                        //     '</div>';
                     })
                     ->html()
                     ->searchable(query: function ($query, string $search) {
@@ -144,10 +153,9 @@ class PegawaisTable
                             ) ||
                             (
                                 $record->is_jtw == 0 &&
+                                $record->is_kontrak == 0 &&
                                 is_null($noWaran)
                             );
-
-
 
                         return $tidakLengkap ? 'Tidak Lengkap' : 'Lengkap';
                     })
@@ -169,6 +177,7 @@ class PegawaisTable
                             ) ||
                             (
                                 $record->is_jtw == 0 &&
+                                $record->is_kontrak == 0 &&
                                 is_null($noWaran)
                             );
 
@@ -192,9 +201,16 @@ class PegawaisTable
                                         ->orWhere(function ($q) {
                                             $q->whereNull('unit_id')
                                                 ->where('ada_subunit', 0);
+                                        })
+
+                                        ->orWhere(function ($q) {
+                                            $q->where('is_jtw', 0)
+                                                ->where('is_kontrak', 0)
+                                                ->whereDoesntHave('waranJawatan');
                                         });
                                 });
                             }
+
                             if (str_contains($search, 'lengkap') && !str_contains($search, 'tidak lengkap')) {
                                 $query->whereNotNull('ptj_id')
                                     ->whereNotNull('bahagian_id')
@@ -207,6 +223,12 @@ class PegawaisTable
                                     ->where(function ($q) {
                                         $q->whereNotNull('unit_id')
                                             ->orWhere('ada_subunit', 1);
+                                    })
+
+                                    ->where(function ($q) {
+                                        $q->where('is_jtw', 1)
+                                            ->orWhere('is_kontrak', 1)
+                                            ->orWhereHas('waranJawatan');
                                     });
                             }
                         }
@@ -215,17 +237,26 @@ class PegawaisTable
                         query: function ($query, string $direction) {
 
                             $query->orderByRaw("
-                CASE
-                    WHEN ptj_id IS NULL
-                        OR bahagian_id IS NULL
-                        OR subunit_id IS NULL
-                        OR unit_id IS NULL
-                    THEN 0
-                    ELSE 1
-                END {$direction}
-            ");
+                                                    CASE
+                                                        WHEN ptj_id IS NULL
+                                                            OR bahagian_id IS NULL
+                                                            OR (subunit_id IS NULL AND ada_unit = 0)
+                                                            OR (unit_id IS NULL AND ada_subunit = 0)
+                                                            OR (
+                                                                is_jtw = 0
+                                                                AND is_kontrak = 0
+                                                                AND NOT EXISTS (
+                                                                    SELECT 1
+                                                                    FROM waran_jawatans
+                                                                    WHERE waran_jawatans.pegawai_id = pegawais.id
+                                                                )
+                                                            )
+                                                        THEN 0
+                                                        ELSE 1
+                                                    END {$direction}
+                                                ");
                         }
-                    ),
+                    )
             ])
             ->filters([
                 //
