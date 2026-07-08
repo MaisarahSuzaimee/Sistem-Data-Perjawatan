@@ -41,6 +41,7 @@ class AppPanelProvider extends PanelProvider
             ->spa()
             // ->login()
             ->login(\App\Filament\Pages\Auth\Login::class)
+            ->passwordReset()
             ->colors([
                 'primary' => Color::Teal,
                 'secondary' => Color::Violet,
