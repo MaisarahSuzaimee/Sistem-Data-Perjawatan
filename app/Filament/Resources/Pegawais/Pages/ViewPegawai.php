@@ -12,8 +12,21 @@ class ViewPegawai extends ViewRecord
 
     protected function getHeaderActions(): array
     {
+
         return [
             EditAction::make(),
         ];
+
+
+    }
+
+    public function getBreadCrumb(): string
+    {
+        return 'Paparan';
+    }
+
+    public function getTitle(): string
+    {
+        return 'Paparan ' . ($this->record->nama);
     }
 }

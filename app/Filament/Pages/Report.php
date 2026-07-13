@@ -14,17 +14,15 @@ use Illuminate\Http\Concerns\InteractsWithInput;
 
 class Report extends Page implements HasTable
 {
-
     use InteractsWithTable;
+
     protected string $view = 'filament.pages.report';
 
     protected static BackedEnum|string|null $navigationIcon = Heroicon::OutlinedPresentationChartBar;
 
-
     protected static ?string $navigationLabel = 'Senarai Laporan';
 
     protected static ?string $title = 'Senarai Laporan';
-
 
     protected static string|\UnitEnum|null $navigationGroup = 'Laporan';
 
@@ -33,6 +31,8 @@ class Report extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
+            ->defaultPaginationPageOption(5)
+            ->paginationPageOptions([5, 10, 25, 50, 100])
             ->columns([
                 TextColumn::make('id')
                     ->label('Bil')
@@ -42,12 +42,8 @@ class Report extends Page implements HasTable
                 TextColumn::make('name')
                     ->label('Nama Laporan')
                     ->sortable()
-                    ->searchable(),
-
-                // TextColumn::make('description')
-                //     ->label('Penerangan')
-                //     ->sortable()
-                //     ->searchable(),
+                    ->searchable()
+                    ->wrap(),
             ])
             ->records(function () {
 
@@ -93,7 +89,7 @@ class Report extends Page implements HasTable
                 return collect($data)
                     ->filter(function ($item) use ($search) {
                         return str_contains(strtolower($item['name']), strtolower($search));
-                            // || str_contains(strtolower($item['description']), strtolower($search));
+                        // || str_contains(strtolower($item['description']), strtolower($search));
                     })
                     ->values()
                     ->toArray();
@@ -103,7 +99,6 @@ class Report extends Page implements HasTable
                     ->label('Muat Turun')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->action(function ($record) {
-
                         return match ($record['id']) {
                             1 => redirect()->route('export.dataKeseluruhan'),
                             2 => redirect()->route('report.waran.export'),

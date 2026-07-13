@@ -19,7 +19,8 @@ class BahagiansTable
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')
-                    ->rowIndex(),
+                    ->rowIndex()
+                    ->width(1),
                 TextColumn::make('ptj.nama_ptj')
                     ->label('PTJ')
                     ->sortable()

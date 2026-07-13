@@ -19,7 +19,8 @@ class SubunitsTable
             ->columns([
                 TextColumn::make('no')
                 ->label('Bil')
-                ->rowIndex(),
+                ->rowIndex()
+                ->width(1),
                 TextColumn::make('unit.nama_unit')
                 ->label('Unit'),
                 TextColumn::make('nama_subunit')
