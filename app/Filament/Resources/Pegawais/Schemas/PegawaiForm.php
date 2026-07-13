@@ -78,6 +78,7 @@ class PegawaiForm
                                     ]),
                                 Select::make('jawatan_id')
                                     ->label('Jawatan')
+                                    ->required()
                                     ->options(
                                         Jawatan::query()
                                             ->orderBy('desc_jawatan')
@@ -107,6 +108,7 @@ class PegawaiForm
 
                                 Select::make('gred_id')
                                     ->label('Gred')
+                                    ->required()
                                     ->options(function (Get $get) {
 
                                         $jawatanId = $get('jawatan_id');
@@ -168,7 +170,17 @@ class PegawaiForm
                             ->schema([
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    ->relationship('ptj', 'nama_ptj')
+                                    ->relationship(
+                                        'ptj',
+                                        'nama_ptj',
+                                        modifyQueryUsing: function (\Illuminate\Database\Eloquent\Builder $query) {
+                                            $user = auth()->user();
+
+                                            if ($user->role == 3) {
+                                                $query->where('id', $user->ptj_id);
+                                            }
+                                        }
+                                    )
                                     ->required()
                                     ->searchable()
                                     ->preload()

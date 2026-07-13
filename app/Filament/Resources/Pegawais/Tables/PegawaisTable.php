@@ -26,11 +26,13 @@ class PegawaisTable
     {
         return $table
             // ->recordAction(null)
+            ->defaultPaginationPageOption(5)
             ->recordUrl(null)
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')
-                    ->rowIndex(),
+                    ->rowIndex()
+                    ->width(1),
                 TextColumn::make('nama')
                     ->label('Pegawai')
                     ->formatStateUsing(function ($record) {

@@ -25,6 +25,7 @@ class WaransTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultPaginationPageOption(5)
             ->recordUrl(fn($record) => route('filament.app.resources.warans.view', [
                 'record' => $record,
             ]))
@@ -42,7 +43,8 @@ class WaransTable
                 // Bil
                 TextColumn::make('no')
                     ->label('Bil')
-                    ->rowIndex(),
+                    ->rowIndex()
+                    ->width(1),
 
                 // Waran Info
                 TextColumn::make('no_waran')

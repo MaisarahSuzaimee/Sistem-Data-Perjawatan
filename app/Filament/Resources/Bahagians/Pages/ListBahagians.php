@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Bahagians\Pages;
 
 use App\Filament\Resources\Bahagians\BahagianResource;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -15,9 +16,12 @@ class ListBahagians extends ListRecords
     {
         return [
             CreateAction::make()
-            ->label('Tambah Bahagian')
-            // ->modal()
-            // ->createAnother(false),
+                ->label('Tambah Bahagian')
+                ->modal()
+                ->modalHeading('Tambah Bahagian')
+                ->modalSubmitActionLabel('Tambah')
+                ->modalCancelActionLabel('Batal')
+                ->createAnother(false),
         ];
     }
 
