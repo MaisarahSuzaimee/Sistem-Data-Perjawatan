@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Panel;
 use App\Models\Waran;
@@ -21,6 +22,19 @@ protected string $view = 'filament.pages.dashboard';
     public static function getRoutePath(Panel $panel): string
     {
         return '/';
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('today')
+                ->label(now()->locale('ms')->translatedFormat('d F Y'))
+                ->disabled()
+                ->color('gray')
+                ->extraAttributes([
+                    'style' => 'background:transparent;border:none;box-shadow:none;padding:0;cursor:default;opacity:1;font-weight:500;',
+                ]),
+        ];
     }
 
     public function getViewData(): array

@@ -485,8 +485,12 @@
 }
 
 /* ── Right-edge indicator bar (the Sneat signature) ── */
-/* Sits on the <li> so it always touches the sidebar right border */
-.fi-sidebar-item.fi-active::after {
+/* Anchored to the same <a> that carries the active background (not the
+   <li>) so both always share the exact same box height — the <li> and <a>
+   can differ in computed height (e.g. <li> only becomes flex-col when
+   active), which previously made the bar and highlight misalign. The <a>
+   is already width:100%, so right:0 still touches the sidebar border. */
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn::after {
     content: '';
     position: absolute;
     right: 0;
@@ -526,6 +530,54 @@
     background-color: var(--sneat-primary);
     border-color: var(--sneat-primary);
     transform: scale(1.3);
+}
+
+/* ── Grouped items: no row highlight on the active subsection itself —
+   the dot above already marks it. The group label carries the highlight
+   instead (see "Active group label" below), and the edge bar is hidden
+   here so it doesn't compete with the dot. ── */
+.fi-sidebar-group:has(.fi-sidebar-group-btn) .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background-color: transparent !important;
+    color: var(--sneat-text-muted) !important;
+    font-weight: 500 !important;
+}
+
+.fi-sidebar-group:has(.fi-sidebar-group-btn) .fi-sidebar-item.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-icon,
+.fi-sidebar-group:has(.fi-sidebar-group-btn) .fi-sidebar-item.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-label {
+    color: var(--sneat-text-muted) !important;
+}
+
+.fi-sidebar-group:has(.fi-sidebar-group-btn) .fi-sidebar-item.fi-active > .fi-sidebar-item-btn::after {
+    display: none;
+}
+
+/* ── Active group heading — rounded teal pill + edge bar, replicating the
+   original Sneat "Layouts" active-group look, shown here instead of on
+   the subsection. ── */
+.fi-sidebar-group-btn {
+    position: relative;
+    border-radius: var(--sneat-radius) !important;
+    transition: background-color 0.2s ease;
+}
+
+.fi-sidebar-group:has(.fi-sidebar-item.fi-active) .fi-sidebar-group-btn {
+    background-color: var(--sneat-primary-subtle) !important;
+    margin: 0 0.625rem;
+}
+
+.fi-sidebar-group:has(.fi-sidebar-item.fi-active) .fi-sidebar-group-label {
+    color: var(--sneat-primary) !important;
+}
+
+.fi-sidebar-group:has(.fi-sidebar-item.fi-active) .fi-sidebar-group-btn::after {
+    content: '';
+    position: absolute;
+    right: -0.625rem;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: var(--sneat-primary);
+    border-radius: 3px 0 0 3px;
 }
 
 /* ── Sub-items (nested inside parent nav items) ── */
@@ -831,6 +883,7 @@
     border-right: 1px solid var(--sneat-border) !important;
     color: var(--sneat-text-main) !important;
     font-size: 0.875rem !important;
+    line-height: 1.5 !important;
     vertical-align: middle !important;
 }
 
@@ -887,19 +940,20 @@ td.fi-ta-selection-cell {
     padding-bottom: 1rem !important;
 }
 
-/* Footer divider — separates content from action buttons */
-.fi-modal-footer {
-    border-top: 1px solid var(--sneat-border) !important;
-    padding-top: 1rem !important;
-}
-
 /* Dark mode */
 .dark .fi-modal-header {
     border-bottom-color: var(--sneat-border) !important;
 }
 
-.dark .fi-modal-footer {
-    border-top-color: var(--sneat-border) !important;
+/* Filament's own sticky-footer style adds a border-top — override it off */
+.fi-modal-footer {
+    border-top: none !important;
+}
+
+/* Filament also adds a border-bottom on the content area (above the
+   footer) for icon/heading/description modals — override it off too */
+.fi-modal-content {
+    border-bottom: none !important;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━ FORM INPUTS ━━━━━━━━━━━━━━━━━━━━ */
@@ -1078,8 +1132,8 @@ td.fi-ta-selection-cell {
     --sneat-body-bg: #051318;
     --sneat-paper-bg: rgba(15, 32, 39, 0.7);
     --sneat-border: rgba(255, 255, 255, 0.05);
-    --sneat-text-main: #cfd3ec;
-    --sneat-text-muted: #a3a5c0;
+    --sneat-text-main: #cfe8e3;
+    --sneat-text-muted: #9fb6b1;
     --sneat-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
     --sneat-primary: #2dd4bf;
     --sneat-primary-rgb: 45, 212, 191;

@@ -50,8 +50,7 @@ class PegawaisTable
                             ($record->jawatan_gred
                                 ? $record->jawatan_gred->jawatan->desc_jawatan .
                                 ' (' . $record->jawatan_gred->gred->kod_gred . ')'
-                                : '-') .
-                            '<br>';
+                                : '-');
                         // . ($lantikan[0]);
 
                         // return
@@ -81,7 +80,7 @@ class PegawaisTable
                     ->formatStateUsing(
                         fn($record) =>
                         '<strong>' . ($record->ptj?->nama_ptj ?? '') . '</strong><br>' .
-                        ($record->bahagian?->nama_bahagian ?? '') . '<br>'
+                        ($record->bahagian?->nama_bahagian ?? '')
                         // .
                         // ($record->unit?->nama_unit ?? '') . '<br>' .
                         // ($record->subunit?->nama_subunit ?? '')

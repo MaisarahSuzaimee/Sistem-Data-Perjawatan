@@ -3,7 +3,7 @@
     {{-- Stats Cards --}}
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px;">
         <div class="sneat-stat-card sneat-stat-card--blue">
-            <p class="sneat-stat-label">Jumlah Waran</p>
+            <p class="sneat-stat-label">Jumlah Perjawatan Mengikut Waran</p>
             <p class="sneat-stat-value">{{ $totalWaran }}</p>
         </div>
         <div class="sneat-stat-card sneat-stat-card--green">
@@ -15,7 +15,7 @@
             <p class="sneat-stat-value">{{ $totalKurang }}</p>
         </div>
         <div class="sneat-stat-card sneat-stat-card--sky">
-            <p class="sneat-stat-label">Waran Seimbang</p>
+            <p class="sneat-stat-label">Jumlah Perjawatan Diisi di JKNK</p>
             <p class="sneat-stat-value">{{ $totalSeimbang }}</p>
         </div>
     </div>
@@ -51,7 +51,7 @@
         </x-filament::section>
 
         {{-- Bar Chart --}}
-        <x-filament::section heading="Waran Mengikut Program">
+        <x-filament::section heading="Jumlah Pengisian Waran Perjawatan Mengikut Program">
             <canvas id="programChart" style="max-height:220px;"></canvas>
         </x-filament::section>
 
