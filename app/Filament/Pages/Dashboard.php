@@ -6,6 +6,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Panel;
+use App\Models\Hebahan;
 use App\Models\Waran;
 use App\Models\Pegawai;
 use App\Models\Ptj;
@@ -61,6 +62,15 @@ protected string $view = 'filament.pages.dashboard';
             }
         }
 
+        $recentHebahans = Hebahan::where('status', 'published')
+            ->where(function ($q) {
+                $q->whereNull('dipaparkan_sehingga')
+                    ->orWhere('dipaparkan_sehingga', '>=', now()->toDateString());
+            })
+            ->latest('tarikh_hebahan')
+            ->take(5)
+            ->get();
+
         return [
             'totalWaran'     => $totalWaran,
             'totalLebih'     => $totalLebih,
@@ -70,6 +80,7 @@ protected string $view = 'filament.pages.dashboard';
             'waranByProgram' => $waranByProgram->sortByDesc('waran_count')->values(),
             'totalPtj'       => Ptj::count(),
             'totalPegawai'   => Pegawai::count(),
+            'recentHebahans' => $recentHebahans,
         ];
     }
 }

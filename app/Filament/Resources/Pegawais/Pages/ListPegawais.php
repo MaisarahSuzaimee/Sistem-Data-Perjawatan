@@ -37,18 +37,21 @@ class ListPegawais extends ListRecords
             // ->badge(Pegawai::count()),
 
             'tetap' => Tab::make('TETAP')
+                ->extraAttributes(['class' => 'fi-tabs-item-tetap'])
                 ->modifyQueryUsing(
                     fn(Builder $query) => $query->where('is_tetap', 1)
                 ),
             // ->badge(Pegawai::where('is_tetap', 1)->count()),
 
             'kontrak_interim' => Tab::make('KONTRAK INTERIM')
+                ->extraAttributes(['class' => 'fi-tabs-item-kontrak-interim'])
                 ->modifyQueryUsing(
                     fn(Builder $query) => $query->where('is_kontrak_interim', 1)
                 ),
             // ->badge(Pegawai::where('is_kontrak_interim', 1)->count()),
 
             'kontrak' => Tab::make('KONTRAK')
+                ->extraAttributes(['class' => 'fi-tabs-item-kontrak'])
                 ->modifyQueryUsing(
                     fn(Builder $query) => $query->where('is_kontrak', 1)
                 ),

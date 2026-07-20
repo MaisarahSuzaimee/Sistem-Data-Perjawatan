@@ -46,7 +46,7 @@ class PegawaisTable
 
                         return
                             '<strong>' . ($record->nama ?? '-') . '</strong><br>' .
-                                // ($record->nokp ?? '-') . '<br>' .
+                            ($record->nokp ?? '-') . '<br>' .
                             ($record->jawatan_gred
                                 ? $record->jawatan_gred->jawatan->desc_jawatan .
                                 ' (' . $record->jawatan_gred->gred->kod_gred . ')'

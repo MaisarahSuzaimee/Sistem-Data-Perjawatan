@@ -62,7 +62,7 @@ class Report extends Page implements HasTable
                     ],
                     [
                         'id' => 3,
-                        'name' => 'Data Mengikut Kupulan Mengikut PTJ',
+                        'name' => 'Data Mengikut Kumpulan Mengikut PTJ',
                         // 'description' => 'Senarai jawatan kosong',
                     ],
                     [
