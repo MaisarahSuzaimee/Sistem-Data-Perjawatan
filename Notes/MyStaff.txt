@@ -47,3 +47,16 @@ MAIL_FROM_ADDRESS=msrhszm@gmail.com
 MAIL_FROM_NAME="${APP_NAME}"
 
 2. tambah profile page - boleh reset password
+
+-------------------------------------------------------------------------------------------------------------
+
+TASK (19/07/2026)
+1. Tambah page hebahan dan info page
+2. Autocalculate jantina ikut ic (KIV)
+3. tambah colouring untuk status lantikan. kotak view/ update pun letak color
+4. tambah aktiviti & program dalam tab penempatan
+5. Laporan jik boleh custom ikut program, ptj, skim
+
+
+upm_mystaff
+4JFngtBEbhqwj(xB

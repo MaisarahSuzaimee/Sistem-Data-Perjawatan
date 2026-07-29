@@ -16,4 +16,14 @@ class ViewLetakJawatan extends ViewRecord
             EditAction::make(),
         ];
     }
+
+    public function getTitle(): string
+    {
+        return ($this->record->nama);
+    }
+
+    public function getBreadCrumb(): string
+    {
+        return 'Paparan';
+    }
 }

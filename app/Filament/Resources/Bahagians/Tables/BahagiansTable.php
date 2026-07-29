@@ -23,6 +23,7 @@ class BahagiansTable
                     ->width(1),
                 TextColumn::make('ptj.nama_ptj')
                     ->label('PTJ')
+                    ->wrap()
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('nama_bahagian')
@@ -39,7 +40,8 @@ class BahagiansTable
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make(),
-                    EditAction::make(),
+                    EditAction::make()
+                    ->modal(),
                     DeleteAction::make()
                         ->label('Padam')
                         ->modalHeading(fn($record) => "Padam {$record->nama_bahagian}")

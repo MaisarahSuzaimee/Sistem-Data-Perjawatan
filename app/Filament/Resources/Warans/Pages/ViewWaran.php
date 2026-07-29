@@ -24,4 +24,14 @@ class ViewWaran extends ViewRecord
             EditAction::make(),
         ];
     }
+
+    public function getTitle(): string
+    {
+        return ($this->record->no_waran);
+    }
+
+    public function getBreadCrumb(): string
+    {
+        return 'Paparan';
+    }
 }

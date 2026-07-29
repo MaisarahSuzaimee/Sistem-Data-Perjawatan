@@ -18,14 +18,15 @@ class BahagianForm
     {
         return $schema
             ->components([
-                // Section::make('Maklumat Bahagian')
-                //     ->schema([
+                Section::make('Maklumat Bahagian')
+                    ->schema([
                         Select::make('ptj_id')
                             ->label('Ptj')
                             ->relationship('ptj', 'nama_ptj')
                             ->searchable()
                             ->preload()
                             ->required()
+
                             // ->unique()
                             ->columnSpanFull(),
                         TextInput::make('nama_bahagian')
@@ -76,9 +77,9 @@ class BahagianForm
                         //     ->helperText('Sila pilih Parlimen dahulu'),
 
 
-                    // ])
-                    // ->columns(2)
-                    // ->columnSpanFull()
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull()
 
             ]);
     }
