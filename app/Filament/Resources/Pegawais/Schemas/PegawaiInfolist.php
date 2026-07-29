@@ -2,6 +2,10 @@
 
 namespace App\Filament\Resources\Pegawais\Schemas;
 
+use App\Models\Aktiviti;
+use App\Models\PegawaiKontrak;
+use App\Models\Program;
+use App\Models\WaranJawatan;
 use Carbon\Carbon;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -20,23 +24,28 @@ class PegawaiInfolist
                         Tab::make('Maklumat Pegawai')
                             ->schema([
                                 TextEntry::make('nama')
-                                    ->columnSpanFull(),
+                                    ->label('Nama'),
                                 TextEntry::make('nokp')
                                     ->label('No Kad Pengenalan'),
                                 TextEntry::make('jantina'),
-                                TextEntry::make('jawatan_gred.jawatan.desc_jawatan')
-                                    ->label('Jawatan'),
-                                TextEntry::make('jawatan_gred.gred.kod_gred')
-                                    ->label('Gred')
-                            ]),
+                                // TextEntry::make('jawatan_gred.jawatan.desc_jawatan')
+                                //     ->label('Jawatan'),
+                                // TextEntry::make('jawatan_gred.gred.kod_gred')
+                                //     ->label('Gred'),
+                                TextEntry::make('jawatan_gred')
+                                    ->label('Jawatan / Gred')
+                                    ->formatStateUsing(function ($record) {
+                                        $jawatan = $record->jawatan_gred?->jawatan?->desc_jawatan;
+                                        $gred = $record->jawatan_gred?->gred?->kod_gred;
+                                        $tbk = $record->waranJawatan?->tbk?->tbk;
 
-                        Tab::make('Penempatan')
-                            ->schema([
+                                        return $jawatan . ', ' . $gred . ($tbk ? " (TBK{$tbk})" : '');
+                                    }),
                                 TextEntry::make('ptj.nama_ptj')
                                     ->label('PTJ')
                                     ->columnSpanFull(),
                                 TextEntry::make('bahagian.nama_bahagian')
-                                    ->label('Bahagian')
+                                    ->label('bahagian')
                                     ->columnSpanFull(),
                                 TextEntry::make('unit')
                                     ->label('Unit')
@@ -63,8 +72,10 @@ class PegawaiInfolist
                                         }
 
                                         return null;
-                                    })
+                                    }),
                             ]),
+
+
 
                         Tab::make('Jenis Lantikan')
                             ->schema([
@@ -262,7 +273,150 @@ class PegawaiInfolist
                                         return $record->is_kontrak == 1
                                             && $record->pegawaiKontrak?->tarikh_tamat5 !== null;
                                     }),
-                            ])
+                            ]),
+
+                        Tab::make('Penempatan')
+                            ->schema([
+                                TextEntry::make('waran')
+                                    ->label('No Waran')
+                                    ->getStateUsing(function ($record) {
+                                        $no_waran = $record->waranJawatan?->waran?->no_waran;
+                                        return $no_waran;
+                                    })
+                                    ->visible(function ($record) {
+                                        return !$record -> is_kontrak;
+                                    }),
+
+                                TextEntry::make('butiran')
+                                    ->label('Butiran')
+                                    ->getStateUsing(function ($record) {
+                                        $butiran = $record->waranJawatan?->butiran;
+                                        return $butiran;
+                                    })
+                                    ->visible(function ($record) {
+                                        return !$record -> is_kontrak;
+                                    }),
+
+                                TextEntry::make('program')
+                                    ->label('Program')
+                                    ->getStateUsing(function ($record) {
+
+                                        if ($record->is_kontrak) {
+                                            $program = $record->pegawaiKontrak?->program;
+                                        } else {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $program = $waranJawatan?->aktiviti?->program;
+                                        }
+
+                                        return $program
+                                            ? "{$program->nama_program} : {$program->desc_program}"
+                                            : '-';
+                                    }),
+
+                                TextEntry::make('aktiviti')
+                                    ->label('Aktiviti')
+                                    ->getStateUsing(function ($record) {
+                                        if ($record->is_kontrak) {
+                                            $aktiviti = $record->pegawaiKontrak?->aktiviti;
+                                        } else {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $aktiviti = $waranJawatan?->aktiviti;
+                                        }
+
+                                        return $aktiviti
+                                            ? "{$aktiviti->no_aktivit} - {$aktiviti->nama_aktiviti}"
+                                            : '-';
+                                    }),
+
+
+                                TextEntry::make('ptj_waran')
+                                    ->label('PTJ')
+                                    ->columnSpanFull()
+                                    ->getStateUsing(function ($record) {
+                                        if ($record->is_kontrak) {
+                                            $ptj = $record->ptj?->nama_ptj;
+                                        } else {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $ptj = $waranJawatan?->ptj?->nama_ptj;
+                                        }
+
+                                        return $ptj
+                                            ? "{$ptj}"
+                                            : '';
+                                    }),
+
+                                TextEntry::make('bahagian_waran')
+                                    ->label('Bahagian')
+                                    ->columnSpanFull()
+                                    ->getStateUsing(function ($record) {
+                                        if ($record->is_kontrak) {
+                                            $bahagian = $record->bahagian?->nama_bahagian;
+                                        } else {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $bahagian = $waranJawatan?->bahagian?->nama_bahagian;
+                                        }
+
+                                        return $bahagian
+                                            ? "{$bahagian}"
+                                            : '';
+                                    }),
+
+                                TextEntry::make('unit_waran')
+                                    ->label('Unit')
+                                    ->getStateUsing(function ($record) {
+                                        if ($record->is_kontrak) {
+                                            $unit = $record->unit?->nama_unit;
+                                        } else {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $unit = $waranJawatan?->unit?->nama_unit;
+                                        }
+
+                                        return $unit
+                                            ? "{$unit}"
+                                            : '';
+                                    }),
+
+                                TextEntry::make('subunit_waran')
+                                    ->label('Subunit')
+                                    ->getStateUsing(function ($record) {
+                                        if ($record->is_kontrak) {
+                                            $subunit = $record->subunit?->nama_subunit;
+                                        } else {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $subunit = $waranJawatan?->subunit?->nama_subunit;
+                                        }
+
+                                        return $subunit
+                                            ? "{$subunit}"
+                                            : '';
+                                    }),
+
+
+                                TextEntry::make('status_pinjam')
+                                    ->label('Lain-lain')
+                                    ->getStateUsing(function ($record) {
+                                        $ptj_pegawai = $record->ptj?->id;
+                                        $waranJawatan = $record->waranJawatan;
+                                        $ptj_waran = $waranJawatan?->ptj?->id;
+
+                                        if (!$record->is_kontrak && $ptj_pegawai !== $ptj_waran) {
+                                            return 'Pinjam';
+                                        }
+
+                                        return 'Tiada';
+                                    })
+                                    ->badge()
+                                    ->size('lg')
+                                    ->color(
+                                        fn($state) => match ($state) {
+                                            'Pinjam' => 'danger',
+
+                                            default => 'success',
+                                        }
+                                    ),
+
+                            ]),
+
                     ])
                     ->columns(2)
                     ->columnSpanFull()

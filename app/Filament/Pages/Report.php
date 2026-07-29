@@ -2,7 +2,9 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Jawatan;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
@@ -95,16 +97,50 @@ class Report extends Page implements HasTable
                     ->toArray();
             })
             ->actions([
+
                 Action::make('download')
                     ->label('Muat Turun')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->action(function ($record) {
+
+                    ->form(function ($record) {
+
                         return match ($record['id']) {
-                            1 => redirect()->route('export.dataKeseluruhan'),
-                            2 => redirect()->route('report.waran.export'),
-                            3 => redirect()->route('report.kosong.export'),
+
+                            5 => [
+                                Select::make('jawatan_id')
+                                    ->label('Pilih Jawatan')
+                                    ->options(
+                                        Jawatan::orderBy('desc_jawatan')
+                                            ->pluck('desc_jawatan', 'id')
+                                    )
+                                    ->searchable()
+                                    ->required(),
+                            ],
+                          
+
+                            default => [],
                         };
+
+                    })
+
+                    ->action(function ($record, array $data) {
+
+                        return match ($record['id']) {
+
+                            1 => redirect()->route('export.dataKeseluruhan'),
+
+                            2 => redirect()->route('export.dataKontrak'),
+
+                            3 => redirect()->route('report.kosong.export'),
+
+                            5 => redirect()->route('export.jikByJawatan', [
+                                'jawatan_id' => $data['jawatan_id'],
+                            ]),
+
+                        };
+
                     }),
+
             ]);
     }
 }

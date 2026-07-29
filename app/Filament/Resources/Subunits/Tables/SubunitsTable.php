@@ -22,13 +22,22 @@ class SubunitsTable
                 ->rowIndex()
                 ->width(1),
                 TextColumn::make('unit.nama_unit')
-                ->label('Unit'),
+                ->label('Unit')
+                ->wrap()
+                ->sortable()
+                ->searchable(),
                 TextColumn::make('nama_subunit')
-                ->label('Sub Unit'),
+                ->label('Sub Unit')
+                ->sortable()
+                ->searchable(),
                 TextColumn::make('parlimen.nama_parlimen')
-                ->label('Parlimen'),
+                ->label('Parlimen')
+                ->sortable()
+                ->searchable(),
                 TextColumn::make('dun.nama_dun')
                 ->label('Dun')
+                ->sortable()
+                ->searchable()
             ])
             ->filters([
                 //

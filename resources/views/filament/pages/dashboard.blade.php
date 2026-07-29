@@ -79,7 +79,7 @@
                     <tr style="border-bottom:1px solid #f3f4f6;">
                         <td style="padding:10px 0; color:#6366f1; font-weight:600;">{{ $waran->no_waran }}</td>
                         <td style="padding:10px 0;">
-                            @if($waran->jenis === 'tambah')
+                            @if($waran->jenis === 'Tambah')
                                 <x-filament::badge color="success">Tambah</x-filament::badge>
                             @else
                                 <x-filament::badge color="warning">Tolak</x-filament::badge>
