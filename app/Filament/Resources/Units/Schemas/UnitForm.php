@@ -46,10 +46,16 @@ class UnitForm
 
                         Select::make('bahagian_id')
                             ->label('Bahagian')
-                            ->relationship('bahagian', 'nama_bahagian')
+                            ->options(function (Get $get) {
+                                return \App\Models\Bahagian::query()
+                                    ->where('ptj_id', $get('ptj_id'))
+                                    ->orderBy('nama_bahagian')
+                                    ->pluck('nama_bahagian', 'id');
+                            })
                             ->searchable()
-                            ->required()
                             ->preload()
+                            ->required()
+                            ->live()
                             ->columnSpanFull()
                             ->visible(fn($record) => $record === null),
 

@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Pegawais\Pages;
+namespace App\Filament\Resources\Pencens\Pages;
 
-use App\Filament\Resources\Pegawais\PegawaiResource;
+use App\Filament\Resources\Pencens\PencenResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
-class ViewPegawai extends ViewRecord
+class ViewPencen extends ViewRecord
 {
-    protected static string $resource = PegawaiResource::class;
+    protected static string $resource = PencenResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -26,4 +26,5 @@ class ViewPegawai extends ViewRecord
     {
         return ($this->record->nama);
     }
+
 }

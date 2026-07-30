@@ -61,7 +61,8 @@ class WaranJawatan extends Model
 
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class, 'pegawai_id');
+        return $this->belongsTo(Pegawai::class, 'pegawai_id')
+            ->withoutGlobalScopes();
     }
 
     public function jawatan()
@@ -115,6 +116,14 @@ class WaranJawatan extends Model
 
             // });
         });
+
     }
+
+    public function tbk()
+    {
+        return $this->hasOne(Tbk::class);
+    }
+
+
 
 }
