@@ -951,6 +951,141 @@ td.fi-ta-selection-cell {
     box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18) !important;
 }
 
+/* ── Pegawai "Papar" modal — whole popup tinted to match the jenis
+   lantikan row colour (see .fi-ta-row-* above), including the inner
+   tab panel, the active tab pill, and the footer buttons + their
+   hover states. Solid (opaque) pastel colours are used here — not
+   rgba — so the dimmed page behind the modal never bleeds through. ── */
+.fi-modal-window-tetap,
+.fi-modal-window-tetap .fi-sc-tabs-tab {
+    background-color: #eff6ff !important;
+}
+
+.fi-modal-window-kontrak-interim,
+.fi-modal-window-kontrak-interim .fi-sc-tabs-tab {
+    background-color: #fffbeb !important;
+}
+
+.fi-modal-window-kontrak,
+.fi-modal-window-kontrak .fi-sc-tabs-tab {
+    background-color: #faf5ff !important;
+}
+
+.dark .fi-modal-window-tetap,
+.dark .fi-modal-window-tetap .fi-sc-tabs-tab {
+    background-color: #1e3a5f !important;
+}
+
+.dark .fi-modal-window-kontrak-interim,
+.dark .fi-modal-window-kontrak-interim .fi-sc-tabs-tab {
+    background-color: #4d3a0f !important;
+}
+
+.dark .fi-modal-window-kontrak,
+.dark .fi-modal-window-kontrak .fi-sc-tabs-tab {
+    background-color: #3b1f52 !important;
+}
+
+/* Active tab pill ("Maklumat Pegawai" etc.) inside the modal.
+   The label/icon are targeted explicitly too, since a directly-set
+   colour on them would otherwise win over the inherited colour set on
+   the parent .fi-tabs-item, regardless of the parent rule's
+   specificity. */
+.fi-modal-window-tetap .fi-tabs-item:hover,
+.fi-modal-window-tetap .fi-tabs-item.fi-active,
+.fi-modal-window-tetap .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-tetap .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-tetap .fi-tabs-item:hover .fi-tabs-item-icon,
+.fi-modal-window-tetap .fi-tabs-item.fi-active .fi-tabs-item-icon {
+    color: #2563eb !important;
+}
+
+.fi-modal-window-tetap .fi-tabs-item:hover,
+.fi-modal-window-tetap .fi-tabs-item.fi-active {
+    background-color: rgba(37, 99, 235, 0.25) !important;
+}
+
+.fi-modal-window-kontrak-interim .fi-tabs-item:hover,
+.fi-modal-window-kontrak-interim .fi-tabs-item.fi-active,
+.fi-modal-window-kontrak-interim .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-kontrak-interim .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-kontrak-interim .fi-tabs-item:hover .fi-tabs-item-icon,
+.fi-modal-window-kontrak-interim .fi-tabs-item.fi-active .fi-tabs-item-icon {
+    color: #d97706 !important;
+}
+
+.fi-modal-window-kontrak-interim .fi-tabs-item:hover,
+.fi-modal-window-kontrak-interim .fi-tabs-item.fi-active {
+    background-color: rgba(217, 119, 6, 0.25) !important;
+}
+
+.fi-modal-window-kontrak .fi-tabs-item:hover,
+.fi-modal-window-kontrak .fi-tabs-item.fi-active,
+.fi-modal-window-kontrak .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-kontrak .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-kontrak .fi-tabs-item:hover .fi-tabs-item-icon,
+.fi-modal-window-kontrak .fi-tabs-item.fi-active .fi-tabs-item-icon {
+    color: #9333ea !important;
+}
+
+.fi-modal-window-kontrak .fi-tabs-item:hover,
+.fi-modal-window-kontrak .fi-tabs-item.fi-active {
+    background-color: rgba(147, 51, 234, 0.25) !important;
+}
+
+/* Footer buttons — "Edit" filled solid, "Close" outlined with a
+   matching hover tint */
+.fi-modal-window-tetap .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-tetap .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+}
+
+.fi-modal-window-kontrak-interim .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #d97706 !important;
+    border-color: #d97706 !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-kontrak-interim .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #b45309 !important;
+    border-color: #b45309 !important;
+}
+
+.fi-modal-window-kontrak .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #9333ea !important;
+    border-color: #9333ea !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-kontrak .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #7e22ce !important;
+    border-color: #7e22ce !important;
+}
+
+.fi-modal-window-tetap .fi-modal-footer-actions .fi-btn:last-child:hover {
+    background-color: rgba(37, 99, 235, 0.12) !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+
+.fi-modal-window-kontrak-interim .fi-modal-footer-actions .fi-btn:last-child:hover {
+    background-color: rgba(217, 119, 6, 0.12) !important;
+    border-color: #d97706 !important;
+    color: #d97706 !important;
+}
+
+.fi-modal-window-kontrak .fi-modal-footer-actions .fi-btn:last-child:hover {
+    background-color: rgba(147, 51, 234, 0.12) !important;
+    border-color: #9333ea !important;
+    color: #9333ea !important;
+}
+
 /* Header divider — separates title from content */
 .fi-modal-header {
     border-bottom: 1px solid var(--sneat-border) !important;
@@ -1172,15 +1307,74 @@ td.fi-ta-selection-cell {
     color: #c084fc !important;
 }
 
+/* ── Pegawai table rows — left-edge colour bar matching the jenis
+   lantikan tab colours above. inset box-shadow is used because a plain
+   border on <tr> is suppressed by border-collapse. ── */
+.fi-ta-row.fi-ta-row-tetap {
+    box-shadow: inset 3px 0 0 #2563eb;
+}
+
+.fi-ta-row.fi-ta-row-kontrak-interim {
+    box-shadow: inset 3px 0 0 #d97706;
+}
+
+.fi-ta-row.fi-ta-row-kontrak {
+    box-shadow: inset 3px 0 0 #9333ea;
+}
+
+.dark .fi-ta-row.fi-ta-row-tetap {
+    box-shadow: inset 3px 0 0 #60a5fa;
+}
+
+.dark .fi-ta-row.fi-ta-row-kontrak-interim {
+    box-shadow: inset 3px 0 0 #fbbf24;
+}
+
+.dark .fi-ta-row.fi-ta-row-kontrak {
+    box-shadow: inset 3px 0 0 #c084fc;
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━ PAGE HEADER ━━━━━━━━━━━━━━━━━━━━ */
 
 .fi-header-heading {
     color: var(--sneat-text-main) !important;
     font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.625rem !important;
 }
 
 .fi-breadcrumbs-item {
     color: var(--sneat-text-muted) !important;
+}
+
+/* ── Back button — placed inline before the page heading via
+   getHeading() on pages that opt in (e.g. Maklumat Penyandang). ── */
+.mystaff-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    border: 1px solid var(--sneat-border);
+    background-color: var(--sneat-paper-bg);
+    color: var(--sneat-text-muted);
+    flex-shrink: 0;
+    cursor: pointer;
+    text-decoration: none !important;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.mystaff-back-btn svg {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.mystaff-back-btn:hover {
+    background-color: var(--sneat-primary-subtle);
+    color: var(--sneat-primary);
+    border-color: var(--sneat-primary);
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━ DARK MODE TOGGLE BUTTON ━━━━━━━━━━━━━━━━━━━━ */

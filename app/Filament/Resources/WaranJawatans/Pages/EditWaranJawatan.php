@@ -11,6 +11,8 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
 
 class EditWaranJawatan extends EditRecord
 {
@@ -28,6 +30,29 @@ class EditWaranJawatan extends EditRecord
             ->label('Batal');
     }
 
+    // public function getTitle(): string
+    // {
+    //     return 'Kemaskini Nama Penyandang Bagi Butiran ' . $this->record->butiran;
+    // }
+
+        public function getTitle(): string
+    {
+        return 'Butiran ' . $this->record->butiran;
+    }
+
+    public function getHeading(): string | Htmlable
+    {
+        return new HtmlString(
+        '<button type="button" onclick="window.history.back()" class="mystaff-back-btn" aria-label="Kembali">' .
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>' .
+        '</button>' .
+        '<div>' .
+            '<div style="font-size:20px; font-weight:600; line-height:1.3;">' . e($this->getTitle()) . '</div>' .
+            '<div style="font-size:13px; font-weight:400; color:#6b7280; line-height:1.2;">Kemaskini Nama Penyandang bagi butiran ini</div>' .
+        '</div>'
+        );
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -37,6 +62,13 @@ class EditWaranJawatan extends EditRecord
             ForceDeleteAction::make(),
             RestoreAction::make(),
         ];
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        // The back button (see getHeading()) replaces the need for a
+        // breadcrumb trail on this page.
+        return [];
     }
 
     // protected function afterCreate(): void

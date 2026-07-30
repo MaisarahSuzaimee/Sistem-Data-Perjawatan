@@ -209,6 +209,8 @@ class WaransTable
                     ->searchable()
                     ->preload()
 
+                    
+
             ])
             ->recordActions([
                 ActionGroup::make([

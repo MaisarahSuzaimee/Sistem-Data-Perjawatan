@@ -8,7 +8,7 @@ use App\Models\Program;
 use App\Models\WaranJawatan;
 use Carbon\Carbon;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Section;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
@@ -22,33 +22,27 @@ class PegawaiInfolist
                 Tabs::make('Tabs')
                     ->tabs([
                         Tab::make('Maklumat Pegawai')
+                            ->icon('heroicon-o-identification')
                             ->schema([
-                                TextEntry::make('nama')
-                                    ->label('Nama'),
-                                TextEntry::make('nokp')
-                                    ->label('No Kad Pengenalan'),
-                                TextEntry::make('jantina'),
-                                // TextEntry::make('jawatan_gred.jawatan.desc_jawatan')
-                                //     ->label('Jawatan'),
-                                // TextEntry::make('jawatan_gred.gred.kod_gred')
-                                //     ->label('Gred'),
-                                TextEntry::make('jawatan_gred')
-                                    ->label('Jawatan / Gred')
-                                    ->formatStateUsing(function ($record) {
-                                        $jawatan = $record->jawatan_gred?->jawatan?->desc_jawatan;
-                                        $gred = $record->jawatan_gred?->gred?->kod_gred;
-                                        $tbk = $record->waranJawatan?->tbk?->tbk;
-
-                                        return $jawatan . ', ' . $gred . ($tbk ? " (TBK{$tbk})" : '');
-                                    }),
+                                ViewEntry::make('nama')
+                                    ->view('filament.infolists.maklumat-pegawai-table')
+                                    ->columnSpanFull(),
                                 TextEntry::make('ptj.nama_ptj')
                                     ->label('PTJ')
+                                    ->icon('heroicon-o-building-office-2')
+                                    ->iconColor('success')
                                     ->columnSpanFull(),
                                 TextEntry::make('bahagian.nama_bahagian')
-                                    ->label('bahagian')
+                                    ->label('Bahagian')
+                                    ->icon('heroicon-o-building-office')
+                                    ->iconColor('success')
                                     ->columnSpanFull(),
                                 TextEntry::make('unit')
                                     ->label('Unit')
+                                    ->icon('heroicon-o-squares-2x2')
+                                    ->iconColor('success')
+                                    ->badge()
+                                    ->color(fn (?string $state): string => $state === 'TIADA' ? 'gray' : 'success')
                                     ->getStateUsing(function ($record) {
                                         if ($record->unit_id !== null) {
                                             return $record->unit?->nama_unit;
@@ -62,6 +56,10 @@ class PegawaiInfolist
                                     }),
                                 TextEntry::make('subunit')
                                     ->label('Sub Unit')
+                                    ->icon('heroicon-o-square-2-stack')
+                                    ->iconColor('success')
+                                    ->badge()
+                                    ->color(fn (?string $state): string => $state === 'TIADA' ? 'gray' : 'success')
                                     ->getStateUsing(function ($record) {
                                         if ($record->subunit_id !== null) {
                                             return $record->subunit?->nama_subunit;
@@ -78,8 +76,18 @@ class PegawaiInfolist
 
 
                         Tab::make('Jenis Lantikan')
+                            ->icon('heroicon-o-document-check')
                             ->schema([
                                 TextEntry::make('lantikan')
+                                    ->icon('heroicon-o-check-badge')
+                                    ->iconColor('warning')
+                                    ->badge()
+                                    ->color(fn (?string $state): string => match ($state) {
+                                        'Tetap' => 'success',
+                                        'Kontrak' => 'warning',
+                                        'Kontrak Interim' => 'amber',
+                                        default => 'gray',
+                                    })
                                     ->getStateUsing(function ($record) {
                                         if ($record->is_tetap == 1) {
                                             return 'Tetap';
@@ -96,6 +104,10 @@ class PegawaiInfolist
 
                                 TextEntry::make('lain-lain')
                                     ->label('Lain-lain')
+                                    ->icon('heroicon-o-tag')
+                                    ->iconColor('warning')
+                                    ->badge()
+                                    ->color(fn (?string $state): string => $state === 'Tiada' ? 'gray' : 'warning')
                                     ->getStateUsing(function ($record) {
                                         if ($record->is_kup == 1) {
                                             return 'Khas Untuk Penyandang (KUP)';
@@ -114,6 +126,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_lantikan')
                                     ->label('Tarikh Lantikan')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->tarikh_lantikan)->format('d-m-Y');
                                     })
@@ -123,6 +137,8 @@ class PegawaiInfolist
                                     }),
                                 TextEntry::make('tarikh_sah_jawatan')
                                     ->label('Tarikh Sah Jawatan')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->tarikh_sah_jawatan)->format('d-m-Y');
                                     })
@@ -132,11 +148,15 @@ class PegawaiInfolist
                                     }),
                                 TextEntry::make('opsyenPencen.opsyen')
                                     ->label('Opsyen Pencen')
+                                    ->icon('heroicon-o-shield-check')
+                                    ->iconColor('warning')
                                     ->visible(function ($record) {
                                         return $record->is_tetap == 1
                                             || $record->is_kontrak_interim == 1;
                                     }),
                                 TextEntry::make('tarikh_pencen')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->tarikh_pencen)->format('d-m-Y');
                                     })
@@ -147,6 +167,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_lantikan1')
                                     ->label('Tarikh Lantikan 1')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_lantikan1)->format('d-m-Y');
                                     })
@@ -160,6 +182,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_tamat1')
                                     ->label('Tarikh Tamat 1')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('danger')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_tamat1)->format('d-m-Y');
                                     })
@@ -172,6 +196,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_lantikan2')
                                     ->label('Tarikh Lantikan 2')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_lantikan2)->format('d-m-Y');
                                     })
@@ -185,6 +211,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_tamat2')
                                     ->label('Tarikh Tamat 2')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('danger')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_tamat2)->format('d-m-Y');
                                     })
@@ -198,6 +226,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_lantikan3')
                                     ->label('Tarikh Lantikan 3')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_lantikan3)->format('d-m-Y');
                                     })
@@ -211,6 +241,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_tamat3')
                                     ->label('Tarikh Tamat 3')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('danger')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_tamat3)->format('d-m-Y');
                                     })
@@ -224,6 +256,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_lantikan4')
                                     ->label('Tarikh Lantikan 4')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_lantikan4)->format('d-m-Y');
                                     })
@@ -237,6 +271,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_tamat4')
                                     ->label('Tarikh Tamat 4')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('danger')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_tamat4)->format('d-m-Y');
                                     })
@@ -250,6 +286,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_lantikan5')
                                     ->label('Tarikh Lantikan 5')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('warning')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_lantikan5)->format('d-m-Y');
                                     })
@@ -263,6 +301,8 @@ class PegawaiInfolist
 
                                 TextEntry::make('tarikh_tamat5')
                                     ->label('Tarikh Tamat 5')
+                                    ->icon('heroicon-o-calendar')
+                                    ->iconColor('danger')
                                     ->formatStateUsing(function ($record) {
                                         return Carbon::parse($record->pegawaiKontrak?->tarikh_tamat5)->format('d-m-Y');
                                     })
@@ -276,6 +316,7 @@ class PegawaiInfolist
                             ]),
 
                         Tab::make('Penempatan')
+                            ->icon('heroicon-o-map-pin')
                             ->schema([
                                 TextEntry::make('waran')
                                     ->label('No Waran')
@@ -419,7 +460,8 @@ class PegawaiInfolist
 
                     ])
                     ->columns(2)
-                    ->columnSpanFull()
+                    ->columnSpanFull(),
             ]);
     }
 }
+

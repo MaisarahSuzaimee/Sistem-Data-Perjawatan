@@ -135,6 +135,11 @@
                         @if($hebahan->kandungan)
                             <p style="margin:2px 0 0; font-size:12px; color:#6b7280;">{{ \Illuminate\Support\Str::limit(strip_tags($hebahan->kandungan), 100) }}</p>
                         @endif
+                        @if($hebahan->lampiran)
+                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($hebahan->lampiran) }}" target="_blank" style="font-size:12px; color:#0ea5e9; text-decoration:underline;">
+                                Lihat Lampiran
+                            </a>
+                        @endif
                     </div>
                     <span style="font-size:12px; color:#6b7280; white-space:nowrap;">{{ $hebahan->tarikh_hebahan->translatedFormat('d M Y') }}</span>
                 </div>
@@ -143,6 +148,8 @@
             @endforelse
         </x-filament::section>
     </div>
+
+    
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
