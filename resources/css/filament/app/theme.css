@@ -1108,6 +1108,17 @@ td.fi-ta-selection-cell {
     border-bottom: none !important;
 }
 
+/* Simple confirmation modals (no form fields, e.g. logout) — drop the
+   header divider and Filament's footer gap so the description flows
+   straight into the buttons instead of leaving an empty banded gap */
+.fi-modal-window:not(.fi-modal-window-has-content) .fi-modal-header {
+    border-bottom: none !important;
+}
+
+.fi-modal-window:not(.fi-modal-window-has-content) .fi-modal-footer {
+    margin-top: 0 !important;
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━ FORM INPUTS ━━━━━━━━━━━━━━━━━━━━ */
 
 .fi-input-wrp {
