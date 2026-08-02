@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 
 #[Fillable(['name', 'email', 'password', 'ptj_id', 'nokp', 'phone_number', 'status', 'role', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
-#[ObservedBy(UserObserver::class)]
+// #[ObservedBy(UserObserver::class)]
 class User extends Authenticatable implements HasAvatar
 {
     /** @use HasFactory<UserFactory> */

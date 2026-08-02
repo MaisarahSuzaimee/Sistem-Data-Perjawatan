@@ -46,12 +46,12 @@ class PegawaisTable
 
                         return
                             '<strong>' . ($record->nama ?? '-') . '</strong><br>' .
-                                // ($record->nokp ?? '-') . '<br>' .
-                            ($record->jawatan_gred
+                            // ($record->nokp ?? '-') . '<br>' .
+                            '<span class="text-xs text-gray-500">' . ($record->jawatan_gred
                                 ? $record->jawatan_gred->jawatan->desc_jawatan .
                                 ' (' . $record->jawatan_gred->gred->kod_gred . ')'
                                 : '-') .
-                            '<br>';
+                            '</span><br>';
                         // . ($lantikan[0]);
 
                         // return
@@ -77,15 +77,26 @@ class PegawaisTable
                     ->sortable(),
 
                 TextColumn::make('ptj')
-                    ->label('Penempatan')
-                    ->formatStateUsing(
-                        fn($record) =>
-                        '<strong>' . ($record->ptj?->nama_ptj ?? '') . '</strong><br>' .
-                        ($record->bahagian?->nama_bahagian ?? '') . '<br>'
-                        // .
-                        // ($record->unit?->nama_unit ?? '') . '<br>' .
-                        // ($record->subunit?->nama_subunit ?? '')
-                    )
+                    ->label('PTJ')
+                    ->formatStateUsing(function ($record) {
+
+                        $html =
+                            '<strong>' . ($record->ptj?->nama_ptj ?? '') . '</strong><br>' .
+                            '<span class="text-xs text-gray-500">' . ($record->bahagian?->nama_bahagian ?? '') . '</span>';
+
+                        $ptj_pegawai = $record->ptj?->id;
+                        $ptj_waran = $record->waranJawatan?->ptj?->id;
+
+                        if (!$record->is_kontrak && $ptj_pegawai !== $ptj_waran) {
+                            $html .= '<br><span class="text-xs px-2 py-1 rounded bg-warning-100 text-warning-700">
+                        Pinjam
+                      </span>';
+                        }
+
+                        return $html;
+                    })
+
+
 
                     ->html()
                     ->sortable(

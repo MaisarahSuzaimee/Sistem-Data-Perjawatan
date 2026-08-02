@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\Users\Pages;
 
 use App\Filament\Exports\UserExporter;
+use App\Filament\Imports\UserImporter;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\ExportAction;
+use Filament\Actions\ImportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
@@ -19,15 +21,18 @@ class ListUsers extends ListRecords
     {
         return [
             CreateAction::make()
-            ->label('Tambah Pengguna'),
+                ->label('Tambah Pengguna'),
             // ->modal()
             // ->createAnother(false),
-          Action::make('export')
-            ->label('Export Excel')
-            ->icon('heroicon-o-arrow-down-tray')
-            // ->color('')
-            ->url(route('export.users'))
-            ->openUrlInNewTab(), // optional
+            Action::make('export')
+                ->label('Export Excel')
+                ->icon('heroicon-o-arrow-down-tray')
+                // ->color('')
+                ->url(route('export.users'))
+                ->openUrlInNewTab(), // optional
+
+            ImportAction::make()
+                ->importer(UserImporter::class)
         ];
     }
 
