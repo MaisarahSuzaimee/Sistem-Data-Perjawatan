@@ -28,6 +28,9 @@ class PegawaisTable
             // ->recordAction(null)
             ->defaultPaginationPageOption(5)
             ->recordUrl(null)
+            ->recordClasses(fn(Pegawai $record) => static::lantikanSlug($record)
+                ? 'fi-ta-row-' . static::lantikanSlug($record)
+                : null)
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')
@@ -46,12 +49,11 @@ class PegawaisTable
 
                         return
                             '<strong>' . ($record->nama ?? '-') . '</strong><br>' .
-                                // ($record->nokp ?? '-') . '<br>' .
+                            ($record->nokp ?? '-') . '<br>' .
                             ($record->jawatan_gred
                                 ? $record->jawatan_gred->jawatan->desc_jawatan .
                                 ' (' . $record->jawatan_gred->gred->kod_gred . ')'
-                                : '-') .
-                            '<br>';
+                                : '-');
                         // . ($lantikan[0]);
 
                         // return
@@ -81,7 +83,7 @@ class PegawaisTable
                     ->formatStateUsing(
                         fn($record) =>
                         '<strong>' . ($record->ptj?->nama_ptj ?? '') . '</strong><br>' .
-                        ($record->bahagian?->nama_bahagian ?? '') . '<br>'
+                        ($record->bahagian?->nama_bahagian ?? '')
                         // .
                         // ($record->unit?->nama_unit ?? '') . '<br>' .
                         // ($record->subunit?->nama_subunit ?? '')
@@ -269,6 +271,11 @@ class PegawaisTable
                         ->label('Papar')
                         ->modal()
                         ->modalHeading(fn($record) => $record->nama)
+                        ->extraModalWindowAttributes(fn(Pegawai $record) => [
+                            'class' => static::lantikanSlug($record)
+                                ? 'fi-modal-window-' . static::lantikanSlug($record)
+                                : null,
+                        ])
                         ->extraModalFooterActions([
                             Action::make('edit')
                                 ->label('Edit')
@@ -309,5 +316,15 @@ class PegawaisTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    protected static function lantikanSlug(Pegawai $record): ?string
+    {
+        return match (true) {
+            $record->is_tetap == 1 => 'tetap',
+            $record->is_kontrak_interim == 1 => 'kontrak-interim',
+            $record->is_kontrak == 1 => 'kontrak',
+            default => null,
+        };
     }
 }

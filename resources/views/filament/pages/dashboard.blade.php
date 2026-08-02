@@ -3,7 +3,7 @@
     {{-- Stats Cards --}}
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px;">
         <div class="sneat-stat-card sneat-stat-card--blue">
-            <p class="sneat-stat-label">Jumlah Waran</p>
+            <p class="sneat-stat-label">Jumlah Perjawatan Mengikut Waran</p>
             <p class="sneat-stat-value">{{ $totalWaran }}</p>
         </div>
         <div class="sneat-stat-card sneat-stat-card--green">
@@ -15,7 +15,7 @@
             <p class="sneat-stat-value">{{ $totalKurang }}</p>
         </div>
         <div class="sneat-stat-card sneat-stat-card--sky">
-            <p class="sneat-stat-label">Waran Seimbang</p>
+            <p class="sneat-stat-label">Jumlah Perjawatan Diisi di JKNK</p>
             <p class="sneat-stat-value">{{ $totalSeimbang }}</p>
         </div>
     </div>
@@ -51,7 +51,7 @@
         </x-filament::section>
 
         {{-- Bar Chart --}}
-        <x-filament::section heading="Waran Mengikut Program">
+        <x-filament::section heading="Jumlah Pengisian Waran Perjawatan Mengikut Program">
             <canvas id="programChart" style="max-height:220px;"></canvas>
         </x-filament::section>
 
@@ -124,6 +124,32 @@
         </x-filament::section>
 
     </div>
+
+    {{-- Hebahan Terkini --}}
+    <div style="margin-top:16px;">
+        <x-filament::section heading="Hebahan Terkini">
+            @forelse($recentHebahans as $hebahan)
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:10px 0; {{ ! $loop->last ? 'border-bottom:1px solid #f3f4f6;' : '' }}">
+                    <div>
+                        <p style="margin:0; font-weight:600; font-size:13px;">{{ $hebahan->tajuk }}</p>
+                        @if($hebahan->kandungan)
+                            <p style="margin:2px 0 0; font-size:12px; color:#6b7280;">{{ \Illuminate\Support\Str::limit(strip_tags($hebahan->kandungan), 100) }}</p>
+                        @endif
+                        @if($hebahan->lampiran)
+                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($hebahan->lampiran) }}" target="_blank" style="font-size:12px; color:#0ea5e9; text-decoration:underline;">
+                                Lihat Lampiran
+                            </a>
+                        @endif
+                    </div>
+                    <span style="font-size:12px; color:#6b7280; white-space:nowrap;">{{ $hebahan->tarikh_hebahan->translatedFormat('d M Y') }}</span>
+                </div>
+            @empty
+                <p style="padding:8px 0; text-align:center; color:#6b7280; font-size:13px;">Tiada hebahan buat masa ini.</p>
+            @endforelse
+        </x-filament::section>
+    </div>
+
+    
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
