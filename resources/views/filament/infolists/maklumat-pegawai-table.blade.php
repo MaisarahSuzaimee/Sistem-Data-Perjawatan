@@ -55,5 +55,49 @@
                 {{ $record->jawatan_gred?->gred?->kod_gred }}
             </td>
         </tr>
+        <tr>
+            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
+                <span class="inline-flex items-center gap-2">
+                    <x-filament::icon icon="heroicon-o-building-office-2" class="w-4 h-4 text-fg-cyan" />
+                    PTJ
+                </span>
+            </th>
+            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
+                {{ $record->ptj?->nama_ptj }}
+            </td>
+        </tr>
+        <tr>
+            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
+                <span class="inline-flex items-center gap-2">
+                    <x-filament::icon icon="heroicon-o-building-office" class="w-4 h-4 text-fg-lime" />
+                    Bahagian
+                </span>
+            </th>
+            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
+                {{ $record->bahagian?->nama_bahagian }}
+            </td>
+        </tr>
+        <tr>
+            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
+                <span class="inline-flex items-center gap-2">
+                    <x-filament::icon icon="heroicon-o-squares-2x2" class="w-4 h-4 text-fg-yellow" />
+                    Unit
+                </span>
+            </th>
+            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
+                {{ $record->unit?->nama_unit }}
+            </td>
+        </tr>
+        <tr>
+            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
+                <span class="inline-flex items-center gap-2">
+                    <x-filament::icon icon="heroicon-o-square-2-stack" class="w-4 h-4 text-fg-brand" />
+                    Sub Unit
+                </span>
+            </th>
+            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
+                {{ $record->subunit?->nama_subunit }}
+            </td>
+        </tr>
     </tbody>
 </table>

@@ -6,6 +6,7 @@ use App\Models\Aktiviti;
 use App\Models\Jawatan;
 use App\Models\Jawatan_Gred;
 use App\Models\OpsyenPencen;
+use App\Models\Pegawai;
 use App\Models\Program;
 use App\Models\Subunit;
 use App\Models\Unit;
@@ -167,7 +168,159 @@ class PegawaiForm
                                         $set('butiran', null);
                                     }),
                                 Hidden::make('jawatan_gred_id'),
-                                
+
+                                Select::make('ptj_id')
+                                    ->label('PTJ')
+                                    ->relationship(
+                                        'ptj',
+                                        'nama_ptj',
+                                        modifyQueryUsing: function (\Illuminate\Database\Eloquent\Builder $query) {
+                                            $user = auth()->user();
+
+                                            if ($user->role == 3) {
+                                                $query->where('id', $user->ptj_id);
+                                            }
+                                        }
+                                    )
+                                    ->required()
+                                    ->searchable()
+                                    ->preload()
+                                    ->columnSpanFull()
+                                    ->reactive()
+                                    ->visible(function (?Pegawai $record): bool {
+                                        if (!$record) {
+                                            // Create page
+                                            return true;
+                                        }
+
+                                        return auth()->user()->ptj_id === $record->ptj_id || auth()->user()->role == 1 || auth()->user()->role == 2;
+                                    })->afterStateUpdated(fn($state, callable $set) => $set('bahagian_id', null)),
+
+                                TextEntry::make('ptj')
+                                    ->label('PTJ')
+                                    ->getStateUsing(function ($record) {
+                                        return $record->ptj?->nama_ptj ?? '-';
+                                    })
+                                    ->visible(fn(Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id'))
+                                    ->columnSpanFull(),
+
+                                Select::make('bahagian_id')
+                                    ->label('Bahagian')
+                                    ->options(function (Get $get) {
+                                        $ptjId = $get('ptj_id');
+
+                                        if (!$ptjId) {
+                                            return [];
+                                        }
+
+                                        return \App\Models\Bahagian::where('ptj_id', $ptjId)
+                                            ->pluck('nama_bahagian', 'id');
+                                    })
+                                    ->searchable()
+                                    ->required()
+                                    ->preload()
+                                    ->visible(function (?Pegawai $record): bool {
+                                        if (!$record) {
+                                            // Create page
+                                            return true;
+                                        }
+
+                                        return auth()->user()->ptj_id === $record->ptj_id || auth()->user()->role == 1 || auth()->user()->role == 2;
+                                    })
+                                    ->columnSpanFull(),
+
+                                TextEntry::make('bahagian')
+                                    ->label('Bahagian')
+                                    ->getStateUsing(function ($record) {
+                                        return $record->bahagian?->nama_bahagian ?? '-';
+                                    })
+                                    ->visible(fn(Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id'))
+                                    ->columnSpanFull(),
+
+                                Grid::make(4)
+                                    ->schema([
+                                        Select::make('unit_id')
+                                            ->label('Unit')
+                                            ->options(function (Get $get) {
+                                                $bahagianId = $get('bahagian_id');
+
+                                                if (!$bahagianId) {
+                                                    return [];
+                                                }
+
+                                                return Unit::where('bahagian_id', $bahagianId)
+                                                    ->pluck('nama_unit', 'id');
+                                            })
+                                            ->searchable()
+                                            ->preload()
+                                            ->disabled(fn(Get $get) => $get('ada_unit'))
+                                            ->dehydrated(fn(Get $get) => !$get('ada_unit'))
+                                            ->nullable()
+                                            ->columnSpan(4),
+
+                                        Checkbox::make('ada_unit')
+                                            ->label('Tiada Unit')
+                                            ->live()
+                                            ->columnSpan(1)
+
+                                    ])
+                                   ->visible(function (?Pegawai $record): bool {
+                                        if (!$record) {
+                                            // Create page
+                                            return true;
+                                        }
+
+                                        return auth()->user()->ptj_id === $record->ptj_id || auth()->user()->role == 1 || auth()->user()->role == 2;
+                                   }),
+
+                                Textentry::make('unit')
+                                    ->label('Unit')
+                                    ->getStateUsing(function ($record) {
+                                        return $record->unit?->namaUnit ?? '';
+                                    })
+                                    ->visible(fn(Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id')),
+
+                                Grid::make(4)
+                                    ->schema([
+                                        Select::make('subunit_id')
+                                            ->label('Subunit')
+                                            ->options(function (Get $get) {
+                                                $unitId = $get('unit_id');
+
+                                                if (!$unitId) {
+                                                    return [];
+                                                }
+
+                                                return Subunit::where('unit_id', $unitId)
+                                                    ->pluck('nama_subunit', 'id');
+                                            })
+                                            ->searchable()
+                                            ->preload()
+                                            ->disabled(fn(Get $get) => $get('ada_subunit'))
+                                            ->dehydrated(fn(Get $get) => !$get('ada_subunit'))
+                                            ->nullable()
+                                            ->columnSpan(4),
+
+                                        Checkbox::make('ada_subunit')
+                                            ->label('Tiada Subunit')
+                                            ->live()
+                                            ->columnSpan(1)
+                                    ])
+                                    ->visible(function (?Pegawai $record): bool {
+                                        if (!$record) {
+                                            // Create page
+                                            return true;
+                                        }
+
+                                        return auth()->user()->ptj_id === $record->ptj_id || auth()->user()->role == 1 || auth()->user()->role == 2;
+                                    }),
+
+                                Textentry::make('subunit')
+                                    ->label('Subunit')
+                                    ->getStateUsing(function ($record) {
+                                        return $record->subunit?->namaSubunit ?? '';
+                                    })
+                                    ->visible(fn(Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id'))
 
                             ]),
 
@@ -363,99 +516,93 @@ class PegawaiForm
 
                         Tab::make('Penempatan')
                             ->schema([
-                                Select::make('ptj_id')
-                                    ->label('PTJ')
-                                    ->relationship(
-                                        'ptj',
-                                        'nama_ptj',
-                                        modifyQueryUsing: function (\Illuminate\Database\Eloquent\Builder $query) {
-                                            $user = auth()->user();
-
-                                            if ($user->role == 3) {
-                                                $query->where('id', $user->ptj_id);
-                                            }
-                                        }
-                                    )
-                                    ->required()
-                                    ->searchable()
-                                    ->preload()
-                                    ->columnSpanFull()
-                                    ->reactive()
-                                    ->afterStateUpdated(fn($state, callable $set) => $set('bahagian_id', null)),
-
-                                Select::make('bahagian_id')
-                                    ->label('Bahagian')
-                                    ->options(function (Get $get) {
-                                        $ptjId = $get('ptj_id');
-
-                                        if (!$ptjId) {
-                                            return [];
+                                TextEntry::make('no_waran')
+                                    ->label('No Waran')
+                                    ->getStateUsing(function ($record) {
+                                        if (!$record) {
+                                            return null;
                                         }
 
-                                        return \App\Models\Bahagian::where('ptj_id', $ptjId)
-                                            ->pluck('nama_bahagian', 'id');
+                                        return $record->waranJawatan?->waran?->no_waran;
                                     })
-                                    ->searchable()
-                                    ->required()
-                                    ->preload()
+                                    ->visible(fn(Get $get): bool => !$get('is_kontrak')),
+
+                                TextEntry::make('butiran')
+                                    ->label('Butiran')
+                                    ->getStateUsing(function ($record) {
+                                        if (!$record) {
+                                            return null;
+                                        }
+                                        $waranJawatan = $record->waranJawatan;
+                                        $butiran = $waranJawatan?->butiran;
+
+                                        return $butiran;
+                                    })
+                                    ->visible(fn(Get $get): bool => !$get('is_kontrak')),
+                                TextEntry::make('ptj')
+                                    ->label('PTJ')
+                                    ->getStateUsing(function ($record) {
+                                        if (!$record) {
+                                            return null;
+                                        } elseif (!$record->is_kontrak) {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $ptj = $waranJawatan->ptj?->nama_ptj ?? '';
+                                        } else {
+                                            $ptj = $record->ptj?->nama_ptj;
+                                        }
+
+                                        return $ptj;
+                                    })
+                                    // ->visible(fn(Get $get): bool => !$get('is_kontrak'))
                                     ->columnSpanFull(),
 
-                                Grid::make(4)
-                                    ->schema([
-                                        Select::make('unit_id')
-                                            ->label('Unit')
-                                            ->options(function (Get $get) {
-                                                $bahagianId = $get('bahagian_id');
+                                TextEntry::make('bahagian')
+                                    ->label('Bahagian')
+                                    ->getStateUsing(function ($record) {
+                                        if (!$record) {
+                                            return null;
+                                        } elseif (!$record->is_kontrak) {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $bahagian = $waranJawatan->bahagian?->nama_bahagian ?? '';
+                                        } else {
+                                            $bahagian = $record->bahagian?->nama_bahagian ?? '';
+                                        }
 
-                                                if (!$bahagianId) {
-                                                    return [];
-                                                }
+                                        return $bahagian;
+                                    })
+                                    ->columnSpanFull(),
 
-                                                return Unit::where('bahagian_id', $bahagianId)
-                                                    ->pluck('nama_unit', 'id');
-                                            })
-                                            ->searchable()
-                                            ->preload()
-                                            ->disabled(fn(Get $get) => $get('ada_unit'))
-                                            ->dehydrated(fn(Get $get) => !$get('ada_unit'))
-                                            ->nullable()
-                                            ->columnSpan(4),
+                                Textentry::make('unit')
+                                    ->label('Unit')
+                                    ->getStateUsing(function ($record) {
+                                        if (!$record) {
+                                            return null;
+                                        } elseif (!$record->is_kontrak) {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $unit = $waranJawatan->unit?->namaUnit ?? '';
+                                        } else {
+                                            $unit = $record->unit?->nama_unit ?? '';
+                                        }
 
-                                        Checkbox::make('ada_unit')
-                                            ->label('Tiada Unit')
-                                            ->live()
-                                            ->columnSpan(1)
+                                        return $unit;
+                                    })
+                                    ->visible(fn(Get $get) => auth()->user()->role == 3),
 
-                                    ]),
+                                Textentry::make('subunit')
+                                    ->label('Subunit')
+                                    ->getStateUsing(function ($record) {
+                                        if (!$record) {
+                                            return null;
+                                        } elseif (!$record->is_kontrak) {
+                                            $waranJawatan = $record->waranJawatan;
+                                            $subunit = $waranJawatan->subunit?->nama_subunit ?? '';
+                                        } else {
+                                            $subunit = $record->subunit?->nama_subunit;
+                                        }
 
-
-                                Grid::make(4)
-                                    ->schema([
-                                        Select::make('subunit_id')
-                                            ->label('Subunit')
-                                            ->options(function (Get $get) {
-                                                $unitId = $get('unit_id');
-
-                                                if (!$unitId) {
-                                                    return [];
-                                                }
-
-                                                return Subunit::where('unit_id', $unitId)
-                                                    ->pluck('nama_subunit', 'id');
-                                            })
-                                            ->searchable()
-                                            ->preload()
-                                            ->disabled(fn(Get $get) => $get('ada_subunit'))
-                                            ->dehydrated(fn(Get $get) => !$get('ada_subunit'))
-                                            ->nullable()
-                                            ->columnSpan(4),
-
-                                        Checkbox::make('ada_subunit')
-                                            ->label('Tiada Subunit')
-                                            ->live()
-                                            ->columnSpan(1)
-                                    ]),
-
+                                        return $subunit;
+                                    })
+                                    ->visible(fn(Get $get) => auth()->user()->role == 3),
                                 Group::make()
                                     ->columns(2)
                                     ->columnSpanFull()
@@ -493,7 +640,7 @@ class PegawaiForm
                                             })
                                             ->searchable()
 
-,
+                                        ,
                                     ])
                                     ->visible(fn(Get $get) => $get('is_kontrak')),
                                 TextEntry::make('program')
@@ -509,7 +656,7 @@ class PegawaiForm
                                     ->visible(fn(Get $get) => $get('is_kontrak_interim') || $get('is_tetap')),
 
                                 TextEntry::make('aktiviti')
-                                    ->label('program')
+                                    ->label('Aktiviti')
                                     ->getStateUsing(function ($record) {
                                         $waranJawatan = $record->waranJawatan->first();
                                         $aktiviti = $waranJawatan?->aktiviti;
@@ -520,8 +667,6 @@ class PegawaiForm
                                     })
                                     ->visible(fn(Get $get) => $get('is_kontrak_interim') || $get('is_tetap')),
                             ]),
-
-
 
                     ])
                     ->columns(2)
