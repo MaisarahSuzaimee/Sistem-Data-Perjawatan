@@ -995,8 +995,8 @@ td.fi-ta-selection-cell {
 .fi-modal-window-tetap .fi-tabs-item.fi-active,
 .fi-modal-window-tetap .fi-tabs-item:hover .fi-tabs-item-label,
 .fi-modal-window-tetap .fi-tabs-item.fi-active .fi-tabs-item-label,
-.fi-modal-window-tetap .fi-tabs-item:hover .fi-tabs-item-icon,
-.fi-modal-window-tetap .fi-tabs-item.fi-active .fi-tabs-item-icon {
+.fi-modal-window-tetap .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-tetap .fi-tabs-item.fi-active > .fi-icon {
     color: #2563eb !important;
 }
 
@@ -1009,8 +1009,8 @@ td.fi-ta-selection-cell {
 .fi-modal-window-kontrak-interim .fi-tabs-item.fi-active,
 .fi-modal-window-kontrak-interim .fi-tabs-item:hover .fi-tabs-item-label,
 .fi-modal-window-kontrak-interim .fi-tabs-item.fi-active .fi-tabs-item-label,
-.fi-modal-window-kontrak-interim .fi-tabs-item:hover .fi-tabs-item-icon,
-.fi-modal-window-kontrak-interim .fi-tabs-item.fi-active .fi-tabs-item-icon {
+.fi-modal-window-kontrak-interim .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-kontrak-interim .fi-tabs-item.fi-active > .fi-icon {
     color: #d97706 !important;
 }
 
@@ -1023,8 +1023,8 @@ td.fi-ta-selection-cell {
 .fi-modal-window-kontrak .fi-tabs-item.fi-active,
 .fi-modal-window-kontrak .fi-tabs-item:hover .fi-tabs-item-label,
 .fi-modal-window-kontrak .fi-tabs-item.fi-active .fi-tabs-item-label,
-.fi-modal-window-kontrak .fi-tabs-item:hover .fi-tabs-item-icon,
-.fi-modal-window-kontrak .fi-tabs-item.fi-active .fi-tabs-item-icon {
+.fi-modal-window-kontrak .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-kontrak .fi-tabs-item.fi-active > .fi-icon {
     color: #9333ea !important;
 }
 
