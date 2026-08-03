@@ -1,5 +1,6 @@
 <x-filament-panels::page>
 
+    
     {{-- Stats Cards --}}
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px;">
         <div class="sneat-stat-card sneat-stat-card--blue">
@@ -28,7 +29,8 @@
             <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
                 <div style="position:relative; width:200px; height:200px;">
                     <canvas id="statusChart" width="200" height="200"></canvas>
-                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
+                    <div
+                        style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
                         <p style="font-size:24px; font-weight:700; margin:0;">{{ $totalWaran }}</p>
                         <p style="font-size:12px; color:#6b7280; margin:0;">Jumlah</p>
                     </div>
@@ -75,31 +77,37 @@
                 </thead>
                 <tbody>
                     @forelse($recentWarans as $waran)
-                    @php $status = $waran->status_jik; @endphp
-                    <tr style="border-bottom:1px solid #f3f4f6;">
-                        <td style="padding:10px 0; color:#6366f1; font-weight:600;">{{ $waran->no_waran }}</td>
-                        <td style="padding:10px 0;">
-                            @if($waran->jenis === 'Tambah')
-                                <x-filament::badge color="success">Tambah</x-filament::badge>
-                            @else
-                                <x-filament::badge color="warning">Tolak</x-filament::badge>
-                            @endif
-                        </td>
-                        <td style="padding:10px 0; text-align:center; font-weight:600;">{{ $waran->jik }}</td>
-                        <td style="padding:10px 0; text-align:center; font-weight:600; color:#16a34a;">{{ $waran->isi_count }}</td>
-                        <td style="padding:10px 0; text-align:center; font-weight:600; color:{{ $waran->kosong_count < 0 ? '#dc2626' : '#d97706' }};">{{ $waran->kosong_count }}</td>
-                        <td style="padding:10px 0;">
-                            @if($status === 'Lebih')
-                                <x-filament::badge color="success">{{ $status }}</x-filament::badge>
-                            @elseif($status === 'Kurang')
-                                <x-filament::badge color="danger">{{ $status }}</x-filament::badge>
-                            @else
-                                <x-filament::badge color="info">{{ $status }}</x-filament::badge>
-                            @endif
-                        </td>
-                    </tr>
+                        @php $status = $waran->status_jik; @endphp
+                        <tr style="border-bottom:1px solid #f3f4f6;">
+                            <td style="padding:10px 0; color:#6366f1; font-weight:600;">{{ $waran->no_waran }}</td>
+                            <td style="padding:10px 0;">
+                                @if ($waran->jenis === 'Tambah')
+                                    <x-filament::badge color="success">Tambah</x-filament::badge>
+                                @else
+                                    <x-filament::badge color="warning">Tolak</x-filament::badge>
+                                @endif
+                            </td>
+                            <td style="padding:10px 0; text-align:center; font-weight:600;">{{ $waran->jik }}</td>
+                            <td style="padding:10px 0; text-align:center; font-weight:600; color:#16a34a;">
+                                {{ $waran->isi_count }}</td>
+                            <td
+                                style="padding:10px 0; text-align:center; font-weight:600; color:{{ $waran->kosong_count < 0 ? '#dc2626' : '#d97706' }};">
+                                {{ $waran->kosong_count }}</td>
+                            <td style="padding:10px 0;">
+                                @if ($status === 'Lebih')
+                                    <x-filament::badge color="success">{{ $status }}</x-filament::badge>
+                                @elseif($status === 'Kurang')
+                                    <x-filament::badge color="danger">{{ $status }}</x-filament::badge>
+                                @else
+                                    <x-filament::badge color="info">{{ $status }}</x-filament::badge>
+                                @endif
+                            </td>
+                        </tr>
                     @empty
-                    <tr><td colspan="6" style="padding:16px 0; text-align:center; color:#6b7280;">Tiada waran ditemui.</td></tr>
+                        <tr>
+                            <td colspan="6" style="padding:16px 0; text-align:center; color:#6b7280;">Tiada waran
+                                ditemui.</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
@@ -108,15 +116,18 @@
         {{-- System Stats --}}
         <x-filament::section heading="Ringkasan Sistem">
             <div style="display:flex; flex-direction:column; gap:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f9fafb; border-radius:8px;">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f9fafb; border-radius:8px;">
                     <span style="font-size:13px; color:#6b7280;">Jumlah PTJ</span>
                     <span style="font-size:20px; font-weight:700; color:#1d4ed8;">{{ $totalPtj }}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f9fafb; border-radius:8px;">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f9fafb; border-radius:8px;">
                     <span style="font-size:13px; color:#6b7280;">Jumlah Pegawai</span>
                     <span style="font-size:20px; font-weight:700; color:#15803d;">{{ $totalPegawai }}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f9fafb; border-radius:8px;">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f9fafb; border-radius:8px;">
                     <span style="font-size:13px; color:#6b7280;">Waran Aktif</span>
                     <span style="font-size:20px; font-weight:700; color:#6366f1;">{{ $totalWaran }}</span>
                 </div>
@@ -125,31 +136,37 @@
 
     </div>
 
-    {{-- Hebahan Terkini --}}
+{{-- Hebahan Terkini --}}
     <div style="margin-top:16px;">
         <x-filament::section heading="Hebahan Terkini">
             @forelse($recentHebahans as $hebahan)
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:10px 0; {{ ! $loop->last ? 'border-bottom:1px solid #f3f4f6;' : '' }}">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:10px 0; {{ !$loop->last ? 'border-bottom:1px solid #f3f4f6;' : '' }}">
                     <div>
                         <p style="margin:0; font-weight:600; font-size:13px;">{{ $hebahan->tajuk }}</p>
-                        @if($hebahan->kandungan)
-                            <p style="margin:2px 0 0; font-size:12px; color:#6b7280;">{{ \Illuminate\Support\Str::limit(strip_tags($hebahan->kandungan), 100) }}</p>
+                        @if ($hebahan->kandungan)
+                            <p style="margin:2px 0 0; font-size:12px; color:#6b7280;">
+                                {{ \Illuminate\Support\Str::limit(strip_tags($hebahan->kandungan), 100) }}</p>
                         @endif
-                        @if($hebahan->lampiran)
-                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($hebahan->lampiran) }}" target="_blank" style="font-size:12px; color:#0ea5e9; text-decoration:underline;">
+                        @if ($hebahan->lampiran)
+                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($hebahan->lampiran) }}"
+                                target="_blank" style="font-size:12px; color:#0ea5e9; text-decoration:underline;">
                                 Lihat Lampiran
                             </a>
                         @endif
                     </div>
-                    <span style="font-size:12px; color:#6b7280; white-space:nowrap;">{{ $hebahan->tarikh_hebahan->translatedFormat('d M Y') }}</span>
+                    <span
+                        style="font-size:12px; color:#6b7280; white-space:nowrap;">{{ $hebahan->tarikh_hebahan->translatedFormat('d M Y') }}</span>
                 </div>
             @empty
-                <p style="padding:8px 0; text-align:center; color:#6b7280; font-size:13px;">Tiada hebahan buat masa ini.</p>
+                <p style="padding:8px 0; text-align:center; color:#6b7280; font-size:13px;">Tiada hebahan buat masa ini.
+                </p>
             @endforelse
         </x-filament::section>
     </div>
 
-    
+
+
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -181,7 +198,14 @@
                 options: {
                     responsive: false,
                     cutout: '70%',
-                    plugins: { legend: { display: false }, tooltip: { enabled: true } }
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: true
+                        }
+                    }
                 }
             });
 
@@ -200,10 +224,23 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false } },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
                     scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                        x: { grid: { display: false } }
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
                     }
                 }
             });
