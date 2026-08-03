@@ -112,7 +112,16 @@ class WaranJawatan extends Model
             }
 
             // normal user → filter by PTJ
-            $query->where('ptj_id', $user->ptj_id);
+            $query->where(function ($query) use ($user) {
+
+                // Waran under user's PTJ
+                $query->where('ptj_id', $user->ptj_id)
+
+                    // OR waran assigned to pegawai in user's PTJ
+                    ->orWhereHas('pegawai', function ($pegawaiQuery) use ($user) {
+                        $pegawaiQuery->where('ptj_id', $user->ptj_id);
+                    });
+            });
 
             // });
         });
