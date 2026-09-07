@@ -30,26 +30,31 @@ class EditWaranJawatan extends EditRecord
             ->label('Batal');
     }
 
+    protected function getRedirectUrl(): ?string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
     // public function getTitle(): string
     // {
     //     return 'Kemaskini Nama Penyandang Bagi Butiran ' . $this->record->butiran;
     // }
 
-        public function getTitle(): string
+    public function getTitle(): string
     {
-        return 'Butiran ' . $this->record->butiran;
+        return 'Butiran '.$this->record->butiran;
     }
 
-    public function getHeading(): string | Htmlable
+    public function getHeading(): string|Htmlable
     {
         return new HtmlString(
-        '<button type="button" onclick="window.history.back()" class="mystaff-back-btn" aria-label="Kembali">' .
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>' .
-        '</button>' .
-        '<div>' .
-            '<div style="font-size:20px; font-weight:600; line-height:1.3;">' . e($this->getTitle()) . '</div>' .
-            '<div style="font-size:13px; font-weight:400; color:#6b7280; line-height:1.2;">Kemaskini Nama Penyandang bagi butiran ini</div>' .
-        '</div>'
+            '<button type="button" onclick="window.history.back()" class="mystaff-back-btn" aria-label="Kembali">'.
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>'.
+            '</button>'.
+            '<div>'.
+                '<div style="font-size:20px; font-weight:600; line-height:1.3;">'.e($this->getTitle()).'</div>'.
+                '<div style="font-size:13px; font-weight:400; color:#6b7280; line-height:1.2;">Kemaskini Nama Penyandang bagi butiran ini</div>'.
+            '</div>'
         );
     }
 
@@ -91,6 +96,7 @@ class EditWaranJawatan extends EditRecord
         // Condition 1: Must have multiple gred
         if (count($gredIds) <= 1) {
             Tbk::where('waran_jawatan_id', $this->record->id)->delete();
+
             return;
         }
 
@@ -98,7 +104,6 @@ class EditWaranJawatan extends EditRecord
             ->whereIn('id', $gredIds)
             ->orderBy('kod_gred')
             ->get();
-
 
         // Condition 2: Gred must be between 1 to 8
         $gredNumbers = $selectedGreds->map(function ($gred) {
@@ -108,7 +113,6 @@ class EditWaranJawatan extends EditRecord
 
         });
 
-
         if ($gredNumbers->min() < 1 || $gredNumbers->max() > 8) {
 
             // remove existing TBK if condition no longer valid
@@ -117,28 +121,22 @@ class EditWaranJawatan extends EditRecord
             return;
         }
 
-
         $pegawai = $this->record->pegawai;
 
-        if (!$pegawai) {
+        if (! $pegawai) {
             return;
         }
 
-
         $pegawaiGredId = $pegawai->jawatan_gred->gred_id;
 
-
         $gredList = $selectedGreds->pluck('id')->values();
-
 
         // Find pegawai position in grade list
         $tbk = $gredList->search($pegawaiGredId);
 
-
         if ($tbk === false) {
             return;
         }
-
 
         // Condition 3: Pegawai must not be lowest grade
         if ($tbk === 0) {
@@ -147,7 +145,6 @@ class EditWaranJawatan extends EditRecord
 
             return;
         }
-
 
         // Create TBK
         Tbk::updateOrCreate(

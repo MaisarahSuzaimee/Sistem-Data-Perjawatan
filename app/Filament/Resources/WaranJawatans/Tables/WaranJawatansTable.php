@@ -12,6 +12,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -152,7 +153,8 @@ class WaranJawatansTable
 
                 TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->isSuperAdmin()),
-            ])
+            ], layout: FiltersLayout::Modal)
+            ->filtersApplyAction(fn (Action $action) => $action->label('Cari'))
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make()

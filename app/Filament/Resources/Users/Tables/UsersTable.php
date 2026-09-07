@@ -49,6 +49,7 @@ class UsersTable
                     ->searchable()
                     ->sortable(),
             ])
+            ->defaultSort('updated_at', 'desc')
             ->filters([
                 //
             ])

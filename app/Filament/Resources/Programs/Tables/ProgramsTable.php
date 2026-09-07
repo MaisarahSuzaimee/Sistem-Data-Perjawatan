@@ -7,7 +7,6 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -16,18 +15,18 @@ class ProgramsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('nama_program', 'asc')
+            ->defaultSort('updated_at', 'desc')
 
             ->columns([
                 TextColumn::make('no')
-                    ->label("Bil")
+                    ->label('Bil')
                     ->rowindex()
                     ->width(1),
                 TextColumn::make('desc_program')
+                    ->label('PROGRAM')
                     ->getStateUsing(
-                        fn($record) =>
-                        $record->aktiviti
-                            ->map(fn($a) => $a->program?->nama_program . ' - ' . $a->program?->desc_program)
+                        fn ($record) => $record->aktiviti
+                            ->map(fn ($a) => $a->program?->nama_program.' - '.$a->program?->desc_program)
                             ->filter()
                             ->unique()
                             ->join(', ')
@@ -42,17 +41,14 @@ class ProgramsTable
                                 $q->where('no_aktivit', 'like', "%{$search}%")
                                     ->orWhere('nama_aktiviti', 'like', "%{$search}%");
                             });
-                    })
-                        ,
+                    }),
                 // ->defaultSort('nama_program'),
-
 
                 TextColumn::make('aktiviti')
                     ->label('Aktiviti')
                     ->getStateUsing(
-                        fn($record) =>
-                        $record->aktiviti
-                            ->map(fn($item) => $item->no_aktivit . ' - ' . $item->nama_aktiviti)
+                        fn ($record) => $record->aktiviti
+                            ->map(fn ($item) => $item->no_aktivit.' - '.$item->nama_aktiviti)
                             ->toArray()
                     )
                     ->wrap()
@@ -63,16 +59,16 @@ class ProgramsTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                     EditAction::make()
-                    ->label('Edit')
-                    ->tooltip('Edit'),
-                DeleteAction::make()
+                    EditAction::make()
+                        ->label('Edit')
+                        ->tooltip('Edit'),
+                    DeleteAction::make()
                         ->label('Padam')
-                        ->modalHeading(fn($record) => "Padam {$record->nama_program}")
+                        ->modalHeading(fn ($record) => "Padam {$record->nama_program}")
                         ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Padam')
-                        ->modalCancelActionLabel('Batal')
-                ])
+                        ->modalCancelActionLabel('Batal'),
+                ]),
 
             ])
             ->toolbarActions([
