@@ -13,7 +13,7 @@ class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
-     protected ?string $plainPassword = null;
+    protected ?string $plainPassword = null;
 
     public function getTitle(): string
     {
@@ -43,7 +43,12 @@ class CreateUser extends CreateRecord
             ->hidden();
     }
 
-     protected function mutateFormDataBeforeCreate(array $data): array
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
+    protected function mutateFormDataBeforeCreate(array $data): array
     {
         $this->plainPassword = $data['password'];
 

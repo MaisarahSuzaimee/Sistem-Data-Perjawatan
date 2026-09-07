@@ -12,7 +12,6 @@ use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Pest\Support\View;
 
 class JawatansTable
 {
@@ -49,7 +48,8 @@ class JawatansTable
                 //     ]),
                 TextColumn::make('greds.kod_gred')
                     ->label('Gred')
-                    ->formatStateUsing(fn($state) => collect($state)->unique()->implode(' / '))
+                    ->searchable()
+                    ->formatStateUsing(fn ($state) => collect($state)->unique()->implode(' / '))
                     ->badge()
                     ->wrap()
                     ->color(function ($record) {
@@ -64,9 +64,10 @@ class JawatansTable
                             5 => 'secondary',
                             default => 'gray',
                         };
-                    })
+                    }),
 
             ])
+            ->defaultSort('updated_at', 'desc')
             ->filters([
                 //
             ])
@@ -93,11 +94,11 @@ class JawatansTable
 
                     DeleteAction::make()
                         ->label('Padam')
-                        ->modalHeading(fn($record) => "Padam {$record->desc_jawatan}")
+                        ->modalHeading(fn ($record) => "Padam {$record->desc_jawatan}")
                         ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Padam')
-                        ->modalCancelActionLabel('Batal')
-                ])
+                        ->modalCancelActionLabel('Batal'),
+                ]),
 
             ])
             ->toolbarActions([

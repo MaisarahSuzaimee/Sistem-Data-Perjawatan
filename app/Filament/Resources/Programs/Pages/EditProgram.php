@@ -29,4 +29,9 @@ class EditProgram extends EditRecord
         return parent::getCancelFormAction()
             ->label('Batal');
     }
+
+    protected function getRedirectUrl(): ?string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

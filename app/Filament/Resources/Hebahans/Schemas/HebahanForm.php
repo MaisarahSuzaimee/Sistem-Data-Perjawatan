@@ -40,7 +40,9 @@ class HebahanForm
                         DatePicker::make('tarikh_hebahan')
                             ->label('Tarikh Hebahan')
                             ->required()
-                            ->default(now()),
+                            ->default(now())
+                            ->native(false)
+                            ->displayFormat('d F Y'),
 
                         Select::make('status')
                             ->label('Status')
@@ -53,6 +55,8 @@ class HebahanForm
 
                         DatePicker::make('dipaparkan_sehingga')
                             ->label('Dipaparkan Sehingga')
+                            ->native(false)
+                            ->displayFormat('d F Y')
                             ->helperText('Biarkan kosong jika hebahan ini tiada tarikh luput.'),
                     ]),
             ]);
