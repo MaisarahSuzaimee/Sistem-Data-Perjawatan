@@ -6,20 +6,27 @@ use Filament\Actions\Action;
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 
 class EditProfile extends BaseEditProfile
 {
-    public function getMaxContentWidth(): Width
+    public function getMaxContentWidth(): Width|string
     {
         return Width::Full;
     }
 
-    public function getMaxWidth(): Width
+    public function getMaxWidth(): Width|string
     {
         return Width::Full;
+    }
+
+    public function getFormContentComponent(): Component
+    {
+        return parent::getFormContentComponent()
+            ->extraAttributes(['class' => 'mystaff-profile-page']);
     }
 
     protected function getSaveFormAction(): Action
@@ -27,6 +34,7 @@ class EditProfile extends BaseEditProfile
         return Action::make('save')
             ->label('Simpan')
             ->color('primary')
+            ->extraAttributes(['class' => 'mystaff-btn-simpan'])
             ->requiresConfirmation()
             ->modalHeading('Pengesahan')
             ->modalDescription('Adakah anda pasti mahu simpan perubahan ini?')
@@ -38,7 +46,8 @@ class EditProfile extends BaseEditProfile
         return Action::make('cancel')
             ->label('Kembali ke Laman Utama')
             ->url('/app')
-            ->color(false);
+            ->color('gray')
+            ->extraAttributes(['class' => 'mystaff-btn-kembali']);
     }
 
     public function form(Schema $schema): Schema

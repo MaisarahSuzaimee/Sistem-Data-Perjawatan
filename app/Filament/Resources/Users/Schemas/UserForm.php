@@ -8,7 +8,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 // use Filament\Actions\Action;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class UserForm
@@ -72,11 +71,21 @@ class UserForm
                         Select::make('role')
                             ->label('Peranan')
                             ->searchable()
-                            ->options([
-                                '1' => 'Super Admin',
-                                '2' => 'Admin',
-                                '3' => 'User',
-                            ])
+                            ->options(function (): array {
+                                // Admin (role 2) only allowed to create Admin/User, not Super Admin
+                                if ((auth()->user()?->role) === 2) {
+                                    return [
+                                        '2' => 'Admin',
+                                        '3' => 'User',
+                                    ];
+                                }
+
+                                return [
+                                    '1' => 'Super Admin',
+                                    '2' => 'Admin',
+                                    '3' => 'User',
+                                ];
+                            })
                             ->default('3'),
 
                         TextInput::make('password')

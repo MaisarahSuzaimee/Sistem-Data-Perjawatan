@@ -499,6 +499,99 @@
     max-width: 100% !important;
 }
 
+/* EditProfile (simple layout) - wider form base (was 480px) - stretched left/right */
+.fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-simple-main-ctn {
+    max-width: 1150px !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+}
+
+.fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-simple-main,
+.fi-simple-main:has(.mystaff-profile-page) {
+    max-width: 1150px !important;
+    width: 100% !important;
+}
+
+@media (min-width: 1280px) {
+    .fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-simple-main-ctn,
+    .fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-simple-main,
+    .fi-simple-main:has(.mystaff-profile-page) {
+        max-width: 1250px !important;
+    }
+}
+
+/* EditProfile actions - harmonious standout, different but low-contrast */
+.mystaff-profile-page .fi-form-actions,
+.fi-simple-main:has(.mystaff-profile-page) .fi-ac {
+    gap: 0.75rem !important;
+}
+
+/* Simpan - solid teal (primary) - more prominent */
+.mystaff-btn-simpan.fi-btn,
+.fi-btn.mystaff-btn-simpan,
+.mystaff-profile-page .fi-ac-actions > *:first-child .fi-btn,
+.fi-simple-main:has(.mystaff-profile-page) .fi-ac > *:first-child .fi-btn {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
+    border-color: #0f766e !important;
+    color: #ffffff !important;
+    --tw-ring-color: rgba(20, 184, 166, 0.2) !important;
+    box-shadow: 0 8px 18px -6px rgba(20, 184, 166, 0.45), 0 3px 8px -4px rgba(15, 118, 110, 0.3) !important;
+    font-weight: 700 !important;
+    border-radius: 999px !important;
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+}
+
+.mystaff-btn-simpan.fi-btn:hover,
+.fi-btn.mystaff-btn-simpan:hover,
+.mystaff-profile-page .fi-ac-actions > *:first-child .fi-btn:hover {
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
+    border-color: #115e59 !important;
+    box-shadow: 0 12px 24px -6px rgba(20, 184, 166, 0.55), 0 5px 10px -4px rgba(15, 118, 110, 0.35) !important;
+    transform: translateY(-1px);
+}
+
+/* Kembali - soft violet (secondary) - harmonious with teal Simpan, distinct but low-contrast */
+.mystaff-btn-kembali.fi-btn,
+.fi-btn.mystaff-btn-kembali,
+.mystaff-profile-page .fi-ac-actions > *:last-child .fi-btn,
+.fi-simple-main:has(.mystaff-profile-page) .fi-ac > *:last-child .fi-btn {
+    background: #f5f3ff !important;
+    border: 1.5px solid #c4b5fd !important;
+    color: #5b21b6 !important;
+    box-shadow: 0 2px 8px -2px rgba(139, 92, 246, 0.15) !important;
+    font-weight: 600 !important;
+    border-radius: 999px !important;
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+}
+
+.mystaff-btn-kembali.fi-btn:hover,
+.fi-btn.mystaff-btn-kembali:hover,
+.mystaff-profile-page .fi-ac-actions > *:last-child .fi-btn:hover,
+.fi-simple-main:has(.mystaff-profile-page) .fi-ac > *:last-child .fi-btn:hover {
+    background: #ede9fe !important;
+    border-color: #8b5cf6 !important;
+    color: #4c1d95 !important;
+    box-shadow: 0 4px 12px -2px rgba(139, 92, 246, 0.25) !important;
+    transform: translateY(-1px);
+}
+
+.dark .mystaff-btn-kembali.fi-btn,
+.dark .fi-btn.mystaff-btn-kembali,
+.dark .mystaff-profile-page .fi-ac-actions > *:last-child .fi-btn {
+    background: #2e1065 !important;
+    border-color: #7c3aed !important;
+    color: #ddd6fe !important;
+}
+
+.dark .mystaff-btn-kembali.fi-btn:hover,
+.dark .fi-btn.mystaff-btn-kembali:hover {
+    background: #4c1d95 !important;
+    border-color: #8b5cf6 !important;
+    color: #ede9fe !important;
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━ SIDEBAR ━━━━━━━━━━━━━━━━━━━━ */
 
 .fi-sidebar {
