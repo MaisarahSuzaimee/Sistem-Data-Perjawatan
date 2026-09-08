@@ -3,16 +3,15 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\EditProfile;
+use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Auth\RequestPasswordReset;
 use App\Filament\Resources\WaranJawatans\Widgets\NamaPenyandang;
 use Filament\Actions\Action;
-use Filament\Auth\Notifications\ResetPassword;
-use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -26,9 +25,6 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Caresome\FilamentNeobrutalism\NeobrutalismeTheme;
-
-
 
 class AppPanelProvider extends PanelProvider
 {
@@ -48,9 +44,9 @@ class AppPanelProvider extends PanelProvider
             ->darkMode(true)
             ->spa()
             // ->login()
-            ->login(\App\Filament\Pages\Auth\Login::class)
-            ->passwordReset(\App\Filament\Pages\Auth\RequestPasswordReset::class,
-)
+            ->login(Login::class)
+            ->passwordReset(RequestPasswordReset::class,
+            )
             ->profile(EditProfile::class)
             ->userMenuItems([
                 'logout' => Action::make('logout')
@@ -60,6 +56,7 @@ class AppPanelProvider extends PanelProvider
                     ->modalDescription('Adakah anda pasti mahu log keluar?')
                     ->modalSubmitActionLabel('Ya, Log Keluar')
                     ->modalCancelActionLabel('Batal')
+                    ->modalSubmitAction(fn (Action $action) => $action->color('danger'))
                     ->action(function () {
                         Filament::auth()->logout();
 
