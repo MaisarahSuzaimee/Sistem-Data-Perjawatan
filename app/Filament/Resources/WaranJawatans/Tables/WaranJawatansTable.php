@@ -44,7 +44,7 @@ class WaranJawatansTable
                         }
 
                         return '<strong>'.e($record->pegawai->nama).'</strong><br>
-                        <span class="text-sm text-gray-600">'.e($record->pegawai->nokp).'</span>';
+                        <span class="text-xs text-gray-500 dark:text-gray-400">'.e($record->pegawai->nokp).'</span>';
                     })
                     ->html()
                     ->wrap()
@@ -72,31 +72,55 @@ class WaranJawatansTable
                         });
                     }),
 
-                TextColumn::make('ptj.nama_ptj')
-                    ->label('PTJ')
-                    ->sortable()
-                    ->searchable()
-                    ->wrap(),
-
                 TextColumn::make('aktiviti')
-                    ->label('Aktiviti / Jawatan')
-                    ->formatStateUsing(
-                        fn ($record) => ($record->aktiviti?->no_aktivit).' - '.($record->aktiviti?->nama_aktiviti).'<br>'.($record->jawatan_list.' , GRED '.$record->gred_list)
-                    )
+                    ->label('PTJ / Aktiviti / Jawatan')
+                    ->getStateUsing(function ($record): string {
+                        $muted = 'text-xs text-gray-500 dark:text-gray-400';
+
+                        $ptj = e($record->ptj?->nama_ptj ?? '-');
+
+                        $aktiviti = trim(
+                            ($record->aktiviti?->no_aktivit ?? '').' - '.($record->aktiviti?->nama_aktiviti ?? ''),
+                            ' -'
+                        );
+                        $aktiviti = $aktiviti !== '' ? e($aktiviti) : '-';
+
+                        $jawatanParts = [];
+                        if (filled($record->jawatan_list)) {
+                            $jawatanParts[] = $record->jawatan_list;
+                        }
+                        if (filled($record->gred_list)) {
+                            $jawatanParts[] = 'GRED '.$record->gred_list;
+                        }
+
+                        $jawatan = e($jawatanParts !== [] ? implode(' , ', $jawatanParts) : '-');
+
+                        if (filled($record->butiran)) {
+                            $jawatan .= ' ('.e($record->butiran).')';
+                        }
+
+                        return '<div class="font-medium">'.$ptj.'</div>'
+                            .'<div class="'.$muted.'">'.$aktiviti.'</div>'
+                            .'<div class="'.$muted.'">'.$jawatan.'</div>';
+                    })
                     ->html()
                     ->wrap()
                     ->sortable(
-                        query: function ($query, string $direction) {
+                        query: function ($query, string $direction): void {
                             $query
-                                ->leftJoin('aktivitis', 'waran_jawatans.aktiviti_id', '=', 'aktivitis.id')
-                                ->orderBy('aktivitis.no_aktivit', $direction)
+                                ->leftJoin('ptjs as ptj_sort', 'waran_jawatans.ptj_id', '=', 'ptj_sort.id')
+                                ->orderBy('ptj_sort.nama_ptj', $direction)
                                 ->select('waran_jawatans.*');
                         }
                     )
-                    ->searchable(query: function ($query, string $search) {
-                        $query->whereHas('aktiviti', function ($q) use ($search) {
-                            $q->where('no_aktivit', 'like', "%{$search}%")
-                                ->orWhere('nama_aktiviti', 'like', "%{$search}%");
+                    ->searchable(query: function ($query, string $search): void {
+                        $query->where(function ($q) use ($search): void {
+                            $q->whereHas('ptj', fn ($ptj) => $ptj->where('nama_ptj', 'like', "%{$search}%"))
+                                ->orWhereHas('aktiviti', function ($aktiviti) use ($search): void {
+                                    $aktiviti->where('no_aktivit', 'like', "%{$search}%")
+                                        ->orWhere('nama_aktiviti', 'like', "%{$search}%");
+                                })
+                                ->orWhere('butiran', 'like', "%{$search}%");
                         });
                     }),
 

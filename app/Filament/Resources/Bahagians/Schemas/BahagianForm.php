@@ -3,7 +3,8 @@
 namespace App\Filament\Resources\Bahagians\Schemas;
 
 use App\Models\Bahagian;
-use App\Models\Dun;
+use App\Models\Program;
+use App\Models\Ptj;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -24,21 +25,50 @@ class BahagianForm
             ->components([
                 Section::make('Maklumat Bahagian')
                     ->schema([
-                        Select::make('ptj_id')
-                            ->label('Ptj')
-                            ->relationship('ptj', 'nama_ptj')
+                        Select::make('program_id')
+                            ->label('Program')
+                            ->options(
+                                Program::query()
+                                    ->orderBy('nama_program')
+                                    ->pluck('nama_program', 'id')
+                            )
+                            ->live()
                             ->searchable()
                             ->preload()
-                            ->required()
+                            ->dehydrated(false)
+                            ->afterStateUpdated(fn (Set $set) => $set('ptj_id', null))
                             ->visible(fn ($record) => $record === null)
                             ->columnSpanFull(),
 
-                        TextInput::make('ptj_id')
-                            ->label('Ptj')
+                        Select::make('ptj_id')
+                            ->label('PTJ')
+                            ->options(function (Get $get): array {
+                                $programId = $get('program_id');
+
+                                $query = Ptj::query()
+                                    ->where('is_jkn', true)
+                                    ->orderBy('nama_ptj');
+
+                                if (filled($programId)) {
+                                    $query->whereHas('programs', fn ($q) => $q->whereKey($programId));
+                                }
+
+                                return $query->pluck('nama_ptj', 'id')->toArray();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->helperText('Hanya PTJ JKN (termasuk VEKTOR) menggunakan hierarki Bahagian.')
+                            ->visible(fn ($record) => $record === null)
+                            ->columnSpanFull(),
+
+                        TextInput::make('ptj_display')
+                            ->label('PTJ')
                             ->afterStateHydrated(function ($component, $state, $record): void {
                                 $component->state($record?->ptj?->nama_ptj);
                             })
                             ->readOnly()
+                            ->dehydrated(false)
                             ->visible(fn ($record) => $record !== null)
                             ->columnSpanFull(),
 
@@ -123,47 +153,6 @@ class BahagianForm
                                     ->modalSubmitActionLabel('Ya, Padam')
                                     ->modalCancelActionLabel('Batal');
                             }),
-
-                        // Repeater::make('units')
-
-                        //     ->label('Unit')
-                        //     ->relationship()
-                        //     ->addActionLabel('Tambah Unit')
-                        //     ->addAction(function (Action $action) {
-                        //         return $action
-                        //             ->color('info')
-                        //             ->icon('heroicon-m-plus');
-                        //     })
-                        //     ->simple(
-                        //         TextInput::make('nama_unit')
-                        //             ->required()
-                        //             ->dehydrateStateUsing(fn($state) => $state ? strtoupper($state) : null)
-                        //             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                        //     )
-                        //     ->columnSpanFull(),
-
-                        // Select::make('parlimen_id')
-                        //     ->label('Parlimen')
-                        //     ->relationship('parlimen', 'nama_parlimen')
-                        //     ->searchable()
-                        //     ->preload()
-                        //     ->live()
-                        //     ->afterStateUpdated(fn(Set $set) => $set('dun_id', null)),
-
-                        // Select::make('dun_id')
-                        //     ->label('DUN')
-                        //     ->searchable()
-                        //     ->options(function (Get $get): array {
-                        //         $parlimenId = $get('parlimen_id');
-                        //         if (blank($parlimenId))
-                        //             return [];
-                        //         return Dun::where('parlimen_id', $parlimenId)
-                        //             ->pluck('nama_dun', 'id')
-                        //             ->toArray();
-                        //     })
-                        //     ->disabled(fn(Get $get) => blank($get('parlimen_id')))
-                        //     ->helperText('Sila pilih Parlimen dahulu'),
-
                     ])
                     ->columns(2)
                     ->columnSpanFull(),

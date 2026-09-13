@@ -212,13 +212,7 @@ function openEditModal(id) {
 }
 
 function initCascading() {
-    // PTJ → Bahagian
-    const ptjSelect = document.querySelector('[name="ptj_id"]');
-    if (ptjSelect) {
-        ptjSelect.addEventListener('change', function() {
-            fetchOptions('/api/bahagian?ptj_id=' + this.value, 'bahagian_id');
-        });
-    }
+    // Org hierarchy no longer cascades Bahagian from PTJ
 }
 </script>
 @endpush

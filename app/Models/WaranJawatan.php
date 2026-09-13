@@ -105,6 +105,11 @@ class WaranJawatan extends Model
 
             $user = auth()->user();
 
+            // No authenticated user (Artisan, Queue, tests, etc.)
+            if (! $user) {
+                return;
+            }
+
             // superadmin & admin can see all
             if (in_array($user->role, [1, 2])) {
                 return;
@@ -121,10 +126,7 @@ class WaranJawatan extends Model
                         $pegawaiQuery->where('ptj_id', $user->ptj_id);
                     });
             });
-
-            // });
         });
-
     }
 
     public function tbk()

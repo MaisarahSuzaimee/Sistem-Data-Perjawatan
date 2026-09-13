@@ -21,11 +21,14 @@ class SubunitResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama_subunit';
 
-    protected static ?string $navigationLabel = 'Sub Unit';
-    protected static ?string $modelLabel = 'Sub Unit';
-    protected static ?string $pluralModelLabel = 'Sub Unit';
+    protected static ?string $navigationLabel = 'KD / KKIA / Wad / Klinik';
+
+    protected static ?string $modelLabel = 'KD / KKIA / Wad / Klinik';
+
+    protected static ?string $pluralModelLabel = 'KD / KKIA / Wad / Klinik';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
+
     protected static ?int $navigationSort = 24;
 
     public static function form(Schema $schema): Schema

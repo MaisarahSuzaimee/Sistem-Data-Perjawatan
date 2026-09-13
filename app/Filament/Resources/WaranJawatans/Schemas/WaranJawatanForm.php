@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\WaranJawatans\Schemas;
 
-use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
 use App\Models\Jawatan_Gred;
@@ -114,11 +113,40 @@ class WaranJawatanForm
                                     ->multiple()
                                     ->live(),
 
+                                Select::make('program_id')
+                                    ->label('Program (Organisasi)')
+                                    ->options(
+                                        Program::query()
+                                            ->orderBy('nama_program')
+                                            ->pluck('nama_program', 'id')
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->afterStateHydrated(function ($component, $state, $record): void {
+                                        $component->state($record?->ptj?->programs?->first()?->id);
+                                    })
+                                    ->afterStateUpdated(fn (Set $set) => $set('ptj_id', null))
+                                    ->columnSpanFull()
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    ),
+
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    ->options(
-                                        Ptj::pluck('nama_ptj', 'id')
-                                    )
+                                    ->options(function (Get $get): array {
+                                        $programId = $get('program_id');
+
+                                        $query = Ptj::query()->orderBy('nama_ptj');
+
+                                        if (filled($programId)) {
+                                            $query->whereHas('programs', fn ($q) => $q->whereKey($programId));
+                                        }
+
+                                        return $query->pluck('nama_ptj', 'id')->toArray();
+                                    })
                                     ->searchable()
                                     ->preload()
                                     ->live()
@@ -128,28 +156,6 @@ class WaranJawatanForm
                                         fn () => ! auth()->user()?->isSuperadmin()
                                         && ! auth()->user()?->isAdmin()
                                     ),
-
-                                Select::make('bahagian_id')
-                                    ->label('Bahagian')
-                                    ->options(function (Get $get) {
-
-                                        $ptjId = $get('ptj_id');
-
-                                        if (blank($ptjId)) {
-                                            return [];
-                                        }
-
-                                        return Bahagian::query()
-                                            ->where('ptj_id', $ptjId)
-                                            ->orderBy('nama_bahagian')
-                                            ->pluck('nama_bahagian', 'id')
-                                            ->toArray();
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->live()
-                                    ->disabled(fn (Get $get) => blank($get('ptj_id')))
-                                    ->columnSpanFull(),
 
                             ]),
 

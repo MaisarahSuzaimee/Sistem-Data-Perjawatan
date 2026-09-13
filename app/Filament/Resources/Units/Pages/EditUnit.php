@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Units\Pages;
 use App\Filament\Resources\Units\UnitResource;
 use App\Models\Unit;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,20 +38,31 @@ class EditUnit extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
+        $ptjId = $record->ptj_id;
         $bahagianId = $record->bahagian_id;
 
         $unitsData = $data['units'] ?? [];
 
         if (is_array($unitsData) && count($unitsData) > 0) {
-            $existing = Unit::where('bahagian_id', $bahagianId)->get()->keyBy('id');
+            $existingQuery = Unit::query();
+
+            if (filled($bahagianId)) {
+                $existingQuery->where('bahagian_id', $bahagianId);
+            } else {
+                $existingQuery->where('ptj_id', $ptjId)->whereNull('bahagian_id');
+            }
+
+            $existing = $existingQuery->get()->keyBy('id');
 
             $keepIds = [];
 
             foreach ($unitsData as $item) {
                 $id = $item['id'] ?? null;
                 $payload = [
+                    'ptj_id' => $ptjId,
                     'bahagian_id' => $bahagianId,
                     'nama_unit' => strtoupper(trim((string) ($item['nama_unit'] ?? ''))),
+                    'aktiviti_id' => $item['aktiviti_id'] ?? null,
                     'parlimen_id' => $item['parlimen_id'] ?? null,
                     'dun_id' => $item['dun_id'] ?? null,
                 ];
@@ -81,7 +91,7 @@ class EditUnit extends EditRecord
         }
 
         // Fallback single update
-        unset($data['units'], $data['ptj_id']);
+        unset($data['units'], $data['program_id'], $data['program_display'], $data['ptj_display'], $data['bahagian_display']);
 
         if (isset($data['nama_unit'])) {
             $data['nama_unit'] = strtoupper((string) $data['nama_unit']);

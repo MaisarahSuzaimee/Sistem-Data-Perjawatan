@@ -38,7 +38,6 @@ it('renders the create pegawai page as a wizard', function () {
 it('renders the edit pegawai page wizard pre-filled', function () {
     $pegawai = Pegawai::create([
         'ptj_id' => 1,
-        'bahagian_id' => 1,
         'unit_id' => 1,
         'subunit_id' => 1,
         'jawatan_gred_id' => 1,
@@ -58,7 +57,6 @@ it('renders the edit pegawai page wizard pre-filled', function () {
 it('allows editing but locks Maklumat Pegawai when a waran is assigned', function () {
     $pegawai = Pegawai::create([
         'ptj_id' => 1,
-        'bahagian_id' => 1,
         'unit_id' => 1,
         'subunit_id' => 1,
         'jawatan_gred_id' => 1,
@@ -76,7 +74,8 @@ it('allows editing but locks Maklumat Pegawai when a waran is assigned', functio
         'updated_at' => now(),
     ]);
 
-    // Edit page is still accessible — only Maklumat Pegawai step is locked.
+    // Edit page is still accessible — most Maklumat Pegawai fields stay locked,
+    // but Unit / Subunit remain editable after waran assignment.
     $this->get('/app/pegawais/'.$pegawai->getKey().'/edit')
         ->assertSuccessful()
         ->assertSee('PEGAWAI BERWARAN')
@@ -88,17 +87,14 @@ it('allows editing but locks Maklumat Pegawai when a waran is assigned', functio
     $this->get('/app/pegawais/'.$pegawai->getKey())
         ->assertSuccessful();
 
-    // Verify Maklumat Pegawai fields are disabled via Livewire form state.
+    // Verify form still loads without error when waran is assigned.
     $component = Livewire::test(EditPegawai::class, ['record' => $pegawai->getKey()]);
-    // Filament marks disabled fields; we assert the form still loads without error
-    // and that Jenis Lantikan remains editable (e.g., is_tetap checkbox not disabled).
     $component->assertSuccessful();
 });
 
 it('still allows editing when no waran is assigned', function () {
     $pegawai = Pegawai::create([
         'ptj_id' => 1,
-        'bahagian_id' => 1,
         'unit_id' => 1,
         'subunit_id' => 1,
         'jawatan_gred_id' => 1,

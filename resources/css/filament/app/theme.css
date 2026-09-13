@@ -674,10 +674,14 @@
         display: flex !important;
     }
 
-    /* 3. Content: left margin compensates for fixed sidebar being out of flex flow */
+    /* 3. Content: left margin compensates for fixed sidebar being out of flex flow.
+          Shrink width so margin-left does not cause horizontal overflow. */
     .fi-main-ctn {
         margin-left: var(--sidebar-width) !important;
+        width: calc(100% - var(--sidebar-width)) !important;
+        max-width: calc(100% - var(--sidebar-width)) !important;
         min-width: 0 !important;
+        box-sizing: border-box !important;
     }
 }
 
@@ -960,13 +964,16 @@
 
 /* ━━━━━━━━━━━━━━━━━━━━ TOPBAR ━━━━━━━━━━━━━━━━━━━━ */
 
-/* Ctn is just a positioning wrapper — it mirrors .fi-main-ctn's own
-   margin-left exactly, so its box is the same width as .fi-main-ctn's.
-   All visual styling lives on .fi-topbar (below), matching how .fi-main
-   centers inside .fi-main-ctn — this is what makes the two align. */
+/* Ctn mirrors .fi-main-ctn width/offset so the floating topbar card
+   aligns with main content without overflowing the viewport. */
 .fi-topbar-ctn {
     @media (min-width: 1024px) {
         margin-left: var(--sidebar-width) !important;
+        width: calc(100% - var(--sidebar-width)) !important;
+        max-width: calc(100% - var(--sidebar-width)) !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        padding-inline: 1rem !important;
     }
 }
 
@@ -974,10 +981,12 @@
     background-color: var(--sneat-paper-bg) !important;
     border-bottom: 1px solid var(--sneat-border) !important;
     box-shadow: 0 1px 4px rgba(161, 172, 184, 0.12) !important;
+    min-width: 0 !important;
 
     /* Desktop: centered box matching the content cards' effective width
        (80rem content max-width minus its own 2rem+2rem inner padding) */
     @media (min-width: 1024px) {
+        width: 100% !important;
         max-width: 76rem !important;
         margin: 1.25rem auto 0 auto !important;
         border-bottom: none !important;
@@ -1163,12 +1172,14 @@
     border-radius: var(--sneat-radius) !important;
     box-shadow: var(--sneat-shadow-sm) !important;
     border: 1px solid var(--sneat-border) !important;
+    min-width: 0;
+    max-width: 100%;
 }
 
-/* Clip only the table rows (not the header toolbar), so dropdowns like the
-   "Columns" panel aren't cut off when the table is short. */
+/* Allow horizontal scroll on narrow viewports instead of clipping wide tables. */
 .fi-ta-content-ctn {
-    overflow: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     border-radius: var(--sneat-radius);
 }
 
@@ -1176,6 +1187,7 @@
 .fi-ta-table {
     border-collapse: collapse !important;
     width: 100% !important;
+    min-width: 100%;
 }
 
 /* Header cells — tinted background, uppercase label, right border for column dividers */

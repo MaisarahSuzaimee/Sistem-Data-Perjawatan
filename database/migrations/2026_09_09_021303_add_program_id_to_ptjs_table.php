@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subunits', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->integer('unit_id');
-            $table->integer('dun_id')->nullable();
-            $table->string('nama_subunit')->nullable();
-            $table->timestamps();
+        Schema::table('ptjs', function (Blueprint $table) {
+            $table->unsignedBigInteger('program_id')->nullable()->after('id');
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('subunits');
+        Schema::table('ptjs', function (Blueprint $table) {
+            $table->dropColumn('program_id');
+        });
     }
 };

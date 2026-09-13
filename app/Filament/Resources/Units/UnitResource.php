@@ -20,9 +20,13 @@ class UnitResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static ?string $recordTitleAttribute = 'nama_unit';
-    protected static ?string $navigationLabel = 'Unit';
-    protected static ?string $modelLabel = 'Unit';
-    protected static ?string $pluralModelLabel = 'Unit';
+
+    protected static ?string $navigationLabel = 'Jabatan / KK / KP';
+
+    protected static ?string $modelLabel = 'Jabatan / KK / KP';
+
+    protected static ?string $pluralModelLabel = 'Jabatan / KK / KP';
+
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
     protected static ?int $navigationSort = 23;
@@ -52,5 +56,4 @@ class UnitResource extends Resource
             'edit' => EditUnit::route('/{record}/edit'),
         ];
     }
-    
 }

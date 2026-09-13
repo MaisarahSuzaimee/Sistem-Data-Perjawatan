@@ -100,4 +100,79 @@ class Pegawai extends Model
     {
         return $this->hasOne(WaranJawatan::class, 'pegawai_id');
     }
+
+    public function isTidakLengkap(): bool
+    {
+        if ($this->ptj_id === null) {
+            return true;
+        }
+
+        if ($this->ptj?->usesBahagianHierarchy() && $this->bahagian_id === null) {
+            return true;
+        }
+
+        // Unit: must be filled or "Tiada Unit" checked
+        if ($this->unit_id === null && (int) $this->ada_unit === 0) {
+            return true;
+        }
+
+        // Subunit: must be filled or "Tiada Subunit" checked
+        if ($this->subunit_id === null && (int) $this->ada_subunit === 0) {
+            return true;
+        }
+
+        $hasWaran = $this->waranJawatan()
+            ->withoutGlobalScopes()
+            ->whereHas('waran')
+            ->exists();
+
+        if (! $hasWaran) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  Builder<Pegawai>  $query
+     * @return Builder<Pegawai>
+     */
+    public function scopeTidakLengkap(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q): void {
+            $q->whereNull('ptj_id')
+                ->orWhere(function (Builder $q): void {
+                    $q->whereNull('bahagian_id')
+                        ->whereHas('ptj', fn (Builder $ptj): Builder => $ptj->where('is_jkn', true));
+                })
+                ->orWhere(function (Builder $q): void {
+                    $q->whereNull('unit_id')->where('ada_unit', 0);
+                })
+                ->orWhere(function (Builder $q): void {
+                    $q->whereNull('subunit_id')->where('ada_subunit', 0);
+                })
+                ->orWhereDoesntHave('waranJawatan.waran');
+        });
+    }
+
+    /**
+     * @param  Builder<Pegawai>  $query
+     * @return Builder<Pegawai>
+     */
+    public function scopeLengkap(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('ptj_id')
+            ->where(function (Builder $q): void {
+                $q->whereDoesntHave('ptj', fn (Builder $ptj): Builder => $ptj->where('is_jkn', true))
+                    ->orWhereNotNull('bahagian_id');
+            })
+            ->where(function (Builder $q): void {
+                $q->whereNotNull('unit_id')->orWhere('ada_unit', 1);
+            })
+            ->where(function (Builder $q): void {
+                $q->whereNotNull('subunit_id')->orWhere('ada_subunit', 1);
+            })
+            ->whereHas('waranJawatan.waran');
+    }
 }

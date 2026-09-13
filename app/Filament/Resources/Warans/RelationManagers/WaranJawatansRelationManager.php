@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Warans\RelationManagers;
 use App\Filament\Resources\WaranJawatans\WaranJawatanResource;
 use App\Filament\Resources\Warans\Pages\ViewWaran;
 use App\Filament\Resources\Warans\WaranResource;
-use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
 use App\Models\Jawatan_Gred;
@@ -146,11 +145,40 @@ class WaranJawatansRelationManager extends RelationManager
                                     ->multiple()
                                     ->live(),
 
+                                Select::make('program_id')
+                                    ->label('Program (Organisasi)')
+                                    ->options(
+                                        Program::query()
+                                            ->orderBy('nama_program')
+                                            ->pluck('nama_program', 'id')
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->afterStateHydrated(function ($component, $state, $record): void {
+                                        $component->state($record?->ptj?->programs?->first()?->id);
+                                    })
+                                    ->afterStateUpdated(fn (Set $set) => $set('ptj_id', null))
+                                    ->columnSpanFull()
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    ),
+
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    ->options(
-                                        Ptj::pluck('nama_ptj', 'id')
-                                    )
+                                    ->options(function (Get $get): array {
+                                        $programId = $get('program_id');
+
+                                        $query = Ptj::query()->orderBy('nama_ptj');
+
+                                        if (filled($programId)) {
+                                            $query->whereHas('programs', fn ($q) => $q->whereKey($programId));
+                                        }
+
+                                        return $query->pluck('nama_ptj', 'id')->toArray();
+                                    })
                                     ->searchable()
                                     ->preload()
                                     ->live()
@@ -160,28 +188,6 @@ class WaranJawatansRelationManager extends RelationManager
                                         fn () => ! auth()->user()?->isSuperadmin()
                                         && ! auth()->user()?->isAdmin()
                                     ),
-
-                                Select::make('bahagian_id')
-                                    ->label('Bahagian')
-                                    ->options(function (Get $get) {
-
-                                        $ptjId = $get('ptj_id');
-
-                                        if (blank($ptjId)) {
-                                            return [];
-                                        }
-
-                                        return Bahagian::query()
-                                            ->where('ptj_id', $ptjId)
-                                            ->orderBy('nama_bahagian')
-                                            ->pluck('nama_bahagian', 'id')
-                                            ->toArray();
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->live()
-                                    ->disabled(fn (Get $get) => blank($get('ptj_id')))
-                                    ->columnSpanFull(),
 
                                 Select::make('status')
                                     ->required()
@@ -660,9 +666,9 @@ class WaranJawatansRelationManager extends RelationManager
 
                                                     TextEntry::make('ptj.nama_ptj')
                                                         ->label('PTJ'),
-                                                    TextEntry::make('bahagian.nama_bahagian')
-                                                        ->label('Bahagian')
-                                                        ->state(fn ($record) => $record->bahagian?->nama_bahagian)
+                                                    TextEntry::make('ptj.programs.nama_program')
+                                                        ->label('Program')
+                                                        ->getStateUsing(fn ($record) => $record->ptj?->programs?->pluck('nama_program')->filter()->implode(', ') ?: null)
                                                         ->placeholder('Tiada'),
 
                                                     TextEntry::make('status')
@@ -727,12 +733,6 @@ class WaranJawatansRelationManager extends RelationManager
                                                     TextEntry::make('ptj_asal')
                                                         ->label('PTJ')
                                                         ->getStateUsing(fn ($record) => $record->pegawai?->ptj?->nama_ptj)
-                                                        ->placeholder('Tiada')
-                                                        ->columnSpanFull()
-                                                        ->visible(fn ($record) => $record->pegawai_id !== null),
-                                                    TextEntry::make('bahagian_asal')
-                                                        ->label('Bahagian')
-                                                        ->getStateUsing(fn ($record) => $record->pegawai?->bahagian?->nama_bahagian)
                                                         ->placeholder('Tiada')
                                                         ->columnSpanFull()
                                                         ->visible(fn ($record) => $record->pegawai_id !== null),

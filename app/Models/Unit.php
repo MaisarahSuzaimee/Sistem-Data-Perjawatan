@@ -3,33 +3,50 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Unit extends Model
 {
-     use SoftDeletes;
+    use SoftDeletes;
+
     protected $fillable = [
+        'ptj_id',
         'bahagian_id',
         'nama_unit',
         'parlimen_id',
         'dun_id',
+        'aktiviti_id',
     ];
 
-    public function bahagian()
+    public function ptj(): BelongsTo
     {
-        return $this->belongsTo(Bahagian::class, 'bahagian_id');
-
+        return $this->belongsTo(Ptj::class, 'ptj_id');
     }
 
-        public function parlimen()
+    public function bahagian(): BelongsTo
+    {
+        return $this->belongsTo(Bahagian::class, 'bahagian_id');
+    }
+
+    public function aktiviti(): BelongsTo
+    {
+        return $this->belongsTo(Aktiviti::class, 'aktiviti_id');
+    }
+
+    public function subunits(): HasMany
+    {
+        return $this->hasMany(Subunit::class);
+    }
+
+    public function parlimen(): BelongsTo
     {
         return $this->belongsTo(Parlimen::class);
     }
 
-    public function dun()
+    public function dun(): BelongsTo
     {
         return $this->belongsTo(Dun::class);
     }
-
-   
 }

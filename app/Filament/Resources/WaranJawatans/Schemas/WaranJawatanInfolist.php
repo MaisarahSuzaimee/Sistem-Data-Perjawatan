@@ -42,15 +42,10 @@ class WaranJawatanInfolist
                                 TextEntry::make('ptj.nama_ptj')
                                     ->label('PTJ')
                                     ->columnSpanFull(),
-                                TextEntry::make('bahagian.nama_bahagian')
-                                    ->label('Bahagian')
-                                    ->state(function ($record) {
-                                        if ($record->bahagian_id == null) {
-                                            return 'Tiada';
-                                        } else {
-                                            return $record->bahagian?->nama_bahagian;
-                                        }
-                                    })
+                                TextEntry::make('ptj.programs.nama_program')
+                                    ->label('Program')
+                                    ->getStateUsing(fn ($record) => $record->ptj?->programs?->pluck('nama_program')->filter()->implode(', ') ?: null)
+                                    ->placeholder('Tiada')
                                     ->columnSpanFull(),
 
                                 TextEntry::make('status')
@@ -124,17 +119,6 @@ class WaranJawatanInfolist
                                             return 'Tiada';
                                         } else {
                                             return $record->pegawai?->ptj?->nama_ptj;
-                                        }
-                                    })
-                                    ->columnSpanFull()
-                                    ->visible(fn ($record) => $record->pegawai_id !== null),
-                                TextEntry::make('bahagian_asal')
-                                    ->label('Bahagian')
-                                    ->getStateUsing(function ($record) {
-                                        if ($record->pegawai_id == null) {
-                                            return 'Tiada';
-                                        } else {
-                                            return $record->pegawai?->bahagian?->nama_bahagian;
                                         }
                                     })
                                     ->columnSpanFull()

@@ -59,6 +59,7 @@ class EditSubunit extends EditRecord
                 $payload = [
                     'unit_id' => $unitId,
                     'nama_subunit' => $nama,
+                    'aktiviti_id' => $row['aktiviti_id'] ?? null,
                     'parlimen_id' => $row['parlimen_id'] ?? null,
                     'dun_id' => $row['dun_id'] ?? null,
                 ];
