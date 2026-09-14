@@ -38,43 +38,68 @@ class PegawaisTable
                     ->width(1),
                 TextColumn::make('nama')
                     ->label('Pegawai')
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function (Pegawai $record): string {
+                        $tidakLengkap = $record->isTidakLengkap();
+                        $statusLabel = $tidakLengkap ? 'Tidak Lengkap' : 'Lengkap';
+                        $statusClasses = $tidakLengkap
+                            ? 'bg-danger-soft text-fg-danger-strong'
+                            : 'bg-success-soft text-fg-success-strong';
 
-                        $html =
-                            '<strong>'.($record->nama ?? '').'</strong><br>'.
-                            '<span class="text-xs text-gray-500">'.($record->nokp ?? '').'</span><br>'.
-                            '<span class="text-xs text-gray-500">'.($record->jawatan_gred ? $record->jawatan_gred->jawatan->desc_jawatan.
-                                ' ('.$record->jawatan_gred->gred->kod_gred.')' : '');
-
-                        return $html;
-                        // $lantikan = match (true) {
-                        //     $record->is_tetap == 1 => ['TETAP'],
-                        //     $record->is_kontrak == 1 => ['KONTRAK'],
-                        //     $record->is_kontrak_interim == 1 => ['KONTRAK INTERIM'],
-                        //     default => ['-', 'gray'],
-                        // };
-
-                        // return
-                        //     '<strong>' . ($record->nama ?? '-') . '</strong><br>' .
-                        //     ($record->nokp ?? '-') . '<br>' .
-                        //     ($record->jawatan_gred
-                        //         ? $record->jawatan_gred->jawatan->desc_jawatan .
-                        //         ' (' . $record->jawatan_gred->gred->kod_gred . ')'
-                        //         : '-');
-
+                        return '<strong>'.e($record->nama ?? '').'</strong><br> '
+                            .'<span class="text-xs text-gray-500">'.e($record->nokp ?? '').'</span><br>'
+                             .'<span class="fi-badge inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium '.$statusClasses.'">'
+                            .e($statusLabel)
+                            .'</span><br>';
                     })
                     ->html()
                     ->searchable(query: function ($query, string $search) {
-                        $query->where('nama', 'like', "%{$search}%")
-                            ->orWhere('nokp', 'like', "%{$search}%")
-                            ->orWhereHas('jawatan_gred.jawatan', function ($q) use ($search) {
-                                $q->where('desc_jawatan', 'like', "%{$search}%");
-                            })
-                            ->orWhereHas('jawatan_gred.gred', function ($q) use ($search) {
-                                $q->where('kod_gred', 'like', "%{$search}%");
-                            });
+                        $searchLower = strtolower($search);
+
+                        $query->where(function ($q) use ($search, $searchLower): void {
+                            $q->where('nama', 'like', "%{$search}%")
+                                ->orWhere('nokp', 'like', "%{$search}%")
+                                ->orWhereHas('jawatan_gred.jawatan', function ($jawatan) use ($search): void {
+                                    $jawatan->where('desc_jawatan', 'like', "%{$search}%");
+                                })
+                                ->orWhereHas('jawatan_gred.gred', function ($gred) use ($search): void {
+                                    $gred->where('kod_gred', 'like', "%{$search}%");
+                                });
+
+                            if (str_contains($searchLower, 'tidak lengkap')) {
+                                $q->orWhere(fn ($status) => $status->tidakLengkap());
+                            } elseif (str_contains($searchLower, 'lengkap')) {
+                                $q->orWhere(fn ($status) => $status->lengkap());
+                            }
+                        });
                     })
-                    ->sortable(),
+                    ->sortable(
+                        query: function ($query, string $direction): void {
+                            $query->orderByRaw("
+                                                    CASE
+                                                        WHEN ptj_id IS NULL
+                                                            OR (
+                                                                bahagian_id IS NULL
+                                                                AND EXISTS (
+                                                                    SELECT 1 FROM ptjs
+                                                                    WHERE ptjs.id = pegawais.ptj_id
+                                                                      AND ptjs.is_jkn = 1
+                                                                )
+                                                            )
+                                                            OR (unit_id IS NULL AND ada_unit = 0)
+                                                            OR (subunit_id IS NULL AND ada_subunit = 0)
+                                                            OR NOT EXISTS (
+                                                                SELECT 1
+                                                                FROM waran_jawatans
+                                                                INNER JOIN warans ON warans.id = waran_jawatans.waran_id
+                                                                WHERE waran_jawatans.pegawai_id = pegawais.id
+                                                                  AND waran_jawatans.deleted_at IS NULL
+                                                            )
+                                                        THEN 0
+                                                        ELSE 1
+                                                    END {$direction}
+                                                ");
+                        }
+                    ),
 
                 TextColumn::make('ptj')
                     ->label('PTJ')
@@ -82,7 +107,9 @@ class PegawaisTable
 
                         $html =
                             '<strong>'.($record->ptj?->nama_ptj ?? '').'</strong><br>'.
-                            '<span class="text-xs text-gray-500">'.($record->bahagian?->nama_bahagian ?? '').'</span>';
+                            '<span class="text-xs text-gray-500">'.($record->jawatan_gred ? $record->jawatan_gred->jawatan->desc_jawatan.
+                            ' ('.$record->jawatan_gred->gred->kod_gred.')' : '');
+                        // '<span class="text-xs text-gray-500">'.($record->ptj?->programs?->pluck('nama_program')->filter()->implode(', ') ?? '').'</span>';
 
                         $waranJawatan = $record->waranJawatan;
 
@@ -109,12 +136,11 @@ class PegawaisTable
                     )
                     ->searchable(query: function ($query, string $search) {
                         $query->whereHas('ptj', function ($q) use ($search) {
-                            $q->where('nama_ptj', 'like', "%{$search}%");
-
-                        })
-                            ->orWhereHas('bahagian', function ($q) use ($search) {
-                                $q->where('nama_bahagian', 'like', "%{$search}%");
-                            });
+                            $q->where('nama_ptj', 'like', "%{$search}%")
+                                ->orWhereHas('programs', function ($p) use ($search) {
+                                    $p->where('nama_program', 'like', "%{$search}%");
+                                });
+                        });
                     }),
 
                 TextColumn::make('waran')
@@ -146,130 +172,6 @@ class PegawaisTable
                                 ->select('pegawais.*');
                         }
                     ),
-
-                TextColumn::make('status')
-                    ->label('Status')
-                    ->getStateUsing(function (Pegawai $record) {
-
-                        $noWaran = $record->waranJawatan?->first()?->waran?->no_waran;
-
-                        $tidakLengkap =
-                            is_null($record->ptj_id) ||
-                            is_null($record->bahagian_id) ||
-                            (
-                                is_null($record->subunit_id) &&
-                                $record->ada_unit == 0
-                            ) ||
-                            (
-                                is_null($record->unit_id) &&
-                                $record->ada_subunit == 0
-                            ) ||
-                            (
-                                $record->is_jtw == 0 &&
-                                $record->is_kontrak == 0 &&
-                                is_null($noWaran)
-                            );
-
-                        return $tidakLengkap ? 'Tidak Lengkap' : 'Lengkap';
-                    })
-                    ->badge()
-                    ->color(function (Pegawai $record) {
-
-                        $noWaran = $record->waranJawatan?->first()?->waran?->no_waran;
-
-                        $tidakLengkap =
-                            is_null($record->ptj_id) ||
-                            is_null($record->bahagian_id) ||
-                            (
-                                is_null($record->subunit_id) &&
-                                $record->ada_unit == 0
-                            ) ||
-                            (
-                                is_null($record->unit_id) &&
-                                $record->ada_subunit == 0
-                            ) ||
-                            (
-                                $record->is_jtw == 0 &&
-                                $record->is_kontrak == 0 &&
-                                is_null($noWaran)
-                            );
-
-                        return $tidakLengkap ? 'danger' : 'success';
-                    })
-                    ->searchable(
-                        query: function ($query, string $search) {
-
-                            $search = strtolower($search);
-
-                            if (str_contains($search, 'tidak lengkap')) {
-                                $query->where(function ($q) {
-                                    $q->whereNull('ptj_id')
-                                        ->orWhereNull('bahagian_id')
-
-                                        ->orWhere(function ($q) {
-                                            $q->whereNull('subunit_id')
-                                                ->where('ada_unit', 0);
-                                        })
-
-                                        ->orWhere(function ($q) {
-                                            $q->whereNull('unit_id')
-                                                ->where('ada_subunit', 0);
-                                        })
-
-                                        ->orWhere(function ($q) {
-                                            $q->where('is_jtw', 0)
-                                                ->where('is_kontrak', 0)
-                                                ->whereDoesntHave('waranJawatan');
-                                        });
-                                });
-                            }
-
-                            if (str_contains($search, 'lengkap') && ! str_contains($search, 'tidak lengkap')) {
-                                $query->whereNotNull('ptj_id')
-                                    ->whereNotNull('bahagian_id')
-
-                                    ->where(function ($q) {
-                                        $q->whereNotNull('subunit_id')
-                                            ->orWhere('ada_unit', 1);
-                                    })
-
-                                    ->where(function ($q) {
-                                        $q->whereNotNull('unit_id')
-                                            ->orWhere('ada_subunit', 1);
-                                    })
-
-                                    ->where(function ($q) {
-                                        $q->where('is_jtw', 1)
-                                            ->orWhere('is_kontrak', 1)
-                                            ->orWhereHas('waranJawatan');
-                                    });
-                            }
-                        }
-                    )
-                    ->sortable(
-                        query: function ($query, string $direction) {
-
-                            $query->orderByRaw("
-                                                    CASE
-                                                        WHEN ptj_id IS NULL
-                                                            OR bahagian_id IS NULL
-                                                            OR (subunit_id IS NULL AND ada_unit = 0)
-                                                            OR (unit_id IS NULL AND ada_subunit = 0)
-                                                            OR (
-                                                                is_jtw = 0
-                                                                AND is_kontrak = 0
-                                                                AND NOT EXISTS (
-                                                                    SELECT 1
-                                                                    FROM waran_jawatans
-                                                                    WHERE waran_jawatans.pegawai_id = pegawais.id
-                                                                )
-                                                            )
-                                                        THEN 0
-                                                        ELSE 1
-                                                    END {$direction}
-                                                ");
-                        }
-                    ),
             ])
             ->filters([
                 SelectFilter::make('ptj_id')
@@ -287,41 +189,11 @@ class PegawaisTable
                         $value = $data['value'] ?? null;
 
                         if ($value === 'Tidak Lengkap') {
-                            $query->where(function ($q) {
-                                $q->whereNull('ptj_id')
-                                    ->orWhereNull('bahagian_id')
-                                    ->orWhere(function ($q) {
-                                        $q->whereNull('subunit_id')
-                                            ->where('ada_unit', 0);
-                                    })
-                                    ->orWhere(function ($q) {
-                                        $q->whereNull('unit_id')
-                                            ->where('ada_subunit', 0);
-                                    })
-                                    ->orWhere(function ($q) {
-                                        $q->where('is_jtw', 0)
-                                            ->where('is_kontrak', 0)
-                                            ->whereDoesntHave('waranJawatan');
-                                    });
-                            });
+                            $query->tidakLengkap();
                         }
 
                         if ($value === 'Lengkap') {
-                            $query->whereNotNull('ptj_id')
-                                ->whereNotNull('bahagian_id')
-                                ->where(function ($q) {
-                                    $q->whereNotNull('subunit_id')
-                                        ->orWhere('ada_unit', 1);
-                                })
-                                ->where(function ($q) {
-                                    $q->whereNotNull('unit_id')
-                                        ->orWhere('ada_subunit', 1);
-                                })
-                                ->where(function ($q) {
-                                    $q->where('is_jtw', 1)
-                                        ->orWhere('is_kontrak', 1)
-                                        ->orWhereHas('waranJawatan');
-                                });
+                            $query->lengkap();
                         }
 
                         return $query;

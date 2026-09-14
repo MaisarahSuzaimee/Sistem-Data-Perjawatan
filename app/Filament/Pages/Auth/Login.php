@@ -51,6 +51,7 @@ class Login extends BaseLogin
         return [
             'nokp' => $data['nokp'],
             'password' => $data['password'],
+            'status' => 1,
         ];
     }
 

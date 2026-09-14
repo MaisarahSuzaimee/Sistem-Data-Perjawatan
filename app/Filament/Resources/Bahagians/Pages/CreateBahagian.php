@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\Bahagians\Pages;
 
 use App\Filament\Resources\Bahagians\BahagianResource;
+use App\Models\Ptj;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 class CreateBahagian extends CreateRecord
 {
@@ -46,6 +48,14 @@ class CreateBahagian extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
+        $ptjId = isset($data['ptj_id']) ? (int) $data['ptj_id'] : null;
+
+        if (! Ptj::usesBahagianHierarchyFor($ptjId)) {
+            throw ValidationException::withMessages([
+                'ptj_id' => 'Bahagian hanya dibenarkan untuk PTJ JKN (termasuk VEKTOR).',
+            ]);
+        }
+
         $items = $data['bahagians'] ?? null;
 
         if (is_array($items) && count($items) > 0) {

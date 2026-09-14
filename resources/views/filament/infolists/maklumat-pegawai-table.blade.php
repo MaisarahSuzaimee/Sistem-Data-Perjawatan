@@ -63,20 +63,22 @@
                 </span>
             </th>
             <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->ptj?->nama_ptj }}
+                {{ $record->ptj?->nama_ptj }}@if($record->ptj?->programs?->isNotEmpty())<span class="text-xs text-gray-500"> ({{ $record->ptj->programs->pluck('nama_program')->filter()->implode(', ') }})</span>@endif
             </td>
         </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-building-office" class="w-4 h-4 text-fg-lime" />
-                    Bahagian
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->bahagian?->nama_bahagian }}
-            </td>
-        </tr>
+        @if(filled($record->bahagian?->nama_bahagian))
+            <tr>
+                <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
+                    <span class="inline-flex items-center gap-2">
+                        <x-filament::icon icon="heroicon-o-building-office" class="w-4 h-4 text-fg-cyan" />
+                        Bahagian
+                    </span>
+                </th>
+                <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
+                    {{ $record->bahagian?->nama_bahagian }}
+                </td>
+            </tr>
+        @endif
         <tr>
             <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
                 <span class="inline-flex items-center gap-2">

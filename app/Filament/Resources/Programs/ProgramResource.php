@@ -30,8 +30,7 @@ class ProgramResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
-        protected static ?int $navigationSort = 19;
-
+    protected static ?int $navigationSort = 19;
 
     public static function form(Schema $schema): Schema
     {
@@ -59,10 +58,9 @@ class ProgramResource extends Resource
         ];
     }
 
-
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['aktiviti.butiran']);
+            ->with(['aktiviti.ptjs', 'aktiviti.butiran', 'ptjs.aktivitis']);
     }
 }

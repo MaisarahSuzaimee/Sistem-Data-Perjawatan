@@ -8,7 +8,6 @@ use App\Models\Jawatan;
 use App\Models\Jawatan_Gred;
 use App\Models\OpsyenPencen;
 use App\Models\Pegawai;
-use App\Models\Program;
 use App\Models\Ptj;
 use App\Models\Subunit;
 use App\Models\Unit;
@@ -22,14 +21,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 
@@ -90,6 +87,8 @@ class PegawaiForm
                                                 ->body('Pegawai dengan No. Kad Pengenalan ini telah wujud dalam sistem.')
                                                 ->danger()
                                                 ->send();
+
+                                            return;
                                         }
                                     }
 
@@ -133,7 +132,7 @@ class PegawaiForm
                                             }
                                         }
 
-                                        // Auto-fill jawatan, gred, ptj, bahagian, unit via API
+                                        // Auto-fill jawatan, gred, ptj, unit via API
                                         $ids = PrestasiService::resolvePegawaiFormIds($result['data']);
 
                                         if ($ids['ptj_id']) {
@@ -142,6 +141,8 @@ class PegawaiForm
 
                                         if ($ids['bahagian_id']) {
                                             $set('bahagian_id', $ids['bahagian_id']);
+                                        } elseif ($ids['ptj_id'] && ! Ptj::usesBahagianHierarchyFor((int) $ids['ptj_id'])) {
+                                            $set('bahagian_id', null);
                                         }
 
                                         if ($ids['unit_id']) {
@@ -353,24 +354,23 @@ class PegawaiForm
 
                             Select::make('ptj_id')
                                 ->label('PTJ')
-                                ->relationship(
-                                    'ptj',
-                                    'nama_ptj',
-                                    modifyQueryUsing: function (Builder $query) {
-                                        $user = auth()->user();
+                                ->options(function (): array {
+                                    $user = auth()->user();
 
-                                        if ($user->role == 3) {
-                                            $query->where('id', $user->ptj_id);
-                                        }
+                                    $query = Ptj::query()->orderBy('nama_ptj');
+
+                                    if ($user->role == 3) {
+                                        $query->where('id', $user->ptj_id);
                                     }
-                                )
+
+                                    return $query->pluck('nama_ptj', 'id')->toArray();
+                                })
                                 ->required()
-                                // ->helperText('Akan diisi automatik via API: ptj -> nama')
                                 ->disabled(fn (?Pegawai $record): bool => $record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)
                                 ->searchable()
                                 ->preload()
                                 ->columnSpanFull()
-                                ->reactive()
+                                ->live()
                                 ->visible(function (?Pegawai $record): bool {
                                     if (! $record) {
                                         // Create page
@@ -379,7 +379,11 @@ class PegawaiForm
 
                                     return auth()->user()->ptj_id === $record->ptj_id || auth()->user()->role == 1 || auth()->user()->role == 2;
                                 })
-                                ->afterStateUpdated(fn ($state, callable $set) => $set('bahagian_id', null)),
+                                ->afterStateUpdated(function (Set $set): void {
+                                    $set('bahagian_id', null);
+                                    $set('unit_id', null);
+                                    $set('subunit_id', null);
+                                }),
 
                             TextEntry::make('ptj')
                                 ->label('PTJ')
@@ -391,66 +395,87 @@ class PegawaiForm
 
                             Select::make('bahagian_id')
                                 ->label('Bahagian')
-                                ->options(function (Get $get) {
+                                ->options(function (Get $get): array {
                                     $ptjId = $get('ptj_id');
 
-                                    if (! $ptjId) {
+                                    if (! $ptjId || ! Ptj::usesBahagianHierarchyFor((int) $ptjId)) {
                                         return [];
                                     }
 
-                                    return Bahagian::where('ptj_id', $ptjId)
-                                        ->pluck('nama_bahagian', 'id');
+                                    return Bahagian::query()
+                                        ->where('ptj_id', $ptjId)
+                                        ->orderBy('nama_bahagian')
+                                        ->pluck('nama_bahagian', 'id')
+                                        ->toArray();
                                 })
                                 ->searchable()
-                                ->required()
-                                // ->helperText('Akan diisi automatik via API: bahagian -> nama')
-                                ->disabled(fn (?Pegawai $record): bool => $record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)
                                 ->preload()
-                                ->visible(function (?Pegawai $record): bool {
+                                ->live()
+                                ->required(fn (Get $get): bool => Ptj::usesBahagianHierarchyFor(
+                                    filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                ))
+                                ->visible(function (Get $get, ?Pegawai $record): bool {
+                                    if (! Ptj::usesBahagianHierarchyFor(filled($get('ptj_id')) ? (int) $get('ptj_id') : null)) {
+                                        return false;
+                                    }
+
                                     if (! $record) {
-                                        // Create page
                                         return true;
                                     }
 
                                     return auth()->user()->ptj_id === $record->ptj_id || auth()->user()->role == 1 || auth()->user()->role == 2;
                                 })
-                                ->columnSpanFull(),
-
-                            TextEntry::make('bahagian')
-                                ->label('Bahagian')
-                                ->getStateUsing(function ($record) {
-                                    return $record->bahagian?->nama_bahagian ?? '-';
+                                ->disabled(fn (?Pegawai $record): bool => $record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)
+                                ->dehydrated()
+                                ->dehydrateStateUsing(function ($state, Get $get) {
+                                    return Ptj::usesBahagianHierarchyFor(
+                                        filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                    ) ? $state : null;
                                 })
-                                ->visible(fn (Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id'))
+                                ->afterStateUpdated(function (Set $set): void {
+                                    $set('unit_id', null);
+                                    $set('subunit_id', null);
+                                })
                                 ->columnSpanFull(),
 
                             Grid::make(4)
                                 ->schema([
                                     Select::make('unit_id')
                                         ->label('Unit')
-                                        // ->helperText('Akan diisi automatik via API: unit -> nama')
                                         ->options(function (Get $get) {
-                                            $bahagianId = $get('bahagian_id');
+                                            $ptjId = $get('ptj_id');
 
-                                            if (! $bahagianId) {
+                                            if (! $ptjId) {
                                                 return [];
                                             }
 
-                                            return Unit::where('bahagian_id', $bahagianId)
+                                            $query = Unit::query()->orderBy('nama_unit');
+
+                                            if (Ptj::usesBahagianHierarchyFor((int) $ptjId)) {
+                                                $bahagianId = $get('bahagian_id');
+
+                                                if (! $bahagianId) {
+                                                    return [];
+                                                }
+
+                                                return $query->where('bahagian_id', $bahagianId)
+                                                    ->pluck('nama_unit', 'id');
+                                            }
+
+                                            return $query->where('ptj_id', $ptjId)
                                                 ->pluck('nama_unit', 'id');
                                         })
                                         ->searchable()
                                         ->preload()
                                         ->live()
-                                        ->disabled(fn (Get $get, ?Pegawai $record): bool => $get('ada_unit') || ($record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false))
+                                        ->disabled(fn (Get $get): bool => (bool) $get('ada_unit'))
                                         ->dehydrated(fn (Get $get) => ! $get('ada_unit'))
                                         ->nullable()
-                                        ->required(fn (Get $get, ?Pegawai $record): bool => ! $get('ada_unit') && ! ($record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false))
-                                        ->validationMessages(['required' => 'Sila pilih Unit atau tandakan Tiada Unit.'])
                                         ->afterStateUpdated(function ($state, Set $set): void {
                                             if (filled($state)) {
                                                 $set('ada_unit', false);
                                             }
+                                            $set('subunit_id', null);
                                         })
                                         ->columnSpan(4),
 
@@ -462,22 +487,6 @@ class PegawaiForm
                                                 $set('unit_id', null);
                                             }
                                         })
-                                        ->rules([
-                                            fn (Get $get, ?Pegawai $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record): void {
-                                                if (($record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)) {
-                                                    return;
-                                                }
-
-                                                if (blank($get('unit_id')) && ! $value) {
-                                                    $fail('Sila pilih Unit atau tandakan Tiada Unit.');
-                                                }
-
-                                                if (filled($get('unit_id')) && $value) {
-                                                    $fail('Sila pilih salah satu sahaja: Unit atau Tiada Unit.');
-                                                }
-                                            },
-                                        ])
-                                        ->disabled(fn (?Pegawai $record): bool => $record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)
                                         ->columnSpan(1),
 
                                 ])
@@ -513,11 +522,9 @@ class PegawaiForm
                                         })
                                         ->searchable()
                                         ->preload()
-                                        ->disabled(fn (Get $get, ?Pegawai $record): bool => $get('ada_subunit') || ($record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false))
+                                        ->disabled(fn (Get $get): bool => (bool) $get('ada_subunit'))
                                         ->dehydrated(fn (Get $get) => ! $get('ada_subunit'))
                                         ->nullable()
-                                        ->required(fn (Get $get, ?Pegawai $record): bool => ! $get('ada_subunit') && ! ($record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false))
-                                        ->validationMessages(['required' => 'Sila pilih Subunit atau tandakan Tiada Subunit.'])
                                         ->afterStateUpdated(function ($state, Set $set): void {
                                             if (filled($state)) {
                                                 $set('ada_subunit', false);
@@ -533,22 +540,6 @@ class PegawaiForm
                                                 $set('subunit_id', null);
                                             }
                                         })
-                                        ->rules([
-                                            fn (Get $get, ?Pegawai $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record): void {
-                                                if (($record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)) {
-                                                    return;
-                                                }
-
-                                                if (blank($get('subunit_id')) && ! $value) {
-                                                    $fail('Sila pilih Subunit atau tandakan Tiada Subunit.');
-                                                }
-
-                                                if (filled($get('subunit_id')) && $value) {
-                                                    $fail('Sila pilih salah satu sahaja: Subunit atau Tiada Subunit.');
-                                                }
-                                            },
-                                        ])
-                                        ->disabled(fn (?Pegawai $record): bool => $record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)
                                         ->columnSpan(1),
                                 ])
                                 ->visible(function (?Pegawai $record): bool {
@@ -926,48 +917,6 @@ class PegawaiForm
                                 })
                                 ->columnSpanFull(),
 
-                            TextEntry::make('bahagian')
-                                ->label('Bahagian')
-                                ->getStateUsing(function (?Pegawai $record, Get $get) {
-                                    if (! $record) {
-                                        // Create: when is_kontrak, use Bahagian chosen in Maklumat Pegawai
-                                        if ($get('is_kontrak')) {
-                                            $bahagianId = $get('bahagian_id');
-
-                                            if (blank($bahagianId)) {
-                                                return '-';
-                                            }
-
-                                            return Bahagian::find($bahagianId)?->nama_bahagian ?? '-';
-                                        }
-
-                                        $bahagianId = $get('bahagian_id');
-
-                                        if (filled($bahagianId)) {
-                                            return Bahagian::find($bahagianId)?->nama_bahagian ?? '-';
-                                        }
-
-                                        return '-';
-                                    }
-
-                                    if (! $record->is_kontrak) {
-                                        $waranJawatan = $record->waranJawatan;
-                                        $bahagian = $waranJawatan->bahagian?->nama_bahagian ?? '';
-                                    } else {
-                                        $bahagian = $record->bahagian?->nama_bahagian ?? '';
-                                    }
-
-                                    return $bahagian ?? '-';
-                                })
-                                ->visible(function (Get $get, ?Pegawai $record): bool {
-                                    if (! $record && ($get('is_tetap') || $get('is_kontrak_interim') || $get('is_kontrak_isi_tetap'))) {
-                                        return false;
-                                    }
-
-                                    return true;
-                                })
-                                ->columnSpanFull(),
-
                             TextEntry::make('unit')
                                 ->label('Unit')
                                 ->getStateUsing(function ($record) {
@@ -1011,68 +960,19 @@ class PegawaiForm
 
                                     return auth()->user()->role == 3;
                                 }),
-                            Group::make()
-                                ->columns(2)
-                                ->columnSpanFull()
-                                ->schema([
-                                    Select::make('program_id')
-                                        ->label('Program')
-                                        ->options(
-                                            Program::query()
-                                                ->orderBy('nama_program')
-                                                ->get()
-                                                ->mapWithKeys(fn ($program) => [
-                                                    $program->id => "{$program->nama_program} - {$program->desc_program}",
-                                                ])
-                                        )
-                                        ->live()
-                                        ->searchable()
-                                        ->required(),
-                                    // ->helperText('Akan diisi automatik via API jika ditemui; boleh dipilih manual.'),
-
-                                    Select::make('aktiviti_id')
-                                        ->label('Aktiviti')
-                                        ->options(function (Get $get) {
-                                            $programId = $get('program_id');
-
-                                            if (! $programId) {
-                                                return [];
-                                            }
-
-                                            return Aktiviti::where('program_id', $programId)
-                                                ->orderBy('no_aktivit')
-                                                ->get()
-                                                ->mapWithKeys(fn ($aktiviti) => [
-                                                    $aktiviti->id => "{$aktiviti->no_aktivit} - {$aktiviti->nama_aktiviti}",
-                                                ]);
-                                        })
-                                        ->searchable()
-                                        ->required(),
-                                    // ->helperText('Akan diisi automatik via API jika ditemui; boleh dipilih manual.'),
-                                ])
-                                ->visible(fn (Get $get) => $get('is_kontrak')),
-                            TextEntry::make('program')
-                                ->label('program')
-                                ->getStateUsing(function ($record) {
-                                    // No record on the create page - nothing to show yet.
-                                    if (! $record) {
-                                        return null;
-                                    }
-
-                                    $program = $record->waranJawatan?->aktiviti?->program;
-
-                                    return $program
-                                        ? "{$program->nama_program} : {$program->desc_program}"
-                                        : '-';
-                                })
-                                ->visible(function (Get $get, ?Pegawai $record): bool {
-                                    if (! $record && ($get('is_tetap') || $get('is_kontrak_interim') || $get('is_kontrak_isi_tetap'))) {
-                                        return false;
-                                    }
-
-                                    return $get('is_kontrak_interim') || $get('is_tetap') || $get('is_kontrak_isi_tetap');
-                                }),
-
+                            Select::make('aktiviti_id')
+                                ->label('Aktiviti')
+                                ->options(
+                                    Aktiviti::orderBy('no_aktivit')
+                                        ->get()
+                                        ->mapWithKeys(fn ($aktiviti) => [
+                                            $aktiviti->id => "{$aktiviti->no_aktivit} - {$aktiviti->nama_aktiviti}",
+                                        ])
+                                )
+                                ->searchable()
+                                ->required()
+                                ->visible(fn (Get $get) => $get('is_kontrak'))
+                                ->columnSpanFull(),
                             TextEntry::make('aktiviti')
                                 ->label('Aktiviti')
                                 ->getStateUsing(function ($record) {

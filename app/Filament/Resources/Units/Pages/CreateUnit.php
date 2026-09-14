@@ -50,6 +50,7 @@ class CreateUnit extends CreateRecord
 
         // Bulk creation via Repeater - each unit has its own parlimen/dun
         if (is_array($units) && count($units) > 0) {
+            $ptjId = $data['ptj_id'] ?? null;
             $bahagianId = $data['bahagian_id'] ?? null;
 
             $firstRecord = null;
@@ -62,6 +63,7 @@ class CreateUnit extends CreateRecord
                 }
 
                 $payload = [
+                    'ptj_id' => $ptjId,
                     'bahagian_id' => $bahagianId,
                     'nama_unit' => $nama,
                     'parlimen_id' => $unitData['parlimen_id'] ?? null,
@@ -69,11 +71,13 @@ class CreateUnit extends CreateRecord
                 ];
 
                 $record = static::getModel()::create($payload);
+                $record->syncAktivitis($unitData['aktiviti_ids'] ?? []);
 
                 $firstRecord ??= $record;
             }
 
             return $firstRecord ?? static::getModel()::create([
+                'ptj_id' => $ptjId,
                 'bahagian_id' => $bahagianId,
                 'nama_unit' => strtoupper((string) ($data['nama_unit'] ?? '')),
                 'parlimen_id' => $data['parlimen_id'] ?? null,
@@ -82,7 +86,7 @@ class CreateUnit extends CreateRecord
         }
 
         // Fallback single create (edit-form compatibility)
-        unset($data['units'], $data['ptj_id']);
+        unset($data['units'], $data['program_id']);
 
         if (isset($data['nama_unit'])) {
             $data['nama_unit'] = strtoupper((string) $data['nama_unit']);

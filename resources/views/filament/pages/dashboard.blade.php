@@ -1,12 +1,12 @@
 <x-filament-panels::page>
+    <div class="dashboard-page">
 
     {{-- Hebahan Terkini --}}
-    <div style="margin-bottom:16px;">
+    <div class="dashboard-block">
         <x-filament::section heading="Hebahan Terkini">
             @forelse($recentHebahans as $hebahan)
-                <div
-                    style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:10px 0; {{ !$loop->last ? 'border-bottom:1px solid #f3f4f6;' : '' }}">
-                    <div>
+                <div class="dashboard-hebahan-item">
+                    <div class="dashboard-hebahan-copy">
                         <p style="margin:0; font-weight:600; font-size:13px;">{{ $hebahan->tajuk }}</p>
                         @if ($hebahan->kandungan)
                             <p style="margin:2px 0 0; font-size:12px; color:#6b7280;">
@@ -19,8 +19,7 @@
                             </a>
                         @endif
                     </div>
-                    <span
-                        style="font-size:12px; color:#6b7280; white-space:nowrap;">{{ $hebahan->tarikh_hebahan->translatedFormat('d M Y') }}</span>
+                    <span class="dashboard-hebahan-date">{{ $hebahan->tarikh_hebahan->translatedFormat('d M Y') }}</span>
                 </div>
             @empty
                 <p style="padding:8px 0; text-align:center; color:#6b7280; font-size:13px;">Tiada hebahan buat masa ini.
@@ -30,7 +29,7 @@
     </div>
 
     {{-- Stats Cards --}}
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:16px;">
+    <div class="dashboard-stats">
         <div class="sneat-stat-card sneat-stat-card--blue">
             <div class="sneat-stat-inner">
                 <div>
@@ -67,7 +66,7 @@
     </div>
 
     {{-- Charts Row --}}
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+    <div class="dashboard-charts">
 
         {{-- Donut Chart --}}
         <x-filament::section heading="Status Waran">
@@ -75,9 +74,9 @@
                 $statusTotal = $totalPengisianSemasa + $totalKekosongan;
                 $pct = fn ($n) => $statusTotal > 0 ? round(($n / $statusTotal) * 100) : 0;
             @endphp
-            <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+            <div class="dashboard-donut">
                 <div id="statusChart"></div>
-                <div style="display:flex; gap:16px;">
+                <div class="dashboard-legend">
                     <div style="display:flex; align-items:center; gap:6px;">
                         <div style="width:12px; height:12px; border-radius:50%; background:#10b981;"></div>
                         <span style="font-size:12px;">Pengisian Semasa ({{ $pct($totalPengisianSemasa) }}%)</span>
@@ -92,17 +91,19 @@
 
         {{-- Bar Chart --}}
         <x-filament::section heading="Jumlah Pengisian Waran Perjawatan Mengikut Program">
-            <canvas id="programChart" style="max-height:220px;"></canvas>
+            <div class="dashboard-bar-chart">
+                <canvas id="programChart"></canvas>
+            </div>
         </x-filament::section>
 
     </div>
 
     {{-- Recent Waran --}}
-    <div style="margin-bottom:16px;">
+    <div class="dashboard-block">
 
         <x-filament::section heading="Waran Terbaharu">
-            <div style="border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <div class="dashboard-table-scroll">
+                <table>
                     <thead>
                         <tr style="background:#f9fafb;">
                             <th style="text-align:left; padding:10px 12px; color:#6b7280; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.03em; border:1px solid #e5e7eb;">
@@ -193,7 +194,7 @@
             // no built-in legend, 75% cutout, single aggregate total
             // centered instead of per-segment labels.
             statusApexChart = new ApexCharts(statusEl, {
-                chart: { type: 'donut', height: 200, width: 200 },
+                chart: { type: 'donut', height: 200, width: '100%' },
                 series: [{{ $totalPengisianSemasa }}, {{ $totalKekosongan }}],
                 labels: ['Pengisian Semasa', 'Kekosongan'],
                 colors: ['#10b981', '#f43f5e'],
@@ -263,6 +264,7 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             display: false
@@ -288,6 +290,11 @@
                         x: {
                             grid: {
                                 display: false
+                            },
+                            ticks: {
+                                autoSkip: true,
+                                maxRotation: 45,
+                                minRotation: 0
                             }
                         }
                     }
@@ -319,4 +326,5 @@
         document.addEventListener('livewire:navigated', () => whenChartLibsReady(initDashboardCharts));
     </script>
 
+    </div>
 </x-filament-panels::page>

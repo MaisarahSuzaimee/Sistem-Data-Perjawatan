@@ -299,7 +299,7 @@ class PrestasiService
 
     public static function resolveBahagianId(?string $nama, ?int $ptjId = null): ?int
     {
-        if (blank($nama)) {
+        if (blank($nama) || ! Ptj::usesBahagianHierarchyFor($ptjId)) {
             return null;
         }
 
@@ -315,7 +315,7 @@ class PrestasiService
             }
         }
 
-        $found = $query->first();
+        $found = $query->whereHas('ptj', fn ($q) => $q->where('is_jkn', true))->first();
 
         if ($found) {
             return $found->id;
@@ -331,23 +331,32 @@ class PrestasiService
             }
         }
 
-        $found2 = $query2->first();
+        $found2 = $query2->whereHas('ptj', fn ($q) => $q->where('is_jkn', true))->first();
 
         return $found2?->id;
     }
 
-    public static function resolveUnitId(?string $nama, ?int $bahagianId = null): ?int
+    public static function resolveUnitId(?string $nama, ?int $ptjId = null, ?int $bahagianId = null): ?int
     {
         if (blank($nama)) {
             return null;
         }
 
         $nama = trim($nama);
+        $usesBahagian = Ptj::usesBahagianHierarchyFor($ptjId);
 
         $query = Unit::query()->where('nama_unit', $nama);
 
-        if ($bahagianId) {
+        if ($usesBahagian && $bahagianId) {
             $found = (clone $query)->where('bahagian_id', $bahagianId)->first();
+
+            if ($found) {
+                return $found->id;
+            }
+        }
+
+        if ($ptjId) {
+            $found = (clone $query)->where('ptj_id', $ptjId)->first();
 
             if ($found) {
                 return $found->id;
@@ -362,8 +371,16 @@ class PrestasiService
 
         $query2 = Unit::whereRaw('LOWER(nama_unit) = LOWER(?)', [$nama]);
 
-        if ($bahagianId) {
+        if ($usesBahagian && $bahagianId) {
             $found2 = (clone $query2)->where('bahagian_id', $bahagianId)->first();
+
+            if ($found2) {
+                return $found2->id;
+            }
+        }
+
+        if ($ptjId) {
+            $found2 = (clone $query2)->where('ptj_id', $ptjId)->first();
 
             if ($found2) {
                 return $found2->id;
@@ -458,8 +475,10 @@ class PrestasiService
     public static function resolvePegawaiFormIds(array $data): array
     {
         $ptjId = self::resolvePtjId($data['ptjNama'] ?? null);
-        $bahagianId = self::resolveBahagianId($data['bahagianNama'] ?? null, $ptjId);
-        $unitId = self::resolveUnitId($data['unitNama'] ?? null, $bahagianId);
+        $bahagianId = Ptj::usesBahagianHierarchyFor($ptjId)
+            ? self::resolveBahagianId($data['bahagianNama'] ?? null, $ptjId)
+            : null;
+        $unitId = self::resolveUnitId($data['unitNama'] ?? null, $ptjId, $bahagianId);
         $jawatanId = self::resolveJawatanId($data['jawatanNama'] ?? null);
         $gredId = self::resolveGredId($data['gredKod'] ?? null);
         $jawatanGredId = self::resolveJawatanGredId($jawatanId, $gredId);

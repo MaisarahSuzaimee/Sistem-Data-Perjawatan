@@ -23,7 +23,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
  * Structure (matches the approved Excel layout):
  *   Row 1 : DATA PERJAWATAN KONTRAK JKN KEDAH SEHINGGA <tarikh> (title, merged)
  *   Row 2 : BIL | PUSAT TANGGUNGJAWAB | JUMLAH JAWATAN | <satu lajur per jawatan/gred>
- *   Rows 3+ : per program: section header, unit (PTJ / bahagian JKN) rows,
+ *   Rows 3+ : per program: section header, unit (PTJ) rows,
  *             JUMLAH subtotal row; then a blank row and JUMLAH KESELURUHAN
  *
  * Hanya pegawai dengan is_kontrak = 1 dikira. JUMLAH JAWATAN = jumlah pegawai
@@ -70,7 +70,7 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
     /** Row numbers of program section header rows. */
     public array $sectionRows = [];
 
-    /** Row numbers of unit (PTJ/bahagian) data rows. */
+    /** Row numbers of unit (PTJ) data rows. */
     public array $dataRows = [];
 
     /** Row numbers of JUMLAH subtotal rows. */
@@ -240,15 +240,15 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
 
     /**
      * Org units from waran_jawatans (plus any unit that has kontrak pegawai).
-     * JKN KEDAH units are per bahagian; other PTJs are per PTJ.
+     * Units are per PTJ under the new Program → PTJ hierarchy.
      */
     protected function buildUnits()
     {
         $units = collect();
 
-        $warans = WaranJawatan::with(['ptj', 'bahagian', 'aktiviti.program'])->get();
+        $warans = WaranJawatan::with(['ptj', 'aktiviti.program'])->get();
         foreach ($warans as $waran) {
-            $unit = $this->unitFor($waran->ptj, $waran->bahagian);
+            $unit = $this->unitFor($waran->ptj);
             if ($unit && ! $units->has($unit['key'])) {
                 $unit['programId'] = $waran->aktiviti?->program?->id;
                 $unit['programLabel'] = $this->programLabel($waran->aktiviti?->program);
@@ -264,21 +264,15 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
         return $ptj && ($ptj->is_jkn || $ptj->nama_ptj === 'JABATAN KESIHATAN NEGERI KEDAH');
     }
 
-    protected function unitFor($ptj, $bahagian): ?array
+    protected function unitFor($ptj, $bahagian = null): ?array
     {
         if (! $ptj) {
             return null;
         }
 
-        $isJkn = $this->isJkn($ptj);
-        $key = $isJkn ? $ptj->id.':'.($bahagian?->id ?? '') : 'p'.$ptj->id;
-        $label = $isJkn
-            ? ($bahagian?->nama_bahagian ?? $ptj->nama_ptj)
-            : $ptj->nama_ptj;
-
         return [
-            'key' => $key,
-            'label' => $label,
+            'key' => 'p'.$ptj->id,
+            'label' => $ptj->nama_ptj,
             'programId' => null,
             'programLabel' => 'TANPA PROGRAM',
         ];
@@ -305,7 +299,7 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
     {
         $counts = [];
 
-        $pegawai = Pegawai::with(['ptj', 'bahagian'])->where('is_kontrak', 1)->get();
+        $pegawai = Pegawai::with(['ptj'])->where('is_kontrak', 1)->get();
 
         // Map jawatan_gred_id -> gred_id for the catch-all column
         $jgGredId = [];
@@ -316,7 +310,7 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
         }
 
         foreach ($pegawai as $p) {
-            $unit = $this->unitFor($p->ptj, $p->bahagian);
+            $unit = $this->unitFor($p->ptj);
             if (! $unit) {
                 continue;
             }

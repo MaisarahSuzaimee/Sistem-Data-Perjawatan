@@ -94,7 +94,11 @@ class BahagiansTable
             ->filters([
                 SelectFilter::make('ptj_id')
                     ->label('PTJ')
-                    ->relationship('ptj', 'nama_ptj')
+                    ->relationship(
+                        'ptj',
+                        'nama_ptj',
+                        fn (Builder $query): Builder => $query->where('is_jkn', true)
+                    )
                     ->searchable()
                     ->preload(),
             ], layout: FiltersLayout::Modal)

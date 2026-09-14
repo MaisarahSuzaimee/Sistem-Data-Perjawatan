@@ -35,42 +35,14 @@ class PegawaiResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $tidakLengkap = static::getModel()::where(function ($q) {
-            $q->whereNull('ptj_id')
-                ->orWhereNull('bahagian_id')
-                ->orWhere(function ($q) {
-                    $q->whereNull('subunit_id')->where('ada_unit', 0);
-                })
-                ->orWhere(function ($q) {
-                    $q->whereNull('unit_id')->where('ada_subunit', 0);
-                })
-                ->orWhere(function ($q) {
-                    $q->where('is_jtw', 0)
-                        ->where('is_kontrak', 0)
-                        ->whereDoesntHave('waranJawatan.waran');
-                });
-        })->count();
+        $tidakLengkap = static::getModel()::query()->tidakLengkap()->count();
 
         return $tidakLengkap > 0 ? (string) $tidakLengkap : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $tidakLengkap = static::getModel()::where(function ($q) {
-            $q->whereNull('ptj_id')
-                ->orWhereNull('bahagian_id')
-                ->orWhere(function ($q) {
-                    $q->whereNull('subunit_id')->where('ada_unit', 0);
-                })
-                ->orWhere(function ($q) {
-                    $q->whereNull('unit_id')->where('ada_subunit', 0);
-                })
-                ->orWhere(function ($q) {
-                    $q->where('is_jtw', 0)
-                        ->where('is_kontrak', 0)
-                        ->whereDoesntHave('waranJawatan.waran');
-                });
-        })->count();
+        $tidakLengkap = static::getModel()::query()->tidakLengkap()->count();
 
         return $tidakLengkap > 0 ? 'danger' : null;
     }

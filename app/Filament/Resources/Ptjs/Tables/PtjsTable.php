@@ -12,6 +12,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class PtjsTable
 {
@@ -24,27 +25,17 @@ class PtjsTable
                     ->rowIndex()
                     ->width(1),
                 TextColumn::make('nama_ptj')
-                    ->label('Nama PTJ')
+                    ->label('PTJ')
                     ->searchable()
                     ->sortable()
                     ->wrap(),
-                // TextColumn::make('kod_ptj')
-                //     ->label('Kod PTJ')
-                //     ->searchable()
-                //     ->sortable(),
-                // TextColumn::make('pengarah')
-                //     ->label('Pengarah')
-                //     ->searchable()
-                //     ->sortable()
-                //     ->wrap(),
-                TextColumn::make('parlimen.nama_parlimen')
-                    ->label('Parlimen')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('dun.nama_dun')
-                    ->label('Dun')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('parlimen_dun')
+                    ->label('Parlimen - Dun')
+                    ->getStateUsing(fn ($record): string => static::locationLabel($record))
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('parlimen', fn (Builder $q) => $q->where('nama_parlimen', 'like', "%{$search}%"))
+                            ->orWhereHas('dun', fn (Builder $q) => $q->where('nama_dun', 'like', "%{$search}%"));
+                    }),
             ])
             ->defaultSort('updated_at', 'desc')
             ->filters([
@@ -62,17 +53,26 @@ class PtjsTable
             ->filtersApplyAction(fn (Action $action) => $action->label('Cari'))
             ->recordActions([
                 ActionGroup::make([
-                    // ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make(),
                 ]),
-
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-
                 ]),
             ]);
+    }
+
+    protected static function locationLabel($record): string
+    {
+        $parlimen = $record->parlimen?->nama_parlimen;
+        $dun = $record->dun?->nama_dun;
+
+        if ($parlimen && $dun) {
+            return $parlimen.' - '.$dun;
+        }
+
+        return $parlimen ?: ($dun ?: '-');
     }
 }

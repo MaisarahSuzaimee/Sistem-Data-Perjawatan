@@ -13,7 +13,7 @@ class CreateSubunit extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'Tambah Sub Unit';
+        return 'KD / KKIA / Wad / Klinik';
     }
 
     public function getBreadcrumb(): string
@@ -66,6 +66,7 @@ class CreateSubunit extends CreateRecord
                     'parlimen_id' => $row['parlimen_id'] ?? null,
                     'dun_id' => $row['dun_id'] ?? null,
                 ]);
+                $record->syncAktivitis($row['aktiviti_ids'] ?? []);
 
                 $first ??= $record;
             }

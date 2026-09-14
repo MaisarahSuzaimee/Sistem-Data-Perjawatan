@@ -12,6 +12,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class PtjResource extends Resource
 {
@@ -22,11 +23,14 @@ class PtjResource extends Resource
     protected static ?string $recordTitleAttribute = 'nama_ptj';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
+
     protected static ?int $navigationSort = 21;
 
-    protected static ?string $navigationLabel = 'PTJ';
-    protected static ?string $pluralModelLabel = 'PTJ';
-    Protected static ?string $modelLabel = 'PTJ';
+    protected static ?string $navigationLabel = 'Program & PTJ';
+
+    protected static ?string $pluralModelLabel = 'Program & PTJ';
+
+    protected static ?string $modelLabel = 'Program & PTJ';
 
     public static function form(Schema $schema): Schema
     {
@@ -52,5 +56,11 @@ class PtjResource extends Resource
             'create' => CreatePtj::route('/create'),
             'edit' => EditPtj::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['parlimen', 'dun']);
     }
 }

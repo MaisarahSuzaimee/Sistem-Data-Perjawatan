@@ -27,7 +27,6 @@ beforeEach(function () {
 
     $this->pegawaiId = DB::table('pegawais')->insertGetId([
         'ptj_id' => 1,
-        'bahagian_id' => 1,
         'unit_id' => 1,
         'subunit_id' => 1,
         'jawatan_gred_id' => $this->jawatanGredId,
