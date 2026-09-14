@@ -63,10 +63,10 @@ class CreateSubunit extends CreateRecord
                 $record = static::getModel()::create([
                     'unit_id' => $unitId,
                     'nama_subunit' => $nama,
-                    'aktiviti_id' => $row['aktiviti_id'] ?? null,
                     'parlimen_id' => $row['parlimen_id'] ?? null,
                     'dun_id' => $row['dun_id'] ?? null,
                 ]);
+                $record->syncAktivitis($row['aktiviti_ids'] ?? []);
 
                 $first ??= $record;
             }

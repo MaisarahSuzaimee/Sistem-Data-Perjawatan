@@ -56,7 +56,7 @@ class SubunitsTable
                         }
 
                         $html .= '<div class="'.$muted.'">UNIT: '.e($unit?->nama_unit ?? '-').'</div>';
-                        $html .= '<div class="'.$muted.'">PROGRAM: '.e($programs).'</div>';
+                        // $html .= '<div class="'.$muted.'">PROGRAM: '.e($programs).'</div>';
 
                         return $html;
                     })

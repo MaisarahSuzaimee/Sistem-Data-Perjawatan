@@ -1165,6 +1165,167 @@
 .dark .sneat-stat-card--sky .sneat-stat-label { color: #7dd3fc; }
 .dark .sneat-stat-card--sky .sneat-stat-value { color: #e0f2fe; }
 
+/* ━━━━━━━━━━━━━━━━━━━━ DASHBOARD ━━━━━━━━━━━━━━━━━━━━ */
+
+.dashboard-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-block,
+.dashboard-stats,
+.dashboard-charts {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.dashboard-charts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.dashboard-charts > .fi-section,
+.dashboard-block > .fi-section {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-stats .sneat-stat-inner > div:first-child {
+    min-width: 0;
+}
+
+.dashboard-hebahan-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dashboard-hebahan-item:last-child {
+    border-bottom: none;
+}
+
+.dashboard-hebahan-copy {
+    min-width: 0;
+}
+
+.dashboard-hebahan-date {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.dashboard-donut {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-donut #statusChart {
+    width: min(200px, 100%);
+    max-width: 100%;
+}
+
+.dashboard-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem 1rem;
+    max-width: 100%;
+}
+
+.dashboard-bar-chart {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    height: 220px;
+}
+
+.dashboard-bar-chart canvas {
+    max-width: 100%;
+}
+
+.dashboard-table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.dashboard-table-scroll table {
+    width: 100%;
+    min-width: 36rem;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+@media (min-width: 640px) {
+    .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-hebahan-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .dashboard-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-charts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 639px) {
+    .dashboard-stats .sneat-stat-card {
+        padding: 1rem;
+    }
+
+    .dashboard-stats .sneat-stat-value {
+        font-size: 1.375rem;
+    }
+
+    .fi-page:has(.dashboard-page) .fi-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .fi-page:has(.dashboard-page) .fi-header-actions-ctn {
+        width: 100%;
+    }
+}
+
+.dark .dashboard-hebahan-item {
+    border-bottom-color: var(--sneat-border);
+}
+
+.dark .dashboard-table-scroll {
+    border-color: var(--sneat-border);
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━ TABLES (Sneat Bordered) ━━━━━━━━━━━━━━━━━━━━ */
 
 .fi-ta-ctn {
@@ -1221,6 +1382,82 @@
 
 .fi-ta-row td.fi-ta-cell:last-child {
     border-right: none !important;
+}
+
+/* Program / Aktiviti / PTJ matrix — one grid template for the header and each program row.
+   Must follow .fi-ta-row td.fi-ta-cell so flush padding and wrapping win. */
+.fi-ta-header-cell.fi-program-matrix-header,
+.fi-ta-row td.fi-ta-cell.fi-program-matrix-cell {
+    padding: 0 !important;
+    white-space: normal !important;
+    vertical-align: top !important;
+}
+
+.fi-ta-row td.fi-ta-cell.fi-program-matrix-cell .fi-ta-col {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+}
+
+.fi-program-matrix {
+    display: grid;
+    grid-template-columns: minmax(0, 26%) minmax(0, 32%) minmax(0, 42%);
+    width: 100%;
+    min-width: 0;
+}
+
+.fi-program-matrix-program,
+.fi-program-matrix-aktiviti,
+.fi-program-matrix-ptj {
+    min-width: 0;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    box-sizing: border-box;
+}
+
+.fi-program-matrix-program,
+.fi-program-matrix-aktiviti {
+    border-right: 1px solid var(--sneat-border);
+}
+
+.fi-program-matrix-program {
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-self: stretch;
+}
+
+.fi-program-matrix-aktiviti {
+    grid-column: 2;
+}
+
+.fi-program-matrix-ptj {
+    grid-column: 3;
+}
+
+.fi-program-matrix:not(.fi-program-matrix-head) .fi-program-matrix-program,
+.fi-program-matrix:not(.fi-program-matrix-head) .fi-program-matrix-aktiviti,
+.fi-program-matrix:not(.fi-program-matrix-head) .fi-program-matrix-ptj {
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+    font-size: 0.875rem;
+    color: var(--sneat-text-main);
+}
+
+.fi-program-matrix-more {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--sneat-primary);
+}
+
+.fi-program-matrix-aktiviti:not(:nth-last-child(-n + 2)),
+.fi-program-matrix-ptj:not(:last-child) {
+    border-bottom: 1px solid var(--sneat-border);
 }
 
 /* Selection checkbox column — same padding for <th> and <td> so checkboxes line up */

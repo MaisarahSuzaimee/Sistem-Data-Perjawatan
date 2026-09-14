@@ -27,6 +27,27 @@ class Ptj extends Model
         return $this->belongsToMany(Program::class, 'program_ptj')->withTimestamps();
     }
 
+    public function aktivitis(): BelongsToMany
+    {
+        return $this->belongsToMany(Aktiviti::class, 'aktiviti_ptj')->withTimestamps();
+    }
+
+    /**
+     * Aktiviti assigned to this PTJ in the Program form.
+     *
+     * @return array<int, string>
+     */
+    public function aktivitiSelectOptions(): array
+    {
+        return $this->aktivitis()
+            ->orderBy('no_aktivit')
+            ->get()
+            ->mapWithKeys(fn (Aktiviti $aktiviti): array => [
+                $aktiviti->id => trim(($aktiviti->no_aktivit ?? '').' - '.($aktiviti->nama_aktiviti ?? ''), ' -'),
+            ])
+            ->all();
+    }
+
     public function bahagians(): HasMany
     {
         return $this->hasMany(Bahagian::class);

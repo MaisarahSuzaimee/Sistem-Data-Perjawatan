@@ -62,7 +62,6 @@ class EditUnit extends EditRecord
                     'ptj_id' => $ptjId,
                     'bahagian_id' => $bahagianId,
                     'nama_unit' => strtoupper(trim((string) ($item['nama_unit'] ?? ''))),
-                    'aktiviti_id' => $item['aktiviti_id'] ?? null,
                     'parlimen_id' => $item['parlimen_id'] ?? null,
                     'dun_id' => $item['dun_id'] ?? null,
                 ];
@@ -72,10 +71,13 @@ class EditUnit extends EditRecord
                 }
 
                 if ($id && $existing->has($id)) {
-                    $existing->get($id)->update($payload);
+                    $unit = $existing->get($id);
+                    $unit->update($payload);
+                    $unit->syncAktivitis($item['aktiviti_ids'] ?? []);
                     $keepIds[] = $id;
                 } else {
                     $new = Unit::create($payload);
+                    $new->syncAktivitis($item['aktiviti_ids'] ?? []);
                     $keepIds[] = $new->id;
                 }
             }

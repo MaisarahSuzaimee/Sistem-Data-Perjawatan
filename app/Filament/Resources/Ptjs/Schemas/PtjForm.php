@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Ptjs\Schemas;
 
 use App\Models\Dun;
-use App\Models\Program;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -21,18 +20,6 @@ class PtjForm
             ->components([
                 Section::make('Maklumat PTJ')
                     ->schema([
-                        Select::make('programs')
-                            ->label('Program')
-                            ->relationship(
-                                name: 'programs',
-                                titleAttribute: 'nama_program',
-                                modifyQueryUsing: fn ($query) => $query->orderBy('nama_program'),
-                            )
-                            ->getOptionLabelFromRecordUsing(fn (Program $record): string => $record->display_name)
-                            ->multiple()
-                            ->searchable()
-                            ->preload()
-                            ->columnSpanFull(),
                         TextInput::make('nama_ptj')
                             ->label('Nama PTJ')
                             ->required()

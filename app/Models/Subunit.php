@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Subunit extends Model
 {
@@ -12,7 +13,6 @@ class Subunit extends Model
         'dun_id',
         'nama_subunit',
         'parlimen_id',
-        'aktiviti_id',
     ];
 
     public function unit(): BelongsTo
@@ -30,8 +30,30 @@ class Subunit extends Model
         return $this->belongsTo(Parlimen::class);
     }
 
-    public function aktiviti(): BelongsTo
+    public function aktivitis(): BelongsToMany
     {
-        return $this->belongsTo(Aktiviti::class, 'aktiviti_id');
+        return $this->belongsToMany(Aktiviti::class, 'aktiviti_subunit')->withTimestamps();
+    }
+
+    /**
+     * @param  array<int, mixed>  $ids
+     */
+    public function syncAktivitis(array $ids): void
+    {
+        $this->aktivitis()->sync(static::aktivitiIds($ids));
+    }
+
+    /**
+     * @param  array<int, mixed>  $ids
+     * @return array<int, int>
+     */
+    public static function aktivitiIds(array $ids): array
+    {
+        return collect($ids)
+            ->filter(fn ($id): bool => filled($id))
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 }

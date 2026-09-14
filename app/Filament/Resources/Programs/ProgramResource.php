@@ -61,6 +61,6 @@ class ProgramResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['aktiviti.butiran', 'ptjs']);
+            ->with(['aktiviti.ptjs', 'aktiviti.butiran', 'ptjs.aktivitis']);
     }
 }

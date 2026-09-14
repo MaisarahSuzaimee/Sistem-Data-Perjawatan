@@ -66,12 +66,12 @@ class CreateUnit extends CreateRecord
                     'ptj_id' => $ptjId,
                     'bahagian_id' => $bahagianId,
                     'nama_unit' => $nama,
-                    'aktiviti_id' => $unitData['aktiviti_id'] ?? null,
                     'parlimen_id' => $unitData['parlimen_id'] ?? null,
                     'dun_id' => $unitData['dun_id'] ?? null,
                 ];
 
                 $record = static::getModel()::create($payload);
+                $record->syncAktivitis($unitData['aktiviti_ids'] ?? []);
 
                 $firstRecord ??= $record;
             }

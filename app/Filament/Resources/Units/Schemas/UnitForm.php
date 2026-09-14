@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Units\Schemas;
 
-use App\Models\Aktiviti;
 use App\Models\Bahagian;
 use App\Models\Dun;
 use App\Models\Parlimen;
@@ -52,16 +51,16 @@ class UnitForm
                             ->visible(fn ($record) => $record === null)
                             ->columnSpanFull(),
 
-                        TextInput::make('programs_for_ptj')
-                            ->label('Program')
-                            ->readOnly()
-                            ->dehydrated(false)
-                            ->placeholder('Sila pilih PTJ dahulu')
-                            ->helperText(fn (Get $get): ?string => blank($get('ptj_id'))
-                                ? 'Semua program yang diassign kepada PTJ dipaparkan di sini'
-                                : null)
-                            ->visible(fn ($record) => $record === null)
-                            ->columnSpanFull(),
+                        // TextInput::make('programs_for_ptj')
+                        //     ->label('Program')
+                        //     ->readOnly()
+                        //     ->dehydrated(false)
+                        //     ->placeholder('Sila pilih PTJ dahulu')
+                        //     ->helperText(fn (Get $get): ?string => blank($get('ptj_id'))
+                        //         ? 'Semua program yang diassign kepada PTJ dipaparkan di sini'
+                        //         : null)
+                        //     ->visible(fn ($record) => $record === null)
+                        //     ->columnSpanFull(),
 
                         Select::make('bahagian_id')
                             ->label('Bahagian')
@@ -101,17 +100,17 @@ class UnitForm
                             ->visible(fn ($record) => $record !== null)
                             ->columnSpanFull(),
 
-                        TextInput::make('program_display')
-                            ->label('Program')
-                            ->afterStateHydrated(function ($component, $state, $record): void {
-                                $component->state(
-                                    $record?->ptj?->programs?->pluck('nama_program')->filter()->implode(', ')
-                                );
-                            })
-                            ->readOnly()
-                            ->dehydrated(false)
-                            ->visible(fn ($record) => $record !== null)
-                            ->columnSpanFull(),
+                        // TextInput::make('program_display')
+                        //     ->label('Program')
+                        //     ->afterStateHydrated(function ($component, $state, $record): void {
+                        //         $component->state(
+                        //             $record?->ptj?->programs?->pluck('nama_program')->filter()->implode(', ')
+                        //         );
+                        //     })
+                        //     ->readOnly()
+                        //     ->dehydrated(false)
+                        //     ->visible(fn ($record) => $record !== null)
+                        //     ->columnSpanFull(),
 
                         TextInput::make('bahagian_display')
                             ->label('Bahagian')
@@ -144,11 +143,12 @@ class UnitForm
                                     }
 
                                     $units = $unitsQuery
+                                        ->with('aktivitis')
                                         ->get()
                                         ->map(fn (Unit $u): array => [
                                             'id' => $u->id,
                                             'nama_unit' => $u->nama_unit,
-                                            'aktiviti_id' => $u->aktiviti_id,
+                                            'aktiviti_ids' => $u->aktivitis->pluck('id')->all(),
                                             'parlimen_id' => $u->parlimen_id,
                                             'dun_id' => $u->dun_id,
                                         ])
@@ -207,8 +207,9 @@ class UnitForm
                                     ->dehydrateStateUsing(fn (?string $state): string => $state ? strtoupper($state) : '')
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                                     ->columnSpanFull(),
-                                Select::make('aktiviti_id')
+                                Select::make('aktiviti_ids')
                                     ->label('Aktiviti')
+                                    ->multiple()
                                     ->options(fn (Get $get, $record): array => static::aktivitiOptions($get, $record))
                                     ->searchable()
                                     ->preload()
@@ -280,7 +281,7 @@ class UnitForm
 
         foreach ($units as $key => $unit) {
             if (is_array($unit)) {
-                $units[$key]['aktiviti_id'] = null;
+                $units[$key]['aktiviti_ids'] = [];
             }
         }
 
@@ -322,23 +323,6 @@ class UnitForm
             return [];
         }
 
-        $programIds = Ptj::query()
-            ->whereKey($ptjId)
-            ->first()
-            ?->programs()
-            ->pluck('programs.id') ?? collect();
-
-        if ($programIds->isEmpty()) {
-            return [];
-        }
-
-        return Aktiviti::query()
-            ->whereIn('program_id', $programIds)
-            ->orderBy('no_aktivit')
-            ->get()
-            ->mapWithKeys(fn (Aktiviti $aktiviti): array => [
-                $aktiviti->id => trim(($aktiviti->no_aktivit ?? '').' - '.($aktiviti->nama_aktiviti ?? ''), ' -'),
-            ])
-            ->all();
+        return Ptj::query()->find($ptjId)?->aktivitiSelectOptions() ?? [];
     }
 }

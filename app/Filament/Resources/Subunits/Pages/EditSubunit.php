@@ -59,16 +59,18 @@ class EditSubunit extends EditRecord
                 $payload = [
                     'unit_id' => $unitId,
                     'nama_subunit' => $nama,
-                    'aktiviti_id' => $row['aktiviti_id'] ?? null,
                     'parlimen_id' => $row['parlimen_id'] ?? null,
                     'dun_id' => $row['dun_id'] ?? null,
                 ];
 
                 if ($id && $existing->has($id)) {
-                    $existing->get($id)->update($payload);
+                    $subunit = $existing->get($id);
+                    $subunit->update($payload);
+                    $subunit->syncAktivitis($row['aktiviti_ids'] ?? []);
                     $keepIds[] = $id;
                 } else {
                     $new = Subunit::create($payload);
+                    $new->syncAktivitis($row['aktiviti_ids'] ?? []);
                     $keepIds[] = $new->id;
                 }
             }

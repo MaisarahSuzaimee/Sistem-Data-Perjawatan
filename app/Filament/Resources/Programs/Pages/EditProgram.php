@@ -34,4 +34,9 @@ class EditProgram extends EditRecord
     {
         return $this->getResource()::getUrl('index');
     }
+
+    protected function afterSave(): void
+    {
+        $this->record->syncPtjsFromAktiviti();
+    }
 }

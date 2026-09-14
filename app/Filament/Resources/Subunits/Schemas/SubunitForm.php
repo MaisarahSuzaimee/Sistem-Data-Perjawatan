@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Subunits\Schemas;
 
-use App\Models\Aktiviti;
 use App\Models\Bahagian;
 use App\Models\Dun;
 use App\Models\Parlimen;
@@ -187,12 +186,13 @@ class SubunitForm
                             ->afterStateHydrated(function ($component, ?array $state, $record): void {
                                 if ($record && blank($state)) {
                                     $items = Subunit::where('unit_id', $record->unit_id)
+                                        ->with('aktivitis')
                                         ->orderBy('nama_subunit')
                                         ->get()
                                         ->map(fn (Subunit $s): array => [
                                             'id' => $s->id,
                                             'nama_subunit' => $s->nama_subunit,
-                                            'aktiviti_id' => $s->aktiviti_id,
+                                            'aktiviti_ids' => $s->aktivitis->pluck('id')->all(),
                                             'parlimen_id' => $s->parlimen_id,
                                             'dun_id' => $s->dun_id,
                                         ])
@@ -242,8 +242,9 @@ class SubunitForm
                                     ->dehydrateStateUsing(fn (?string $state): string => $state ? strtoupper($state) : '')
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                                     ->columnSpanFull(),
-                                Select::make('aktiviti_id')
+                                Select::make('aktiviti_ids')
                                     ->label('Aktiviti')
+                                    ->multiple()
                                     ->options(fn (Get $get, $record): array => static::aktivitiOptions($get, $record))
                                     ->searchable()
                                     ->preload()
@@ -317,7 +318,7 @@ class SubunitForm
 
         foreach ($subunits as $key => $item) {
             if (is_array($item)) {
-                $subunits[$key]['aktiviti_id'] = null;
+                $subunits[$key]['aktiviti_ids'] = [];
             }
         }
 
@@ -359,23 +360,6 @@ class SubunitForm
             return [];
         }
 
-        $programIds = Ptj::query()
-            ->whereKey($ptjId)
-            ->first()
-            ?->programs()
-            ->pluck('programs.id') ?? collect();
-
-        if ($programIds->isEmpty()) {
-            return [];
-        }
-
-        return Aktiviti::query()
-            ->whereIn('program_id', $programIds)
-            ->orderBy('no_aktivit')
-            ->get()
-            ->mapWithKeys(fn (Aktiviti $aktiviti): array => [
-                $aktiviti->id => trim(($aktiviti->no_aktivit ?? '').' - '.($aktiviti->nama_aktiviti ?? ''), ' -'),
-            ])
-            ->all();
+        return Ptj::query()->find($ptjId)?->aktivitiSelectOptions() ?? [];
     }
 }

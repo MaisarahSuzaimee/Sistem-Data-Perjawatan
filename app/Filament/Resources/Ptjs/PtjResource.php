@@ -61,6 +61,6 @@ class PtjResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['programs']);
+            ->with(['parlimen', 'dun']);
     }
 }

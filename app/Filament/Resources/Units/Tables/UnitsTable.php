@@ -40,13 +40,16 @@ class UnitsTable
                             ->filter()
                             ->implode(', ') ?: '-';
 
+                        $muted = 'text-xs text-gray-500 dark:text-gray-400';
                         $html = '<div class="font-medium">PTJ: '.e($record->ptj?->nama_ptj ?? '-').'</div>';
 
                         if (filled($record->bahagian_id)) {
                             $html .= '<div class="font-medium">BAHAGIAN: '.e($record->bahagian?->nama_bahagian ?? '-').'</div>';
                         }
 
-                        $html .= '<div class="text-xs text-gray-500 dark:text-gray-400">PROGRAM: '.e($programs).'</div>';
+                        $html .= '<div class="'.$muted.'">UNIT: '.e($unit?->nama_unit ?? '-').'</div>';
+
+                        // $html .= '<div class="text-xs text-gray-500 dark:text-gray-400">PROGRAM: '.e($programs).'</div>';
 
                         return $html;
                     })

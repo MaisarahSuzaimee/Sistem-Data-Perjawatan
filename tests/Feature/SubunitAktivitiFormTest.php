@@ -9,6 +9,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
+    Schema::dropIfExists('aktiviti_subunit');
     Schema::dropIfExists('subunits');
     Schema::dropIfExists('units');
     Schema::dropIfExists('program_ptj');
@@ -63,12 +64,19 @@ beforeEach(function () {
         $table->unsignedBigInteger('dun_id')->nullable();
         $table->string('nama_subunit')->nullable();
         $table->unsignedBigInteger('parlimen_id')->nullable();
-        $table->unsignedBigInteger('aktiviti_id')->nullable();
         $table->timestamps();
+    });
+
+    Schema::create('aktiviti_subunit', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('aktiviti_id');
+        $table->unsignedBigInteger('subunit_id');
+        $table->timestamps();
+        $table->unique(['aktiviti_id', 'subunit_id']);
     });
 });
 
-it('persists aktiviti_id on a subunit for a program aktiviti', function () {
+it('persists multiple aktiviti on a subunit', function () {
     $program = Program::create([
         'nama_program' => 'PROGRAM UJIAN',
         'desc_program' => 'DESC',
@@ -78,6 +86,11 @@ it('persists aktiviti_id on a subunit for a program aktiviti', function () {
         'program_id' => $program->id,
         'no_aktivit' => '010101',
         'nama_aktiviti' => 'AKTIVITI UJIAN',
+    ]);
+    $aktivitiLain = Aktiviti::create([
+        'program_id' => $program->id,
+        'no_aktivit' => '010102',
+        'nama_aktiviti' => 'AKTIVITI LAIN',
     ]);
 
     $ptj = Ptj::create([
@@ -95,11 +108,11 @@ it('persists aktiviti_id on a subunit for a program aktiviti', function () {
     $subunit = Subunit::create([
         'unit_id' => $unit->id,
         'nama_subunit' => 'SUBUNIT UJIAN',
-        'aktiviti_id' => $aktiviti->id,
     ]);
+    $subunit->syncAktivitis([$aktiviti->id, $aktivitiLain->id]);
 
-    expect($subunit->fresh()->aktiviti_id)->toBe($aktiviti->id)
-        ->and($subunit->fresh()->aktiviti?->nama_aktiviti)->toBe('AKTIVITI UJIAN');
+    expect($subunit->fresh()->aktivitis()->orderBy('no_aktivit')->pluck('nama_aktiviti')->all())
+        ->toBe(['AKTIVITI UJIAN', 'AKTIVITI LAIN']);
 });
 
 it('can update a subunit aktiviti_id', function () {
@@ -128,10 +141,9 @@ it('can update a subunit aktiviti_id', function () {
     $subunit = Subunit::create([
         'unit_id' => $unit->id,
         'nama_subunit' => 'SUBUNIT EDIT',
-        'aktiviti_id' => null,
     ]);
 
-    $subunit->update(['aktiviti_id' => $aktiviti->id]);
+    $subunit->syncAktivitis([$aktiviti->id]);
 
-    expect($subunit->fresh()->aktiviti_id)->toBe($aktiviti->id);
+    expect($subunit->fresh()->aktivitis()->pluck('aktivitis.id')->all())->toBe([$aktiviti->id]);
 });

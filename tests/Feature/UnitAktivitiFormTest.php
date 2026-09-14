@@ -8,6 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
+    Schema::dropIfExists('aktiviti_unit');
     Schema::dropIfExists('units');
     Schema::dropIfExists('program_ptj');
     Schema::dropIfExists('aktivitis');
@@ -52,13 +53,20 @@ beforeEach(function () {
         $table->string('nama_unit');
         $table->unsignedBigInteger('parlimen_id')->nullable();
         $table->unsignedBigInteger('dun_id')->nullable();
-        $table->unsignedBigInteger('aktiviti_id')->nullable();
         $table->timestamps();
         $table->softDeletes();
     });
+
+    Schema::create('aktiviti_unit', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('aktiviti_id');
+        $table->unsignedBigInteger('unit_id');
+        $table->timestamps();
+        $table->unique(['aktiviti_id', 'unit_id']);
+    });
 });
 
-it('persists aktiviti_id on a unit for a program aktiviti', function () {
+it('persists multiple aktiviti on a unit', function () {
     $program = Program::create([
         'nama_program' => 'PROGRAM UJIAN',
         'desc_program' => 'DESC',
@@ -68,6 +76,11 @@ it('persists aktiviti_id on a unit for a program aktiviti', function () {
         'program_id' => $program->id,
         'no_aktivit' => '010101',
         'nama_aktiviti' => 'AKTIVITI UJIAN',
+    ]);
+    $aktivitiLain = Aktiviti::create([
+        'program_id' => $program->id,
+        'no_aktivit' => '010102',
+        'nama_aktiviti' => 'AKTIVITI LAIN',
     ]);
 
     $ptj = Ptj::create([
@@ -80,11 +93,11 @@ it('persists aktiviti_id on a unit for a program aktiviti', function () {
     $unit = Unit::create([
         'ptj_id' => $ptj->id,
         'nama_unit' => 'UNIT UJIAN',
-        'aktiviti_id' => $aktiviti->id,
     ]);
+    $unit->syncAktivitis([$aktiviti->id, $aktivitiLain->id]);
 
-    expect($unit->fresh()->aktiviti_id)->toBe($aktiviti->id)
-        ->and($unit->fresh()->aktiviti?->nama_aktiviti)->toBe('AKTIVITI UJIAN');
+    expect($unit->fresh()->aktivitis()->orderBy('no_aktivit')->pluck('nama_aktiviti')->all())
+        ->toBe(['AKTIVITI UJIAN', 'AKTIVITI LAIN']);
 });
 
 it('can update a unit aktiviti_id', function () {
@@ -108,10 +121,9 @@ it('can update a unit aktiviti_id', function () {
     $unit = Unit::create([
         'ptj_id' => $ptj->id,
         'nama_unit' => 'UNIT EDIT',
-        'aktiviti_id' => null,
     ]);
 
-    $unit->update(['aktiviti_id' => $aktiviti->id]);
+    $unit->syncAktivitis([$aktiviti->id]);
 
-    expect($unit->fresh()->aktiviti_id)->toBe($aktiviti->id);
+    expect($unit->fresh()->aktivitis()->pluck('aktivitis.id')->all())->toBe([$aktiviti->id]);
 });

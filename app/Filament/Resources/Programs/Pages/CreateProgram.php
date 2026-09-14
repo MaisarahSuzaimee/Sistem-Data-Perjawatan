@@ -42,4 +42,9 @@ class CreateProgram extends CreateRecord
         return parent::getCreateAnotherFormAction()
             ->hidden();
     }
+
+    protected function afterCreate(): void
+    {
+        $this->record->syncPtjsFromAktiviti();
+    }
 }

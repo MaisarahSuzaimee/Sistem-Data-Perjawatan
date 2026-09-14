@@ -28,6 +28,19 @@ class Program extends Model
         return trim($this->nama_program.($this->desc_program ? ' - '.$this->desc_program : ''));
     }
 
+    public function syncPtjsFromAktiviti(): void
+    {
+        $ids = $this->aktiviti()
+            ->with('ptjs')
+            ->get()
+            ->flatMap(fn (Aktiviti $aktiviti) => $aktiviti->ptjs->pluck('id'))
+            ->unique()
+            ->values()
+            ->all();
+
+        $this->ptjs()->sync($ids);
+    }
+
     protected static function booted(): void
     {
         static::deleting(function (Program $program): void {

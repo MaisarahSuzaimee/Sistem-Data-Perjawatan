@@ -2,13 +2,13 @@
 
 namespace App\Filament\Resources\Programs\Schemas;
 
-use App\Models\Ptj;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProgramForm
 {
@@ -61,28 +61,23 @@ class ProgramForm
                                     ->label('Nama Aktiviti')
                                     ->dehydrateStateUsing(fn ($state) => $state ? strtoupper($state) : null)
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                                Select::make('ptjs')
+                                    ->label('PTJ')
+                                    ->relationship(
+                                        name: 'ptjs',
+                                        titleAttribute: 'nama_ptj',
+                                        modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('nama_ptj'),
+                                    )
+                                    ->multiple()
+                                    ->searchable()
+                                    ->preload()
+                                    ->columnSpanFull(),
                             ])
                             ->itemLabel(
                                 fn (array $state): ?string => filled($state['no_aktivit'] ?? null) || filled($state['nama_aktiviti'] ?? null)
                                 ? ($state['no_aktivit'] ?? '').' - '.($state['nama_aktiviti'] ?? '')
                                 : 'Tambah Aktiviti'
                             )->collapsed(),
-                    ])
-                    ->columnSpanFull(),
-                Section::make('PTJ')
-                    ->schema([
-                        Select::make('ptjs')
-                            ->label('PTJ')
-                            ->relationship(
-                                name: 'ptjs',
-                                titleAttribute: 'nama_ptj',
-                                modifyQueryUsing: fn ($query) => $query->orderBy('nama_ptj'),
-                            )
-                            ->getOptionLabelFromRecordUsing(fn (Ptj $record): string => $record->nama_ptj)
-                            ->multiple()
-                            ->searchable()
-                            ->preload()
-                            ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),
             ]);
