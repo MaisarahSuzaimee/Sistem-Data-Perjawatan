@@ -59,16 +59,16 @@ class SubunitForm
                             ->visible(fn ($record) => $record === null)
                             ->columnSpanFull(),
 
-                        TextInput::make('programs_for_ptj')
-                            ->label('Program')
-                            ->readOnly()
-                            ->dehydrated(false)
-                            ->placeholder('Sila pilih PTJ dahulu')
-                            ->helperText(fn (Get $get): ?string => blank($get('ptj_id'))
-                                ? 'Semua program yang diassign kepada PTJ dipaparkan di sini'
-                                : null)
-                            ->visible(fn ($record) => $record === null)
-                            ->columnSpanFull(),
+                        // TextInput::make('programs_for_ptj')
+                        //     ->label('Program')
+                        //     ->readOnly()
+                        //     ->dehydrated(false)
+                        //     ->placeholder('Sila pilih PTJ dahulu')
+                        //     ->helperText(fn (Get $get): ?string => blank($get('ptj_id'))
+                        //         ? 'Semua program yang diassign kepada PTJ dipaparkan di sini'
+                        //         : null)
+                        //     ->visible(fn ($record) => $record === null)
+                        //     ->columnSpanFull(),
 
                         Select::make('bahagian_id')
                             ->label('Bahagian')
@@ -110,17 +110,17 @@ class SubunitForm
                             ->visible(fn ($record) => $record !== null)
                             ->columnSpanFull(),
 
-                        TextInput::make('program_display')
-                            ->label('Program')
-                            ->afterStateHydrated(function ($component, $state, $record): void {
-                                $component->state(
-                                    $record?->unit?->ptj?->programs?->pluck('nama_program')->filter()->implode(', ')
-                                );
-                            })
-                            ->readOnly()
-                            ->dehydrated(false)
-                            ->visible(fn ($record) => $record !== null)
-                            ->columnSpanFull(),
+                        // TextInput::make('program_display')
+                        //     ->label('Program')
+                        //     ->afterStateHydrated(function ($component, $state, $record): void {
+                        //         $component->state(
+                        //             $record?->unit?->ptj?->programs?->pluck('nama_program')->filter()->implode(', ')
+                        //         );
+                        //     })
+                        //     ->readOnly()
+                        //     ->dehydrated(false)
+                        //     ->visible(fn ($record) => $record !== null)
+                        //     ->columnSpanFull(),
 
                         TextInput::make('bahagian_display')
                             ->label('Bahagian')
