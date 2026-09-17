@@ -18,6 +18,7 @@ AGENTS.md
 /.phpunit.cache
 /.vscode
 /.zed
+/DB_dump
 /auth.json
 /node_modules
 /public/build
