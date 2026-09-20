@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\WaranJawatans\Schemas;
 
+use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
 use App\Models\Jawatan_Gred;
 use App\Models\Pegawai;
 use App\Models\Program;
 use App\Models\Ptj;
+use App\Models\Subunit;
+use App\Models\Unit;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
@@ -28,7 +31,86 @@ class WaranJawatanForm
             ->components([
                 Tabs::make('Tabs')
                     ->tabs([
-                        Tab::make('Maklumat Waran')
+                        Tab::make('Nama Penyandang')
+                            ->schema([
+                                Select::make('pegawai_id')
+                                    ->live()
+                                    ->label('Pegawai')
+                                    ->options(fn (Get $get, $record): array => Pegawai::penyandangOptions(
+                                        $get('jawatan_ids') ?? [],
+                                        $get('gred_ids') ?? [],
+                                        $record?->id,
+                                        $record?->pegawai_id,
+                                    ))
+                                    ->disabled(function ($record, Get $get) {
+
+                                        $user = auth()->user();
+
+                                        // Admin & Superadmin can always edit
+                                        if (in_array($user->role, [1, 2])) {
+                                            return false;
+                                        }
+
+                                        // Role 3 cannot edit when is_kup is true
+                                        if ($user->role == 3 && $get('is_kup')) {
+                                            return true;
+                                        }
+
+                                        if (! $record?->pegawai_id) {
+                                            return false;
+                                        }
+
+                                        $pegawai = Pegawai::withoutGlobalScopes()
+                                            ->find($record->pegawai_id);
+
+                                        return $pegawai?->ptj_id != $user->ptj_id;
+                                    })
+                                    ->dehydrated()
+
+                                    ->afterStateUpdated(function ($state, Get $get, Set $set) {
+
+                                        if (blank($state) || blank($get('gred_ids'))) {
+                                            $set('tbk', null);
+                                            $set('tbk_gred_id', null);
+
+                                            return;
+                                        }
+
+                                        $pegawai = Pegawai::withoutGlobalScopes()->with('jawatan_gred')->find($state);
+
+                                        if (! $pegawai) {
+                                            return;
+                                        }
+
+                                        $selectedGreds = Gred::query()->whereIn('id', $get('gred_ids'))->orderBy('kod_gred')->pluck('id')->values();
+                                        $lowestGredId = $selectedGreds->first();
+                                        $tbk = $selectedGreds->search($pegawai->jawatan_gred->gred_id);
+
+                                        if ($tbk === false) {
+                                            $set('tbk', null);
+                                            $set('tbk_gred_id', null);
+
+                                            return;
+                                        }
+
+                                        $set('tbk', $tbk);
+                                        $set('tbk_gred_id', $lowestGredId);
+
+                                    })->columnSpanFull()->searchable(),
+
+                                Checkbox::make('is_kup')
+                                    ->label('Khas Untuk Penyandang (KUP)')
+                                    ->columnSpanFull(),
+
+                                Hidden::make('tbk'),
+                                Hidden::make('tbk_gred_id'),
+
+                                Textarea::make('catatan_jawatan')
+                                    ->label('Catatan')
+                                    ->columnSpanFull(),
+                            ]),
+
+                        Tab::make('Maklumat Jawatan')
                             ->schema([
                                 Select::make('aktiviti_id')
                                     ->required()
@@ -113,40 +195,14 @@ class WaranJawatanForm
                                     ->multiple()
                                     ->live(),
 
-                                Select::make('program_id')
-                                    ->label('Program (Organisasi)')
-                                    ->options(
-                                        Program::query()
-                                            ->orderBy('nama_program')
-                                            ->pluck('nama_program', 'id')
-                                    )
-                                    ->searchable()
-                                    ->preload()
-                                    ->live()
-                                    ->dehydrated(false)
-                                    ->afterStateHydrated(function ($component, $state, $record): void {
-                                        $component->state($record?->ptj?->programs?->first()?->id);
-                                    })
-                                    ->afterStateUpdated(fn (Set $set) => $set('ptj_id', null))
-                                    ->columnSpanFull()
-                                    ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                        && ! auth()->user()?->isAdmin()
-                                    ),
-
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    ->options(function (Get $get): array {
-                                        $programId = $get('program_id');
-
-                                        $query = Ptj::query()->orderBy('nama_ptj');
-
-                                        if (filled($programId)) {
-                                            $query->whereHas('programs', fn ($q) => $q->whereKey($programId));
-                                        }
-
-                                        return $query->pluck('nama_ptj', 'id')->toArray();
-                                    })
+                                    ->options(
+                                        Ptj::query()
+                                            ->orderBy('nama_ptj')
+                                            ->pluck('nama_ptj', 'id')
+                                            ->toArray()
+                                    )
                                     ->searchable()
                                     ->preload()
                                     ->live()
@@ -155,130 +211,119 @@ class WaranJawatanForm
                                     ->disabled(
                                         fn () => ! auth()->user()?->isSuperadmin()
                                         && ! auth()->user()?->isAdmin()
-                                    ),
+                                    )
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('bahagian_id', null);
+                                        $set('unit_id', null);
+                                        $set('subunit_id', null);
+                                    }),
 
-                            ]),
+                                Select::make('bahagian_id')
+                                    ->label('Bahagian')
+                                    ->options(function (Get $get): array {
+                                        $ptjId = $get('ptj_id');
 
-                        Tab::make('Nama Penyandang')
-                            ->schema([
-                                Select::make('pegawai_id')
-                                    ->live()
-                                    ->label('Pegawai')
-                                    ->options(function (Get $get, $record) {
-
-                                        $jawatanIds = $get('jawatan_ids');
-                                        $gredIds = $get('gred_ids');
-
-                                        if (blank($jawatanIds) || blank($gredIds)) {
+                                        if (! $ptjId || ! Ptj::usesBahagianHierarchyFor((int) $ptjId)) {
                                             return [];
                                         }
 
-                                        $jawatanGredIds = Jawatan_Gred::query()
-                                            ->whereIn('jawatan_id', $jawatanIds)
-                                            ->whereIn('gred_id', $gredIds)
-                                            ->pluck('id');
-
-                                        $query = Pegawai::query()
-                                            ->whereIn('jawatan_gred_id', $jawatanGredIds)
-                                            ->where('is_kontrak', false);
-
-                                        // Admin & superadmin can see all PTJ
-                                        if (! in_array(auth()->user()->role, [1, 2])) {
-
-                                            // Normal user only sees own PTJ
-                                            $query->where('ptj_id', auth()->user()->ptj_id);
-                                        }
-
-                                        $pegawai = $query
-                                            ->orderBy('nama')
-                                            ->get()
-                                            ->mapWithKeys(function ($pegawai) {
-                                                return [
-                                                    $pegawai->id => "{$pegawai->nama} ({$pegawai->nokp})",
-                                                ];
-                                            })
+                                        return Bahagian::query()
+                                            ->where('ptj_id', $ptjId)
+                                            ->orderBy('nama_bahagian')
+                                            ->pluck('nama_bahagian', 'id')
                                             ->toArray();
-
-                                        // Keep current selected pegawai visible even if different PTJ
-                                        if ($record?->pegawai_id) {
-
-                                            $currentPegawai = Pegawai::withoutGlobalScopes()
-                                                ->find($record->pegawai_id);
-
-                                            if ($currentPegawai) {
-                                                $pegawai[$currentPegawai->id] =
-                                                    "{$currentPegawai->nama} ({$currentPegawai->nokp})";
-                                            }
-                                        }
-
-                                        return $pegawai;
                                     })
-                                    ->disabled(function ($record, Get $get) {
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    // ->required(fn (Get $get): bool => Ptj::usesBahagianHierarchyFor(
+                                    //     filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                    // ))
+                                    ->visible(fn (Get $get): bool => Ptj::usesBahagianHierarchyFor(
+                                        filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                    ))
+                                    ->dehydrated()
+                                    ->dehydrateStateUsing(function ($state, Get $get) {
+                                        return Ptj::usesBahagianHierarchyFor(
+                                            filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                        ) ? $state : null;
+                                    })
+                                    ->columnSpanFull()
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    )
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('unit_id', null);
+                                        $set('subunit_id', null);
+                                    }),
 
-                                        $user = auth()->user();
+                                Select::make('unit_id')
+                                    ->label('Unit')
+                                    ->options(function (Get $get): array {
+                                        $ptjId = $get('ptj_id');
 
-                                        // Admin & Superadmin can always edit
-                                        if (in_array($user->role, [1, 2])) {
-                                            return false;
+                                        if (! $ptjId) {
+                                            return [];
                                         }
 
-                                        // Role 3 cannot edit when is_kup is true
-                                        if ($user->role == 3 && $get('is_kup')) {
+                                        $query = Unit::query()->orderBy('nama_unit');
+
+                                        if (Ptj::usesBahagianHierarchyFor((int) $ptjId)) {
+                                            $bahagianId = $get('bahagian_id');
+
+                                            if (! $bahagianId) {
+                                                return [];
+                                            }
+
+                                            return $query->where('bahagian_id', $bahagianId)
+                                                ->pluck('nama_unit', 'id')
+                                                ->toArray();
+                                        }
+
+                                        return $query->where('ptj_id', $ptjId)
+                                            ->pluck('nama_unit', 'id')
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->nullable()
+                                    ->columnSpanFull()
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    )
+                                    ->afterStateUpdated(fn (Set $set) => $set('subunit_id', null)),
+
+                                Select::make('subunit_id')
+                                    ->label('Subunit')
+                                    ->options(function (Get $get): array {
+                                        $unitId = $get('unit_id');
+
+                                        if (! $unitId) {
+                                            return [];
+                                        }
+
+                                        return Subunit::query()
+                                            ->where('unit_id', $unitId)
+                                            ->orderBy('nama_subunit')
+                                            ->pluck('nama_subunit', 'id')
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable()
+                                    ->columnSpanFull()
+                                    ->disabled(function (Get $get): bool {
+                                        if (blank($get('unit_id'))) {
                                             return true;
                                         }
 
-                                        if (! $record?->pegawai_id) {
-                                            return false;
-                                        }
+                                        return ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin();
+                                    }),
 
-                                        $pegawai = Pegawai::withoutGlobalScopes()
-                                            ->find($record->pegawai_id);
-
-                                        return $pegawai?->ptj_id != $user->ptj_id;
-                                    })
-                                    ->dehydrated()
-
-                                    ->afterStateUpdated(function ($state, Get $get, Set $set) {
-
-                                        if (blank($state) || blank($get('gred_ids'))) {
-                                            $set('tbk', null);
-                                            $set('tbk_gred_id', null);
-
-                                            return;
-                                        }
-
-                                        $pegawai = Pegawai::withoutGlobalScopes()->with('jawatan_gred')->find($state);
-
-                                        if (! $pegawai) {
-                                            return;
-                                        }
-
-                                        $selectedGreds = Gred::query()->whereIn('id', $get('gred_ids'))->orderBy('kod_gred')->pluck('id')->values();
-                                        $lowestGredId = $selectedGreds->first();
-                                        $tbk = $selectedGreds->search($pegawai->jawatan_gred->gred_id);
-
-                                        if ($tbk === false) {
-                                            $set('tbk', null);
-                                            $set('tbk_gred_id', null);
-
-                                            return;
-                                        }
-
-                                        $set('tbk', $tbk);
-                                        $set('tbk_gred_id', $lowestGredId);
-
-                                    })->columnSpanFull()->searchable(),
-
-                                Checkbox::make('is_kup')
-                                    ->label('Khas Untuk Penyandang (KUP)')
-                                    ->columnSpanFull(),
-
-                                Hidden::make('tbk'),
-                                Hidden::make('tbk_gred_id'),
-
-                                Textarea::make('catatan_jawatan')
-                                    ->label('Catatan')
-                                    ->columnSpanFull(),
                             ]),
                     ])
                     ->columns(2)

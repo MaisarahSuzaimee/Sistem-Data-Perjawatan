@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Warans\Tables;
 
+use App\Filament\Support\BlockedPegawaiDelete;
 use App\Models\User;
 use App\Models\Waran;
 use App\Models\WaranJawatan;
@@ -12,7 +13,6 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 
 class WaransTable
@@ -193,13 +193,10 @@ class WaransTable
                     ->label('Aktiviti')
                     ->relationship('waranJawatan.aktiviti', 'nama_aktiviti')
                     ->getOptionLabelFromRecordUsing(
-                        fn($record) =>
-                        $record->no_aktivit . ' - ' . $record->nama_aktiviti
+                        fn ($record) => $record->no_aktivit.' - '.$record->nama_aktiviti
                     )
                     ->searchable()
-                    ->preload()
-
-
+                    ->preload(),
 
             ])
             ->recordActions([
@@ -207,6 +204,9 @@ class WaransTable
                     EditAction::make(),
                     DeleteAction::make()
                         ->label('Padam')
+                        ->before(function (DeleteAction $action, Waran $record): void {
+                            BlockedPegawaiDelete::haltIfAssigned($action, $record->hasAssignedPegawai());
+                        })
                         ->modalHeading(fn ($record) => "Padam {$record->no_waran}")
                         ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Padam')

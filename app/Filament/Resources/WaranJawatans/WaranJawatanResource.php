@@ -9,7 +9,6 @@ use App\Filament\Resources\WaranJawatans\Pages\ViewWaranJawatan;
 use App\Filament\Resources\WaranJawatans\Schemas\WaranJawatanForm;
 use App\Filament\Resources\WaranJawatans\Schemas\WaranJawatanInfolist;
 use App\Filament\Resources\WaranJawatans\Tables\WaranJawatansTable;
-use App\Filament\Resources\WaranJawatans\Widgets\NamaPenyandang;
 use App\Filament\Resources\WaranJawatans\Widgets\WaranJawatanStats;
 use App\Models\WaranJawatan;
 use BackedEnum;
@@ -76,6 +75,13 @@ class WaranJawatanResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->listed()
+            ->with(['aktiviti.program', 'pegawai.ptj', 'ptj', 'bahagian', 'unit', 'subunit', 'waran', 'tbk']);
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         return parent::getRecordRouteBindingEloquentQuery()
@@ -83,5 +89,4 @@ class WaranJawatanResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
-
 }

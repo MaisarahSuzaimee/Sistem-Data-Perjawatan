@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\WaranJawatans\Pages;
 
 use App\Filament\Resources\WaranJawatans\WaranJawatanResource;
+use App\Filament\Support\BlockedPegawaiDelete;
 use App\Models\Gred;
 use App\Models\Tbk;
+use App\Models\WaranJawatan;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
@@ -63,8 +65,14 @@ class EditWaranJawatan extends EditRecord
         return [
             // ViewAction::make(),
             DeleteAction::make()
-                ->label('Padam'),
-            ForceDeleteAction::make(),
+                ->label('Padam')
+                ->before(function (DeleteAction $action, WaranJawatan $record): void {
+                    BlockedPegawaiDelete::haltIfAssigned($action, $record->hasAssignedPegawai());
+                }),
+            ForceDeleteAction::make()
+                ->before(function (ForceDeleteAction $action, WaranJawatan $record): void {
+                    BlockedPegawaiDelete::haltIfAssigned($action, $record->hasAssignedPegawai());
+                }),
             RestoreAction::make(),
         ];
     }

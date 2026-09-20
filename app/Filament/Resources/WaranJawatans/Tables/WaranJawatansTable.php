@@ -2,33 +2,41 @@
 
 namespace App\Filament\Resources\WaranJawatans\Tables;
 
+use App\Filament\Resources\WaranJawatans\Schemas\WaranJawatanInfolist;
 use App\Filament\Resources\WaranJawatans\WaranJawatanResource;
+use App\Filament\Support\BlockedPegawaiDelete;
+use App\Models\WaranJawatan;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class WaranJawatansTable
 {
+    public static function notifyBlockedPegawai(Collection $records): void
+    {
+        if ($records->contains(fn ($record): bool => $record->hasAssignedPegawai())) {
+            BlockedPegawaiDelete::notify();
+        }
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
             ->defaultPaginationPageOption(5)
             ->recordUrl(null)
-            ->defaultSort(fn (Builder $query) => $query
-                ->leftJoin('ptjs', 'waran_jawatans.ptj_id', '=', 'ptjs.id')
-                ->orderBy('ptjs.nama_ptj')
-                ->orderByRaw('pegawai_id IS NULL')
+            ->defaultSort(fn (Builder $query): Builder => $query
+                ->leftJoin('warans as waran_sort', 'waran_jawatans.waran_id', '=', 'waran_sort.id')
+                ->orderBy('waran_sort.no_waran')
+                ->orderBy('waran_jawatans.butiran')
                 ->select('waran_jawatans.*'))
             ->columns([
                 TextColumn::make('no')
@@ -38,22 +46,59 @@ class WaranJawatansTable
 
                 TextColumn::make('pegawai_id')
                     ->label('Pegawai')
-                    ->getStateUsing(function ($record) {
+                    ->getStateUsing(function ($record): string {
+                        $statusLabel = match ($record->status) {
+                            'removed' => 'Dibuang',
+                            'pindaan nama' => 'Pindaan Nama',
+                            'batal nama' => 'Batal Nama',
+                            default => 'Aktif',
+                        };
+
+                        $statusStyle = match ($record->status) {
+                            'removed' => 'background-color:#fee2e2;color:#b91c1c;',
+                            'pindaan nama' => 'background-color:#dbeafe;color:#1d4ed8;',
+                            'batal nama' => 'background-color:#fef3c7;color:#b45309;',
+                            default => 'background-color:#dcfce7;color:#15803d;',
+                        };
+
+                        $statusBadge = '<span class="fi-badge inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" style="'.$statusStyle.'">'
+                            .e($statusLabel)
+                            .'</span>';
+
                         if (! $record->pegawai) {
-                            return '<span class="italic text-gray-500">Tiada penyandang</span>';
+                            return '<span class="italic text-gray-500">Tiada penyandang</span><br>'.$statusBadge;
                         }
 
-                        return '<strong>'.e($record->pegawai->nama).'</strong><br>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">'.e($record->pegawai->nokp).'</span>';
+                        return '<strong>'.e($record->pegawai->nama).'</strong><br>'
+                            .'<span class="text-xs text-gray-500 dark:text-gray-400">'.e($record->pegawai->nokp).'</span><br>'
+                            .$statusBadge;
                     })
                     ->html()
                     ->wrap()
                     ->sortable()
-                    // ->searchable(),
-                    ->searchable(query: function ($query, string $search) {
-                        $query->whereHas('pegawai', function ($q) use ($search) {
-                            $q->where('nama', 'like', "%{$search}%")
-                                ->orwhere('nokp', 'like', "%{$search}%");
+                    ->searchable(query: function ($query, string $search): void {
+                        $map = [
+                            'aktif' => 'active',
+                            'dibuang' => 'removed',
+                            'pindaan nama' => 'pindaan nama',
+                            'batal nama' => 'batal nama',
+                        ];
+
+                        $lowerSearch = strtolower($search);
+
+                        $query->where(function ($q) use ($search, $lowerSearch, $map): void {
+                            $q->whereHas('pegawai', function ($pegawai) use ($search): void {
+                                $pegawai->where('nama', 'like', "%{$search}%")
+                                    ->orWhere('nokp', 'like', "%{$search}%");
+                            });
+
+                            foreach ($map as $label => $value) {
+                                if (str_contains($label, $lowerSearch)) {
+                                    $q->orWhere('status', $value);
+
+                                    return;
+                                }
+                            }
                         });
                     }),
 
@@ -64,7 +109,13 @@ class WaranJawatansTable
                     )
                     ->html()
                     ->wrap()
-                    ->sortable()
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query
+                            ->leftJoin('warans as waran_sort', 'waran_jawatans.waran_id', '=', 'waran_sort.id')
+                            ->orderBy('waran_sort.no_waran', $direction)
+                            ->orderBy('waran_jawatans.butiran', $direction)
+                            ->select('waran_jawatans.*');
+                    })
                     ->searchable(query: function ($query, string $search) {
                         $query->where(function ($q) use ($search) {
                             $q->where('butiran', 'like', "%{$search}%")
@@ -124,59 +175,41 @@ class WaranJawatansTable
                         });
                     }),
 
-                TextColumn::make('status')
-                    ->label('Status')
-                    ->badge()
-                    ->size('lg')
-                    ->sortable()
-                    // ->searchable()
-                    ->formatStateUsing(fn ($state) => match ($state) {
-                        'removed' => 'Dibuang',
-                        'pindaan nama' => 'Pindaan Nama',
-                        'batal nama' => 'Batal Nama',
-                        default => 'Aktif',
-                    })
-                    ->color(
-                        fn ($state) => match ($state) {
-                            'removed' => 'danger',
-                            'pindaan nama' => 'info',
-                            'batal nama' => 'primary',
-                            default => 'success',
-                        }
-                    )
-                    ->searchable(
-                        query: function ($query, string $search) {
-                            $map = [
-                                'aktif' => 'active',
-                                'dibuang' => 'removed',
-                                'pindaan nama' => 'pindaan nama',
-                                'batal nama' => 'batal nama',
-                            ];
-
-                            $search = strtolower($search);
-
-                            foreach ($map as $label => $value) {
-                                if (str_contains($label, $search)) {
-                                    $query->where('status', $value);
-
-                                    return;
-                                }
-                            }
-                        }
-                    ),
-                // TextColumn::make('status')
-                // ->label('Status')
-
             ])
             ->filters([
+                SelectFilter::make('waran_id')
+                    ->label('No Waran')
+                    ->relationship('waran', 'no_waran')
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('butiran')
+                    ->label('Butiran')
+                    ->options(fn (): array => WaranJawatan::query()
+                        ->listed()
+                        ->whereNotNull('butiran')
+                        ->where('butiran', '!=', '')
+                        ->orderBy('butiran')
+                        ->distinct()
+                        ->pluck('butiran', 'butiran')
+                        ->all())
+                    ->searchable()
+                    ->preload(),
+
                 SelectFilter::make('ptj')
                     ->label('PTJ')
                     ->relationship('ptj', 'nama_ptj')
                     ->searchable()
                     ->preload(),
 
-                TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->isSuperAdmin()),
+                SelectFilter::make('aktiviti')
+                    ->label('Aktiviti')
+                    ->relationship('aktiviti', 'nama_aktiviti')
+                    ->getOptionLabelFromRecordUsing(
+                        fn ($record) => $record->no_aktivit.' - '.$record->nama_aktiviti
+                    )
+                    ->searchable()
+                    ->preload(),
             ], layout: FiltersLayout::Modal)
             ->filtersApplyAction(fn (Action $action) => $action->label('Cari'))
             ->recordActions([
@@ -192,6 +225,9 @@ class WaranJawatansTable
                                 return $record->pegawai?->nama;
                             }
                         })
+                        ->extraModalWindowAttributes(fn (WaranJawatan $record): array => [
+                            'class' => WaranJawatanInfolist::programWindowClass($record),
+                        ])
                         ->extraModalFooterActions([
                             Action::make('edit')
                                 ->label('Edit')
@@ -215,9 +251,8 @@ class WaranJawatansTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->before(fn (Collection $records): mixed => static::notifyBlockedPegawai($records)),
                 ]),
             ]);
     }
