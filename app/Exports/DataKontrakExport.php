@@ -2,12 +2,10 @@
 
 namespace App\Exports;
 
-use App\Models\Gred;
-use App\Models\Jawatan;
-use App\Models\Jawatan_Gred;
 use App\Models\Pegawai;
 use App\Models\WaranJawatan;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
@@ -23,46 +21,24 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
  * Structure (matches the approved Excel layout):
  *   Row 1 : DATA PERJAWATAN KONTRAK JKN KEDAH SEHINGGA <tarikh> (title, merged)
  *   Row 2 : BIL | PUSAT TANGGUNGJAWAB | JUMLAH JAWATAN | <satu lajur per jawatan/gred>
- *   Rows 3+ : per program: section header, unit (PTJ) rows,
+ *   Rows 3+ : per program: section header, unit (PTJ / Bahagian JKN) rows,
  *             JUMLAH subtotal row; then a blank row and JUMLAH KESELURUHAN
  *
- * Hanya pegawai dengan is_kontrak = 1 dikira. JUMLAH JAWATAN = jumlah pegawai
- * kontrak di unit tersebut (merentasi semua jawatan, termasuk yang tiada dalam
- * senarai lajur). Lajur template adalah senarai tetap yang diluluskan; setiap
- * lajur dipadankan dengan rekod jawatan/gred dalam pangkalan data (gred
- * dipadankan melalui desc_gred atau kod_gred, cth. desc "U41" = kod "U9").
- * Lajur yang tidak dapat dipadankan kekal dipaparkan dengan kiraan 0.
+ * Hanya pegawai dengan is_kontrak = 1 dikira. Lajur hijau (jawatan) dibina
+ * secara dinamik: setiap gabungan jawatan + gred yang wujud pada pegawai
+ * kontrak dalam pangkalan data menjadi satu lajur (label: desc_jawatan + kod_gred).
  */
 class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullComparison
 {
     /**
-     * Senarai lajur tetap (label seperti dalam templat yang diluluskan).
-     * 'jawatan' dipadankan dengan desc_jawatan (normalized exact, kemudian
-     * contains). 'gred' dipadankan dengan desc_gred/kod_gred. Lajur terakhir
-     * adalah "catch-all": semua pegawai kontrak bergred U41 yang jawatannya
-     * belum dikira dalam mana-mana lajur bernama di atas.
+     * Green header columns: one per distinct jawatan+gred on kontrak pegawai.
+     *
+     * @var list<array{label: string, jawatanGredIds: list<int>}>
      */
-    protected array $template = [
-        ['label' => 'PEGAWAI PERUBATAN UD43', 'jawatan' => 'PEGAWAI PERUBATAN', 'gred' => 'UD43'],
-        ['label' => 'PEGAWAI PERUBATAN UD41', 'jawatan' => 'PEGAWAI PERUBATAN', 'gred' => 'UD41'],
-        ['label' => 'PEGAWAI FARMASI UF48', 'jawatan' => 'PEGAWAI FARMASI', 'gred' => 'UF48'],
-        ['label' => 'PEGAWAI SAINS MIKROBIOLOGI C41', 'jawatan' => 'PEGAWAI SAINS (MIKROBIOLOGI)', 'gred' => 'C41'],
-        ['label' => 'PEGAWAI PSIKOLOGI S41', 'jawatan' => 'PEGAWAI PSIKOLOGI', 'gred' => 'S41'],
-        ['label' => 'PKP U41', 'jawatan' => 'PEGAWAI KESIHATAN PERSEKITARAN', 'gred' => 'U41'],
-        ['label' => 'PPP U41', 'jawatan' => 'PENOLONG PEGAWAI PERUBATAN', 'gred' => 'U41'],
-        ['label' => 'JTMP U29', 'jawatan' => 'JURUTEKNOLOGI MAKMAL PERUBATAN', 'gred' => 'U29'],
-        ['label' => 'FISIOTERAPI U41', 'jawatan' => 'PEGAWAI PEMULIHAN PERUBATAN (FISIOTERAPI)', 'gred' => 'U41'],
-        ['label' => 'JURURAWAT U41', 'jawatan' => 'JURURAWAT', 'gred' => 'U41'],
-        ['label' => 'PPPK U29', 'jawatan' => 'PENOLONG PEGAWAI KESIHATAN PERSEKITARAN', 'gred' => 'U29'],
-        ['label' => 'JURU XRAY U41', 'jawatan' => 'JURU X-RAY', 'gred' => 'U41'],
-        ['label' => 'PENOLONG JURUTERA JA29', 'jawatan' => 'PENOLONG JURUTERA', 'gred' => 'JA29'],
-        ['label' => 'PEGAWAI PERGIGIAN UG41', 'jawatan' => 'PEGAWAI PERGIGIAN', 'gred' => 'UG41'],
-        ['label' => 'JURUTEKNOLOGI PERGIGIAN U41', 'jawatan' => 'JURUTEKNOLOGI PERGIGIAN', 'gred' => 'U41'],
-        ['label' => 'U41', 'jawatan' => null, 'gred' => 'U41', 'catchall' => true],
-    ];
-
-    /** Resolved columns: label + jawatan_gred_id (or null) + catchall flag. */
     public array $columns = [];
+
+    /** @var Collection<int, Pegawai>|null */
+    protected ?Collection $kontrakPegawai = null;
 
     /** All rows (1-indexed positions start at A1). */
     public array $rows = [];
@@ -87,9 +63,9 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
         Carbon::setLocale('ms');
         $today = strtoupper(Carbon::now()->translatedFormat('d F Y'));
 
-        $this->lastColumnIndex = 3 + count($this->template);
-
-        $this->resolveTemplate();
+        $this->kontrakPegawai = $this->loadKontrakPegawai();
+        $this->columns = $this->buildColumnsFromKontrak($this->kontrakPegawai);
+        $this->lastColumnIndex = 3 + count($this->columns);
 
         $units = $this->buildUnits();
         $counts = $this->countKontrak($units);
@@ -108,16 +84,15 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
         }
         $rows->push($header);
 
-        // Group units by program (sorted by program id, TANPA PROGRAM last)
-        $groups = $units->groupBy(fn ($unit) => $unit['programId'] ?? PHP_INT_MAX)
-            ->sortKeys()
-            ->map(function ($items) {
-                return $items->sortBy('label')->values();
-            });
+        // Group units by program (sorted by program name, TANPA PROGRAM last)
+        $groups = $units
+            ->groupBy(fn ($unit) => $unit['programSort'])
+            ->sortKeys(SORT_NATURAL)
+            ->map(fn ($items) => $items->sortBy('label')->values());
 
         $grand = $this->emptyCounts();
 
-        foreach ($groups as $programId => $items) {
+        foreach ($groups as $items) {
             $first = $items->first();
 
             // Section header row (merged across all columns)
@@ -177,81 +152,85 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
     }
 
     /**
-     * Resolve each template column to a jawatan__greds pivot id.
+     * @return Collection<int, Pegawai>
      */
-    protected function resolveTemplate(): void
+    protected function loadKontrakPegawai(): Collection
     {
-        $jawatans = Jawatan::all();
-        $greds = Gred::all();
-
-        $gredIdByKey = [];
-        foreach ($greds as $gred) {
-            $gredIdByKey[$this->norm($gred->kod_gred)] = $gred->id;
-            $gredIdByKey[$this->norm($gred->desc_gred)] = $gred->id;
-        }
-
-        $namedJgIds = [];
-        foreach ($this->template as $entry) {
-            $jawatanIds = [];
-            $gredId = $entry['gred'] ? ($gredIdByKey[$this->norm($entry['gred'])] ?? null) : null;
-
-            if ($entry['jawatan']) {
-                $needle = $this->norm($entry['jawatan']);
-                foreach ($jawatans as $jawatan) {
-                    $haystack = $this->norm($jawatan->desc_jawatan);
-                    if ($haystack === $needle || str_contains($haystack, $needle)) {
-                        $jawatanIds[] = $jawatan->id;
-                    }
-                }
-            }
-
-            $jgId = null;
-            if ($jawatanIds && $gredId) {
-                $jg = Jawatan_Gred::whereIn('jawatan_id', $jawatanIds)
-                    ->where('gred_id', $gredId)
-                    ->first();
-                $jgId = $jg?->id;
-            }
-
-            $this->columns[] = [
-                'label' => $entry['label'],
-                'jawatanGredId' => $jgId,
-                'catchall' => ! empty($entry['catchall']),
-            ];
-
-            if ($jgId) {
-                $namedJgIds[] = $jgId;
-            }
-        }
-
-        // Remember the U41 gred + named jawatan_gred ids for the catch-all column
-        $this->u41GredId = $gredIdByKey['U41'] ?? null;
-        $this->namedJgIds = $namedJgIds;
+        return Pegawai::query()
+            ->with([
+                'ptj',
+                'bahagian',
+                'pegawaiKontrak.program',
+                'jawatan_gred.jawatan',
+                'jawatan_gred.gred',
+            ])
+            ->where('is_kontrak', 1)
+            ->get();
     }
 
-    protected ?int $u41GredId = null;
-
-    protected array $namedJgIds = [];
-
-    protected function norm(string $value): string
+    /**
+     * Green columns = distinct jawatan + gred on kontrak pegawai only.
+     *
+     * @param  Collection<int, Pegawai>  $pegawai
+     * @return list<array{label: string, jawatanGredIds: list<int>}>
+     */
+    protected function buildColumnsFromKontrak(Collection $pegawai): array
     {
-        return str_replace('-', ' ', mb_strtoupper(trim(preg_replace('/\s+/', ' ', $value) ?? '')));
+        $byJawatanGred = [];
+
+        foreach ($pegawai as $p) {
+            $jg = $p->jawatan_gred;
+            $jawatan = $jg?->jawatan;
+            $gred = $jg?->gred;
+
+            if (! $jg || ! $jawatan || ! $gred) {
+                continue;
+            }
+
+            $jgId = (int) $jg->id;
+            $gredLabel = $gred->kod_gred;
+
+            if (! filled($gredLabel)) {
+                continue;
+            }
+
+            $byJawatanGred[$jgId] ??= [
+                'label' => strtoupper(trim($jawatan->desc_jawatan.' '.$gredLabel)),
+                'jawatanGredIds' => [$jgId],
+                'jawatanSort' => mb_strtoupper($jawatan->desc_jawatan),
+                'gredSort' => (int) preg_replace('/\D+/', '', $gredLabel) ?: 0,
+            ];
+        }
+
+        return collect($byJawatanGred)
+            ->sortBy([
+                ['jawatanSort', 'asc'],
+                ['gredSort', 'desc'],
+            ])
+            ->map(fn (array $column) => [
+                'label' => $column['label'],
+                'jawatanGredIds' => $column['jawatanGredIds'],
+            ])
+            ->values()
+            ->all();
     }
 
     /**
      * Org units from waran_jawatans (plus any unit that has kontrak pegawai).
-     * Units are per PTJ under the new Program → PTJ hierarchy.
+     * Non-JKN units are per PTJ; JKN units are per Bahagian.
      */
     protected function buildUnits()
     {
         $units = collect();
 
-        $warans = WaranJawatan::with(['ptj', 'aktiviti.program'])->get();
+        $warans = WaranJawatan::with(['ptj', 'bahagian', 'aktiviti.program'])->get();
         foreach ($warans as $waran) {
-            $unit = $this->unitFor($waran->ptj);
+            $unit = $this->unitFor($waran->ptj, $waran->bahagian);
             if ($unit && ! $units->has($unit['key'])) {
-                $unit['programId'] = $waran->aktiviti?->program?->id;
-                $unit['programLabel'] = $this->programLabel($waran->aktiviti?->program);
+                $program = $waran->aktiviti?->program;
+                $unit['programId'] = $program?->id;
+                $unit['programLabel'] = $this->programLabel($program);
+                $unit['programSort'] = $this->programSortKey($program);
                 $units->put($unit['key'], $unit);
             }
         }
@@ -261,7 +240,7 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
 
     protected function isJkn($ptj): bool
     {
-        return $ptj && ($ptj->is_jkn || $ptj->nama_ptj === 'JABATAN KESIHATAN NEGERI KEDAH');
+        return (bool) ($ptj && ($ptj->is_jkn || $ptj->nama_ptj === 'JABATAN KESIHATAN NEGERI KEDAH'));
     }
 
     protected function unitFor($ptj, $bahagian = null): ?array
@@ -270,11 +249,26 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
             return null;
         }
 
+        if ($this->isJkn($ptj)) {
+            if (! $bahagian) {
+                return null;
+            }
+
+            return [
+                'key' => 'b'.$bahagian->id,
+                'label' => $bahagian->nama_bahagian,
+                'programId' => null,
+                'programLabel' => 'TANPA PROGRAM',
+                'programSort' => 'ZZZ',
+            ];
+        }
+
         return [
             'key' => 'p'.$ptj->id,
             'label' => $ptj->nama_ptj,
             'programId' => null,
             'programLabel' => 'TANPA PROGRAM',
+            'programSort' => 'ZZZ',
         ];
     }
 
@@ -292,53 +286,55 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
         return "{$program->nama_program} : {$program->desc_program}";
     }
 
+    protected function programSortKey($program): string
+    {
+        if (! $program) {
+            return 'ZZZ';
+        }
+
+        return $program->nama_program;
+    }
+
     /**
      * Count kontrak pegawai (is_kontrak = 1) per unit, per resolved column.
      */
     protected function countKontrak($units)
     {
         $counts = [];
-
-        $pegawai = Pegawai::with(['ptj'])->where('is_kontrak', 1)->get();
-
-        // Map jawatan_gred_id -> gred_id for the catch-all column
-        $jgGredId = [];
-        if ($this->u41GredId) {
-            foreach (Jawatan_Gred::pluck('gred_id', 'id') as $jgId => $gredId) {
-                $jgGredId[$jgId] = $gredId;
-            }
-        }
+        $pegawai = $this->kontrakPegawai ?? $this->loadKontrakPegawai();
 
         foreach ($pegawai as $p) {
-            $unit = $this->unitFor($p->ptj);
+            $unit = $this->unitFor($p->ptj, $p->bahagian);
             if (! $unit) {
                 continue;
             }
 
+            $program = $p->pegawaiKontrak?->program;
             if (! $units->has($unit['key'])) {
-                $unit['programId'] = null;
-                $unit['programLabel'] = 'TANPA PROGRAM';
+                $unit['programId'] = $program?->id;
+                $unit['programLabel'] = $this->programLabel($program);
+                $unit['programSort'] = $this->programSortKey($program);
                 $units->put($unit['key'], $unit);
+            } elseif ($program && ($units[$unit['key']]['programId'] ?? null) === null) {
+                $existing = $units->get($unit['key']);
+                $existing['programId'] = $program->id;
+                $existing['programLabel'] = $this->programLabel($program);
+                $existing['programSort'] = $this->programSortKey($program);
+                $units->put($unit['key'], $existing);
             }
 
             $counts[$unit['key']] ??= $this->emptyCounts();
             $counts[$unit['key']]['total']++;
 
-            $pJgId = $p->jawatan_gred_id;
+            $pJgId = (int) ($p->jawatan_gred_id ?? 0);
+            if (! $pJgId) {
+                continue;
+            }
+
             foreach ($this->columns as $i => $column) {
-                if ($column['catchall']) {
-                    $isU41 = $this->u41GredId
-                        && ($jgGredId[$pJgId] ?? null) === $this->u41GredId
-                        && ! in_array($pJgId, $this->namedJgIds);
-                    if ($isU41) {
-                        $counts[$unit['key']]['cols'][$i]++;
-                    }
-
-                    continue;
-                }
-
-                if ($column['jawatanGredId'] && $pJgId === $column['jawatanGredId']) {
+                if (in_array($pJgId, $column['jawatanGredIds'], true)) {
                     $counts[$unit['key']]['cols'][$i]++;
+                    break;
                 }
             }
         }
@@ -368,7 +364,7 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                $lastCol = Coordinate::stringFromColumnIndex($this->lastColumnIndex);
+                $lastCol = Coordinate::stringFromColumnIndex(max(1, $this->lastColumnIndex));
 
                 $this->styleTitle($sheet, $lastCol);
                 $this->styleHeader($sheet, $lastCol);
@@ -434,7 +430,7 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '92CDDC'],
+                'startColor' => ['rgb' => '70AD47'],
             ],
             'borders' => [
                 'allBorders' => [
