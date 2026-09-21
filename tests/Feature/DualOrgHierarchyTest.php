@@ -261,6 +261,49 @@ it('requires bahagian, unit/subunit, and waran for lengkap status', function () 
         ->and(Pegawai::query()->lengkap()->pluck('id'))->toContain($pegawaiHospitalWithUnit->id);
 });
 
+it('marks kontrak pegawai lengkap without a waran when org fields are filled', function () {
+    $hospital = makePtj('HOSPITAL KONTRAK', false);
+    $unit = Unit::query()->create([
+        'ptj_id' => $hospital->id,
+        'bahagian_id' => null,
+        'nama_unit' => 'UNIT KONTRAK',
+    ]);
+
+    $kontrak = Pegawai::query()->create([
+        'ptj_id' => $hospital->id,
+        'bahagian_id' => null,
+        'unit_id' => $unit->id,
+        'subunit_id' => 1,
+        'ada_unit' => 0,
+        'ada_subunit' => 0,
+        'nama' => 'PEGAWAI KONTRAK LENGKAP',
+        'nokp' => '777777777777',
+        'jantina' => 'Lelaki',
+        'is_jtw' => 0,
+        'is_kontrak' => 1,
+    ]);
+
+    $kontrakMissingUnit = Pegawai::query()->create([
+        'ptj_id' => $hospital->id,
+        'bahagian_id' => null,
+        'unit_id' => null,
+        'subunit_id' => null,
+        'ada_unit' => 0,
+        'ada_subunit' => 0,
+        'nama' => 'PEGAWAI KONTRAK TIADA UNIT',
+        'nokp' => '888888888888',
+        'jantina' => 'Perempuan',
+        'is_jtw' => 0,
+        'is_kontrak' => 1,
+    ]);
+
+    expect($kontrak->fresh(['ptj'])->isTidakLengkap())->toBeFalse()
+        ->and($kontrakMissingUnit->fresh(['ptj'])->isTidakLengkap())->toBeTrue()
+        ->and($kontrakMissingUnit->fresh(['ptj'])->tidakLengkapTooltip())->toBe('Sila tetapkan unit/subunit.')
+        ->and(Pegawai::query()->lengkap()->pluck('id'))->toContain($kontrak->id)
+        ->and(Pegawai::query()->tidakLengkap()->pluck('id'))->toContain($kontrakMissingUnit->id);
+});
+
 it('resolves bahagian from prestasi only for jkn ptj', function () {
     $jkn = makePtj('JKN PRESTASI', true);
     $hospital = makePtj('HOSPITAL PRESTASI', false);

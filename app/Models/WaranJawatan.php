@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class WaranJawatan extends Model
 {
@@ -127,10 +128,34 @@ class WaranJawatan extends Model
                     });
             });
         });
+
+        static::deleting(function (WaranJawatan $waranJawatan): bool {
+            return ! $waranJawatan->hasAssignedPegawai();
+        });
+
+        static::forceDeleting(function (WaranJawatan $waranJawatan): bool {
+            return ! $waranJawatan->hasAssignedPegawai();
+        });
     }
 
     public function tbk()
     {
         return $this->hasOne(Tbk::class);
+    }
+
+    public function hasAssignedPegawai(): bool
+    {
+        return filled($this->pegawai_id);
+    }
+
+    /**
+     * Active rows for Nama Penyandang and the Waran Penempatan table.
+     * A deleted waran jawatan stays out of both lists.
+     */
+    public function scopeListed(Builder $query): Builder
+    {
+        return $query
+            ->withoutGlobalScope(SoftDeletingScope::class)
+            ->whereNull($query->qualifyColumn('deleted_at'));
     }
 }

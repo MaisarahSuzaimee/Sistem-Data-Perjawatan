@@ -3,18 +3,17 @@
 namespace App\Filament\Pages;
 
 use App\Models\Jawatan;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
-use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Http\Concerns\InteractsWithInput;
-use Illuminate\Support\HtmlString;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
 
 class Report extends Page implements HasTable
 {
@@ -56,37 +55,47 @@ class Report extends Page implements HasTable
                 $data = [
                     [
                         'id' => 1,
-                        'name' => 'Data Keseluruhan Mengikut PTJ',
+                        'name' => 'L1: Data Keseluruhan Mengikut PTJ',
                         // 'description' => 'Senarai semua pegawai dalam sistem',
                     ],
                     [
                         'id' => 2,
-                        'name' => 'Data Perjawatan Kontrak',
+                        'name' => 'L2: Data Perjawatan Kontrak',
                         // 'description' => 'Laporan waran jawatan terkini',
                     ],
                     [
                         'id' => 3,
-                        'name' => 'Data Mengikut Kumpulan Mengikut PTJ',
+                        'name' => 'L3: Data Mengikut Kumpulan Mengikut PTJ',
                         // 'description' => 'Senarai jawatan kosong',
                     ],
                     [
                         'id' => 4,
-                        'name' => 'Data Keseluruhan Mengikut Jawatan',
+                        'name' => 'L4: Data Keseluruhan Mengikut Jawatan',
                         // 'description' => 'Senarai jawatan kosong',
                     ],
                     [
                         'id' => 5,
-                        'name' => 'Laporan JIK Mengikut Jawatan',
+                        'name' => 'L5: Laporan JIK Mengikut Jawatan',
                         // 'description' => 'Senarai jawatan kosong',
                     ],
                     [
                         'id' => 6,
-                        'name' => 'Laporan JIK Mengikut Gred',
+                        'name' => 'L6: Laporan JIK Mengikut Gred',
+                        // 'description' => 'Senarai jawatan kosong',
+                    ],
+                    [
+                        'id' => 7,
+                        'name' => 'L7: Laporan Maklumat Perjawatan Dan Penyandang Mengikut Jawatan',
+                        // 'description' => 'Senarai jawatan kosong',
+                    ],
+                    [
+                        'id' => 8,
+                        'name' => 'L8: Laporan Kedudukan Perjawatan Dan Pengisian Mengikut Program / Aktiviti ',
                         // 'description' => 'Senarai jawatan kosong',
                     ],
                 ];
 
-                if (!$search) {
+                if (! $search) {
                     return $data;
                 }
 
@@ -118,7 +127,6 @@ class Report extends Page implements HasTable
                                     ->searchable()
                                     ->required(),
                             ],
-                          
 
                             default => [],
                         };
@@ -133,11 +141,19 @@ class Report extends Page implements HasTable
 
                             2 => redirect()->route('export.dataKontrak'),
 
-                            3 => redirect()->route('report.kosong.export'),
+                            3 => redirect()->route('export.l3'),
+
+                            4 => redirect()->route('export.l4'),
 
                             5 => redirect()->route('export.jikByJawatan', [
                                 'jawatan_id' => $data['jawatan_id'],
                             ]),
+
+                            6 => redirect()->route('export.l6'),
+
+                            7 => redirect()->route('export.l7'),
+
+                            8 => redirect()->route('export.l8'),
 
                         };
 
@@ -153,13 +169,13 @@ class Report extends Page implements HasTable
         return [];
     }
 
-    public function getHeading(): string | Htmlable
+    public function getHeading(): string|Htmlable
     {
         return new HtmlString(
-            '<a href="' . e(\App\Filament\Pages\Dashboard::getUrl()) . '" class="mystaff-back-btn" aria-label="Kembali ke Dashboard">' .
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>' .
-            '</a>' .
-            '<span>' . e($this->getTitle()) . '</span>'
+            '<a href="'.e(Dashboard::getUrl()).'" class="mystaff-back-btn" aria-label="Kembali ke Dashboard">'.
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>'.
+            '</a>'.
+            '<span>'.e($this->getTitle()).'</span>'
         );
     }
 }

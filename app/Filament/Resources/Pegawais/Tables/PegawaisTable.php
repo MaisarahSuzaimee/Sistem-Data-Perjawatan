@@ -26,7 +26,7 @@ class PegawaisTable
         return $table
             // ->recordAction(null)
             ->defaultPaginationPageOption(5)
-            ->defaultSort('id', 'desc')
+            ->defaultSort('updated_at', 'desc')
             ->recordUrl(null)
             ->recordClasses(fn (Pegawai $record) => static::lantikanSlug($record)
                 ? 'fi-ta-row-'.static::lantikanSlug($record)
@@ -45,9 +45,14 @@ class PegawaisTable
                             ? 'bg-danger-soft text-fg-danger-strong'
                             : 'bg-success-soft text-fg-success-strong';
 
+                        $tooltip = $tidakLengkap ? $record->tidakLengkapTooltip() : null;
+                        $titleAttr = $tooltip !== null
+                            ? ' title="'.e($tooltip).'" class="fi-badge inline-flex cursor-help items-center rounded-md px-2 py-0.5 text-xs font-medium '.$statusClasses.'"'
+                            : ' class="fi-badge inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium '.$statusClasses.'"';
+
                         return '<strong>'.e($record->nama ?? '').'</strong><br> '
                             .'<span class="text-xs text-gray-500">'.e($record->nokp ?? '').'</span><br>'
-                             .'<span class="fi-badge inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium '.$statusClasses.'">'
+                            .'<span'.$titleAttr.'>'
                             .e($statusLabel)
                             .'</span><br>';
                     })
@@ -87,12 +92,16 @@ class PegawaisTable
                                                             )
                                                             OR (unit_id IS NULL AND ada_unit = 0)
                                                             OR (subunit_id IS NULL AND ada_subunit = 0)
-                                                            OR NOT EXISTS (
-                                                                SELECT 1
-                                                                FROM waran_jawatans
-                                                                INNER JOIN warans ON warans.id = waran_jawatans.waran_id
-                                                                WHERE waran_jawatans.pegawai_id = pegawais.id
-                                                                  AND waran_jawatans.deleted_at IS NULL
+                                                            OR (
+                                                                is_kontrak = 0
+                                                                AND is_jtw = 0
+                                                                AND NOT EXISTS (
+                                                                    SELECT 1
+                                                                    FROM waran_jawatans
+                                                                    INNER JOIN warans ON warans.id = waran_jawatans.waran_id
+                                                                    WHERE waran_jawatans.pegawai_id = pegawais.id
+                                                                      AND waran_jawatans.deleted_at IS NULL
+                                                                )
                                                             )
                                                         THEN 0
                                                         ELSE 1

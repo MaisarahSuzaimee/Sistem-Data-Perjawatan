@@ -1679,6 +1679,252 @@ td.fi-ta-selection-cell {
     color: #db2777 !important;
 }
 
+/* ── Nama Penyandang / Waran Jawatan view — tint by aktiviti program ── */
+.fi-modal-window-program,
+.fi-modal-window-program .fi-sc-tabs-tab {
+    background-color: #f8fafc !important;
+}
+
+.dark .fi-modal-window-program,
+.dark .fi-modal-window-program .fi-sc-tabs-tab {
+    background-color: #1e293b !important;
+}
+
+.fi-modal-window-program .fi-tabs-item:hover,
+.fi-modal-window-program .fi-tabs-item.fi-active,
+.fi-modal-window-program .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-program .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-program .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-program .fi-tabs-item.fi-active > .fi-icon {
+    color: #475569 !important;
+}
+
+.fi-modal-window-program .fi-tabs-item:hover,
+.fi-modal-window-program .fi-tabs-item.fi-active {
+    background-color: rgba(71, 85, 105, 0.2) !important;
+}
+
+.fi-modal-window-program .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #475569 !important;
+    border-color: #475569 !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-program .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #334155 !important;
+    border-color: #334155 !important;
+}
+
+.fi-modal-window-program-1,
+.fi-modal-window-program-1 .fi-sc-tabs-tab {
+    background-color: #eff6ff !important;
+}
+
+.fi-modal-window-program-2,
+.fi-modal-window-program-2 .fi-sc-tabs-tab {
+    background-color: #fffbeb !important;
+}
+
+.fi-modal-window-program-3,
+.fi-modal-window-program-3 .fi-sc-tabs-tab {
+    background-color: #faf5ff !important;
+}
+
+.fi-modal-window-program-4,
+.fi-modal-window-program-4 .fi-sc-tabs-tab {
+    background-color: #fdf2f8 !important;
+}
+
+.fi-modal-window-program-5,
+.fi-modal-window-program-5 .fi-sc-tabs-tab {
+    background-color: #f0fdf4 !important;
+}
+
+.fi-modal-window-program-7,
+.fi-modal-window-program-7 .fi-sc-tabs-tab {
+    background-color: #ecfeff !important;
+}
+
+.dark .fi-modal-window-program-1,
+.dark .fi-modal-window-program-1 .fi-sc-tabs-tab {
+    background-color: #1e3a5f !important;
+}
+
+.dark .fi-modal-window-program-2,
+.dark .fi-modal-window-program-2 .fi-sc-tabs-tab {
+    background-color: #4d3a0f !important;
+}
+
+.dark .fi-modal-window-program-3,
+.dark .fi-modal-window-program-3 .fi-sc-tabs-tab {
+    background-color: #3b1f52 !important;
+}
+
+.dark .fi-modal-window-program-4,
+.dark .fi-modal-window-program-4 .fi-sc-tabs-tab {
+    background-color: #500724 !important;
+}
+
+.dark .fi-modal-window-program-5,
+.dark .fi-modal-window-program-5 .fi-sc-tabs-tab {
+    background-color: #14532d !important;
+}
+
+.dark .fi-modal-window-program-7,
+.dark .fi-modal-window-program-7 .fi-sc-tabs-tab {
+    background-color: #164e63 !important;
+}
+
+.fi-modal-window-program-1 .fi-tabs-item:hover,
+.fi-modal-window-program-1 .fi-tabs-item.fi-active,
+.fi-modal-window-program-1 .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-program-1 .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-program-1 .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-program-1 .fi-tabs-item.fi-active > .fi-icon {
+    color: #2563eb !important;
+}
+
+.fi-modal-window-program-1 .fi-tabs-item:hover,
+.fi-modal-window-program-1 .fi-tabs-item.fi-active {
+    background-color: rgba(37, 99, 235, 0.25) !important;
+}
+
+.fi-modal-window-program-2 .fi-tabs-item:hover,
+.fi-modal-window-program-2 .fi-tabs-item.fi-active,
+.fi-modal-window-program-2 .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-program-2 .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-program-2 .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-program-2 .fi-tabs-item.fi-active > .fi-icon {
+    color: #d97706 !important;
+}
+
+.fi-modal-window-program-2 .fi-tabs-item:hover,
+.fi-modal-window-program-2 .fi-tabs-item.fi-active {
+    background-color: rgba(217, 119, 6, 0.25) !important;
+}
+
+.fi-modal-window-program-3 .fi-tabs-item:hover,
+.fi-modal-window-program-3 .fi-tabs-item.fi-active,
+.fi-modal-window-program-3 .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-program-3 .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-program-3 .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-program-3 .fi-tabs-item.fi-active > .fi-icon {
+    color: #9333ea !important;
+}
+
+.fi-modal-window-program-3 .fi-tabs-item:hover,
+.fi-modal-window-program-3 .fi-tabs-item.fi-active {
+    background-color: rgba(147, 51, 234, 0.25) !important;
+}
+
+.fi-modal-window-program-4 .fi-tabs-item:hover,
+.fi-modal-window-program-4 .fi-tabs-item.fi-active,
+.fi-modal-window-program-4 .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-program-4 .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-program-4 .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-program-4 .fi-tabs-item.fi-active > .fi-icon {
+    color: #db2777 !important;
+}
+
+.fi-modal-window-program-4 .fi-tabs-item:hover,
+.fi-modal-window-program-4 .fi-tabs-item.fi-active {
+    background-color: rgba(219, 39, 119, 0.25) !important;
+}
+
+.fi-modal-window-program-5 .fi-tabs-item:hover,
+.fi-modal-window-program-5 .fi-tabs-item.fi-active,
+.fi-modal-window-program-5 .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-program-5 .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-program-5 .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-program-5 .fi-tabs-item.fi-active > .fi-icon {
+    color: #16a34a !important;
+}
+
+.fi-modal-window-program-5 .fi-tabs-item:hover,
+.fi-modal-window-program-5 .fi-tabs-item.fi-active {
+    background-color: rgba(22, 163, 74, 0.25) !important;
+}
+
+.fi-modal-window-program-7 .fi-tabs-item:hover,
+.fi-modal-window-program-7 .fi-tabs-item.fi-active,
+.fi-modal-window-program-7 .fi-tabs-item:hover .fi-tabs-item-label,
+.fi-modal-window-program-7 .fi-tabs-item.fi-active .fi-tabs-item-label,
+.fi-modal-window-program-7 .fi-tabs-item:hover > .fi-icon,
+.fi-modal-window-program-7 .fi-tabs-item.fi-active > .fi-icon {
+    color: #0891b2 !important;
+}
+
+.fi-modal-window-program-7 .fi-tabs-item:hover,
+.fi-modal-window-program-7 .fi-tabs-item.fi-active {
+    background-color: rgba(8, 145, 178, 0.25) !important;
+}
+
+.fi-modal-window-program-1 .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-program-1 .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+}
+
+.fi-modal-window-program-2 .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #d97706 !important;
+    border-color: #d97706 !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-program-2 .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #b45309 !important;
+    border-color: #b45309 !important;
+}
+
+.fi-modal-window-program-3 .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #9333ea !important;
+    border-color: #9333ea !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-program-3 .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #7e22ce !important;
+    border-color: #7e22ce !important;
+}
+
+.fi-modal-window-program-4 .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #db2777 !important;
+    border-color: #db2777 !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-program-4 .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #be185d !important;
+    border-color: #be185d !important;
+}
+
+.fi-modal-window-program-5 .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-program-5 .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #15803d !important;
+    border-color: #15803d !important;
+}
+
+.fi-modal-window-program-7 .fi-modal-footer-actions .fi-btn:first-child {
+    background-color: #0891b2 !important;
+    border-color: #0891b2 !important;
+    color: #fff !important;
+}
+
+.fi-modal-window-program-7 .fi-modal-footer-actions .fi-btn:first-child:hover {
+    background-color: #0e7490 !important;
+    border-color: #0e7490 !important;
+}
+
 /* Header divider — separates title from content */
 .fi-modal-header {
     border-bottom: 1px solid var(--sneat-border) !important;

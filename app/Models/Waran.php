@@ -12,7 +12,7 @@ class Waran extends Model
         'jenis',
         'jik',
         'catatan',
-        'parent_id'
+        'parent_id',
     ];
 
     // public function ptj()
@@ -21,9 +21,9 @@ class Waran extends Model
     // }
 
     //     public function waranJawatan()
-// {
-//     return $this->hasMany(WaranJawatan::class, 'waran_id');
-// }
+    // {
+    //     return $this->hasMany(WaranJawatan::class, 'waran_id');
+    // }
 
     public function waranJawatan()
     {
@@ -36,36 +36,38 @@ class Waran extends Model
         return $this->hasMany(WaranJawatan::class, 'waran_tolak_id');
     }
 
+    public function hasAssignedPegawai(): bool
+    {
+        return $this->waranJawatan()
+            ->withoutGlobalScopes()
+            ->withTrashed()
+            ->whereNotNull('pegawai_id')
+            ->exists();
+    }
+
     public function getAktivitiListAttribute()
     {
         $user = auth()->user();
-        $query = WaranJawatan::query()->withTrashed();
+        $query = $this->summaryJawatanQuery($user);
 
-        if (!$user->isSuperadmin() && !$user->isAdmin()) {
-            $query->where('ptj_id', $user->ptj_id);
-        }
-
-        $items = $this->jenis === 'Tolak'
-            ? $query->where('waran_tolak_id', $this->id)->get()
-            : $query->where('waran_id', $this->id)->get();
+        $items = $query->get();
 
         return $items
             ->groupBy(
-                fn($wj) =>
-                $wj->aktiviti?->no_aktivit . ' - ' . $wj->aktiviti?->nama_aktiviti
+                fn ($wj) => $wj->aktiviti?->no_aktivit.' - '.$wj->aktiviti?->nama_aktiviti
             )
             ->map(function ($items, $aktivitiName) {
 
                 $count = $items->count();
 
                 // ONLY grey if ALL are inactive
-                $isInactive = $this->jenis === 'Tambah' && $items->every(fn($item) => $item->status === 'removed');
+                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
 
                 $class = $isInactive ? 'text-gray-400' : 'text-black';
 
                 return "<span class='{$class}'>"
-                    . $aktivitiName . " ({$count})"
-                    . "</span>";
+                    .$aktivitiName." ({$count})"
+                    .'</span>';
             })
             ->filter()
             ->join('<br>');
@@ -75,62 +77,51 @@ class Waran extends Model
     {
         $user = auth()->user();
 
-        $query = WaranJawatan::withTrashed();
+        $query = $this->summaryJawatanQuery($user);
 
-        // User only sees their own PTJ
-        if (!$user->isSuperadmin() && !$user->isAdmin()) {
-            $query->where('ptj_id', $user->ptj_id);
-        }
-
-        $items = $this->jenis === 'Tolak'
-            ? $query->where('waran_tolak_id', $this->id)->get()
-            : $query->where('waran_id', $this->id)->get();
+        $items = $query->get();
 
         return $items
-            ->groupBy(fn($wj) => $wj->ptj?->nama_ptj)
+            ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj)
             ->map(function ($items, $ptjName) {
 
                 $count = $items->count();
 
                 // ONLY grey if ALL are inactive
-                $isInactive = $this->jenis === 'Tambah' && $items->every(fn($item) => $item->status === 'removed');
+                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
 
                 $class = $isInactive ? 'text-gray-400' : 'text-black';
 
                 return "<span class='{$class}'>"
-                    . $ptjName . " ({$count})"
-                    . "</span>";
+                    .$ptjName." ({$count})"
+                    .'</span>';
             })
             ->filter()
             ->join('<br>');
     }
 
     // public function getButiranListAttribute()
-// {
-//     $query = \App\Models\WaranJawatan::query();
+    // {
+    //     $query = \App\Models\WaranJawatan::query();
 
     //     if ($this->jenis === 'tolak') {
-//         $items = $query->where('waran_tolak_id', $this->id)->get();
-//     } else {
-//         $items = $query->where('waran_id', $this->id)->get();
-//     }
+    //         $items = $query->where('waran_tolak_id', $this->id)->get();
+    //     } else {
+    //         $items = $query->where('waran_id', $this->id)->get();
+    //     }
 
     //     return $items
-//         ->groupBy('butiran')
-//         ->map(fn ($items, $butiran) =>
-//             $butiran . ' (' . $items->count() . ')'
-//         )
-//         ->values()
-//         ->join('<br>');
-// }
+    //         ->groupBy('butiran')
+    //         ->map(fn ($items, $butiran) =>
+    //             $butiran . ' (' . $items->count() . ')'
+    //         )
+    //         ->values()
+    //         ->join('<br>');
+    // }
 
     public function getButiranListAttribute()
     {
-        $query = WaranJawatan::query()->withTrashed();
-
-        $items = $this->jenis === 'Tolak'
-            ? $query->where('waran_tolak_id', $this->id)->get()
-            : $query->where('waran_id', $this->id)->get();
+        $items = $this->summaryJawatanQuery()->get();
 
         return $items
             ->groupBy('butiran')
@@ -139,52 +130,57 @@ class Waran extends Model
                 $count = $items->count();
 
                 // ONLY grey if ALL are inactive
-                $isInactive = $this->jenis === 'Tambah' && $items->every(fn($item) => $item->status === 'removed');
+                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
 
                 $class = $isInactive ? 'text-gray-400' : 'text-black';
 
                 return "<span class='{$class}'>"
-                    . $butiran . " ({$count})"
-                    . "</span>";
+                    .$butiran." ({$count})"
+                    .'</span>';
             })
             ->filter()
             ->join('<br>');
 
     }
+
     protected static function booted()
-{
-    static::addGlobalScope('ptj_access', function (Builder $query) {
+    {
+        static::addGlobalScope('ptj_access', function (Builder $query) {
 
-        $user = auth()->user();
+            $user = auth()->user();
 
-        if (!$user) {
-            return;
-        }
+            if (! $user) {
+                return;
+            }
 
-        if (in_array($user->role, [1, 2])) {
-            return;
-        }
+            if (in_array($user->role, [1, 2])) {
+                return;
+            }
 
-        $query->where(function ($q) use ($user) {
+            $query->where(function ($q) use ($user) {
 
-            // WaranJawatan belongs to user's PTJ
-            $q->whereHas('waranJawatan', function ($sub) use ($user) {
-                $sub->where('ptj_id', $user->ptj_id);
-            })
+                // WaranJawatan belongs to user's PTJ
+                $q->whereHas('waranJawatan', function ($sub) use ($user) {
+                    $sub->where('ptj_id', $user->ptj_id);
+                })
 
-            // OR WaranJawatan has pegawai from user's PTJ
-            ->orWhereHas('waranJawatan.pegawai', function ($sub) use ($user) {
-                $sub->where('ptj_id', $user->ptj_id);
-            })
+                // OR WaranJawatan has pegawai from user's PTJ
+                    ->orWhereHas('waranJawatan.pegawai', function ($sub) use ($user) {
+                        $sub->where('ptj_id', $user->ptj_id);
+                    })
 
-            // OR rejected waran jawatan
-            ->orWhereHas('waranTolakJawatan', function ($sub) use ($user) {
-                $sub->where('ptj_id', $user->ptj_id);
+                // OR rejected waran jawatan
+                    ->orWhereHas('waranTolakJawatan', function ($sub) use ($user) {
+                        $sub->where('ptj_id', $user->ptj_id);
+                    });
+
             });
-
         });
-    });
-}
+
+        static::deleting(function (Waran $waran): bool {
+            return ! $waran->hasAssignedPegawai();
+        });
+    }
 
     // public function parent()
     // {
@@ -196,12 +192,29 @@ class Waran extends Model
     //     return $this->hasMany(Waran::class, 'parent_id');
     // }
 
+    private function summaryJawatanQuery(?User $user = null)
+    {
+        $query = WaranJawatan::query();
+
+        if ($this->jenis === 'Tolak') {
+            $query->withTrashed()->where('waran_tolak_id', $this->id);
+        } else {
+            $query->where('waran_id', $this->id);
+        }
+
+        if ($user && ! $user->isSuperadmin() && ! $user->isAdmin()) {
+            $query->where('ptj_id', $user->ptj_id);
+        }
+
+        return $query;
+    }
+
     private function waranJawatanQuery()
     {
         $user = auth()->user();
 
-        return \App\Models\WaranJawatan::query()
-            ->when(!$user->isSuperadmin() && !$user->isAdmin(), function ($q) use ($user) {
+        return WaranJawatan::query()
+            ->when(! $user->isSuperadmin() && ! $user->isAdmin(), function ($q) use ($user) {
                 $q->where('ptj_id', $user->ptj_id);
             });
     }
@@ -226,6 +239,7 @@ class Waran extends Model
             return $this->jik;
         }
     }
+
     public function getIsiCountAttribute()
     {
         $user = auth()->user();
@@ -280,6 +294,7 @@ class Waran extends Model
         return $this->waranJawatan->first()?->aktiviti?->nama_aktiviti
             ?? 'Tiada Aktiviti';
     }
+
     protected $with = [
         'waranJawatan.aktiviti',
     ];

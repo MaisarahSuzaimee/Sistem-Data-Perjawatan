@@ -2,9 +2,11 @@
 
 namespace App\Exports;
 
+use App\Models\Gred;
 use App\Models\Jawatan;
 use App\Models\WaranJawatan;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
@@ -21,21 +23,19 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
  *   Row 1 : MAKLUMAT PERJAWATAN : <jawatan>
  *   Row 2 : DATA SEHINGGA        : <tarikh>
  *   Row 3 : blank
- *   Rows 4-5 : BIL | PTJ | <J/I/K per gred jawatan> | JUMLAH KESELURUHAN (J/I/K)
+ *   Rows 4-5 : BIL | PTJ | <J/I/K per gred combination> | JUMLAH KESELURUHAN (J/I/K)
  *   Rows 6+  : per program: program header, PTJ rows, JUMLAH PROGRAM subtotal
  *   Last     : blank row, then JUMLAH KESELURUHAN grand total
  *
- * J (perjawatan)  = waran_jawatans where jawatan_ids contains the selected
- *                   jawatan. Each post is counted exactly once, in one gred
- *                   column: a single-gred waran in its own gred; a waran
- *                   spanning multiple greds in the gred of its assigned
- *                   pegawai (when that gred is inside the waran's range),
- *                   otherwise in the waran's lowest gred.
+ * Columns come from distinct gred_ids sets on waran_jawatan rows that include
+ * the selected jawatan. A single-gred waran (N4) becomes one column; a
+ * multi-gred waran (N1/N2/N3) becomes one column labelled N1/N2/N3.
+ *
+ * J (perjawatan)  = waran_jawatans counted in the column matching their
+ *                   exact gred_ids set.
  * I (isi)         = the same rows that are filled (pegawai is_tetap /
  *                   is_kontrak_interim), mirroring DataKeseluruhanExport.
- * K (kosong)      = J - I for single-gred warans. A multi-gred post is never
- *                   kosong (K stays 0) - the post is filled at whatever gred
- *                   the pegawai holds, or awaits a pegawai at any gred.
+ * K (kosong)      = J - I for every gred column (including multi-gred).
  * JUMLAH KESELURUHAN columns = sum across all gred columns of that row.
  */
 class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullComparison
@@ -45,7 +45,11 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
     /** All rows (1-indexed positions start at A1). */
     public array $rows = [];
 
-    /** Ordered greds of the selected jawatan (one J/I/K column group each). */
+    /**
+     * Ordered gred columns from waran_jawatan combinations.
+     *
+     * @var list<array{key: string, label: string, gred_ids: list<int>}>
+     */
     public array $greds = [];
 
     /** Row numbers of program header rows. */
@@ -73,17 +77,14 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
         Carbon::setLocale('ms');
         $today = strtoupper(Carbon::now()->translatedFormat('d F Y'));
 
-        $jawatan = Jawatan::with(['greds' => function ($query) {
-            $query->orderByRaw('CAST(SUBSTRING(kod_gred, 2) AS UNSIGNED) DESC');
-        }])->findOrFail($this->jawatan_id);
+        $jawatan = Jawatan::findOrFail($this->jawatan_id);
 
-        $this->greds = $jawatan->greds->values()->all();
-
-        $warans = WaranJawatan::with(['ptj', 'aktiviti.program', 'pegawai.jawatan_gred.gred'])
+        $warans = WaranJawatan::with(['ptj', 'aktiviti.program', 'pegawai'])
             ->whereJsonContains('jawatan_ids', $this->jawatan_id)
             ->orderBy('ptj_id')
             ->get();
 
+        $this->greds = $this->buildGredColumns($warans);
         $this->lastColumnIndex = 2 + (count($this->greds) * 3) + 3;
 
         $rows = collect();
@@ -100,7 +101,7 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
         // Row 4 – column group headers
         $header4 = ['BIL', 'PTJ'];
         foreach ($this->greds as $gred) {
-            $header4[] = strtoupper($jawatan->desc_jawatan.' '.$gred->kod_gred);
+            $header4[] = strtoupper($jawatan->desc_jawatan.' '.$gred['label']);
             $header4[] = '';
             $header4[] = '';
         }
@@ -185,6 +186,84 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
     }
 
     /**
+     * Distinct gred_ids combinations from waran_jawatan, ordered by highest
+     * gred number descending (same visual order as the previous single-gred
+     * columns). Multi-gred labels use ascending kod order (e.g. N1/N2/N3).
+     *
+     * @return list<array{key: string, label: string, gred_ids: list<int>}>
+     */
+    protected function buildGredColumns(Collection $warans): array
+    {
+        $combinations = [];
+
+        foreach ($warans as $waran) {
+            $ids = $this->normalizedGredIds($waran->gred_ids ?? []);
+            if ($ids === []) {
+                continue;
+            }
+
+            $key = implode(',', $ids);
+            $combinations[$key] = $ids;
+        }
+
+        if ($combinations === []) {
+            return [];
+        }
+
+        $gredById = Gred::query()
+            ->whereIn('id', collect($combinations)->flatten()->unique()->all())
+            ->get()
+            ->keyBy('id');
+
+        $columns = [];
+
+        foreach ($combinations as $key => $ids) {
+            $greds = collect($ids)
+                ->map(fn (int $id) => $gredById->get($id))
+                ->filter();
+
+            if ($greds->isEmpty()) {
+                continue;
+            }
+
+            $label = $greds
+                ->sortBy(fn (Gred $gred) => (int) substr($gred->kod_gred, 1))
+                ->pluck('kod_gred')
+                ->implode('/');
+
+            $columns[] = [
+                // Cast: PHP stores numeric string array keys as ints (e.g. "1" → 1).
+                'key' => (string) $key,
+                'label' => $label,
+                'gred_ids' => $ids,
+                'sort' => $greds->max(fn (Gred $gred) => (int) substr($gred->kod_gred, 1)),
+            ];
+        }
+
+        return collect($columns)
+            ->sortByDesc('sort')
+            ->map(fn (array $column) => [
+                'key' => $column['key'],
+                'label' => $column['label'],
+                'gred_ids' => $column['gred_ids'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<int|string>|null  $gredIds
+     * @return list<int>
+     */
+    protected function normalizedGredIds(?array $gredIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $gredIds ?? [])));
+        sort($ids);
+
+        return array_values(array_filter($ids, fn (int $id) => $id > 0));
+    }
+
+    /**
      * Flat count array: 3 slots per gred column (J/I/K) + 3 for the total.
      */
     protected function emptyCounts(): array
@@ -194,7 +273,7 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
 
     /**
      * Tally J/I/K for a group of waran_jawatans against each gred column.
-     * Each post counts exactly once, in the column chosen by columnIndexFor().
+     * Each post counts exactly once, in the column matching its gred_ids set.
      */
     protected function countsFor($items): array
     {
@@ -207,59 +286,37 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
                 continue;
             }
 
-            $multiGred = count($waran->gred_ids ?? []) > 1;
             $filled = $waran->pegawai
                 && ($waran->pegawai->is_tetap || $waran->pegawai->is_kontrak_interim);
 
             $base = $index * 3;
+            $isi = $filled ? 1 : 0;
 
-            $counts[$base] += 1;                            // J
-            $counts[$base + 1] += $filled ? 1 : 0;          // I
-            $counts[$base + 2] += ($multiGred || $filled) ? 0 : 1; // K
+            $counts[$base] += 1;       // J
+            $counts[$base + 1] += $isi; // I
+            $counts[$base + 2] += 1 - $isi; // K = J - I
             $counts[$totalBase] += 1;
-            $counts[$totalBase + 1] += $filled ? 1 : 0;
-            $counts[$totalBase + 2] += ($multiGred || $filled) ? 0 : 1;
+            $counts[$totalBase + 1] += $isi;
+            $counts[$totalBase + 2] += 1 - $isi;
         }
 
         return $counts;
     }
 
     /**
-     * Index (into $this->greds) of the single column where a waran's post is
-     * counted. A single-gred waran counts in its only gred. A multi-gred waran
-     * counts in the pegawai's own gred when assigned and inside the range;
-     * otherwise (no pegawai, or a pegawai whose gred is outside the range) it
-     * counts in the range's lowest gred. Returns null when no report column
-     * matches.
+     * Index (into $this->greds) of the column whose gred_ids set matches the
+     * waran's exactly. Returns null when the waran has no usable greds.
      */
     protected function columnIndexFor($waran): ?int
     {
-        $gredIds = array_map('intval', $waran->gred_ids ?? []);
+        $key = implode(',', $this->normalizedGredIds($waran->gred_ids ?? []));
 
-        if (count($gredIds) === 1) {
-            foreach ($this->greds as $index => $gred) {
-                if ((int) $gred->id === $gredIds[0]) {
-                    return $index;
-                }
-            }
-
+        if ($key === '') {
             return null;
         }
 
-        // Pegawai's own gred decides the column when it is inside the range.
-        $pegawaiGred = (int) ($waran->pegawai?->jawatan_gred?->gred_id ?? 0);
-        if ($pegawaiGred && in_array($pegawaiGred, $gredIds, true)) {
-            foreach ($this->greds as $index => $gred) {
-                if ((int) $gred->id === $pegawaiGred) {
-                    return $index;
-                }
-            }
-        }
-
-        // Lowest gred of the range: $this->greds is ordered DESC by gred number
-        // (U12, U10, ..., U5), so the last matching column is the lowest.
-        for ($index = count($this->greds) - 1; $index >= 0; $index--) {
-            if (in_array((int) $this->greds[$index]->id, $gredIds, true)) {
+        foreach ($this->greds as $index => $gred) {
+            if ((string) $gred['key'] === $key) {
                 return $index;
             }
         }
@@ -288,7 +345,6 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
                 $sheet = $event->sheet->getDelegate();
 
                 $lastCol = Coordinate::stringFromColumnIndex($this->lastColumnIndex);
-                $totalGroupStart = Coordinate::stringFromColumnIndex(2 + (count($this->greds) * 3) + 1);
 
                 $this->styleTitle($sheet);
                 $this->styleHeader($sheet, $lastCol);

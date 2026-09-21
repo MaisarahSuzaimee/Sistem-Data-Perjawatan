@@ -101,24 +101,111 @@ class Pegawai extends Model
         return $this->hasOne(WaranJawatan::class, 'pegawai_id');
     }
 
+    /**
+     * Pegawai whose jawatan_gred matches the waran jawatan, and who are not assigned to another waran.
+     *
+     * @param  array<int, mixed>  $jawatanIds
+     * @param  array<int, mixed>  $gredIds
+     * @return array<int, string>
+     */
+    public static function penyandangOptions(array $jawatanIds, array $gredIds, ?int $exceptWaranJawatanId = null, ?int $currentPegawaiId = null): array
+    {
+        $jawatanIds = collect($jawatanIds)
+            ->filter(fn ($id): bool => filled($id))
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        $gredIds = collect($gredIds)
+            ->filter(fn ($id): bool => filled($id))
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        $options = [];
+
+        if ($jawatanIds !== [] && $gredIds !== []) {
+            $jawatanGredIds = Jawatan_Gred::query()
+                ->whereIn('jawatan_id', $jawatanIds)
+                ->whereIn('gred_id', $gredIds)
+                ->pluck('id');
+
+            $query = static::query()
+                ->where('is_kontrak', false)
+                ->whereIn('jawatan_gred_id', $jawatanGredIds)
+                ->whereNotIn('id', function ($assigned) use ($exceptWaranJawatanId): void {
+                    $assigned->select('pegawai_id')
+                        ->from('waran_jawatans')
+                        ->whereNotNull('pegawai_id')
+                        ->whereNull('deleted_at');
+
+                    if ($exceptWaranJawatanId !== null) {
+                        $assigned->where('id', '!=', $exceptWaranJawatanId);
+                    }
+                });
+
+            $user = auth()->user();
+
+            if ($user && ! in_array($user->role, [1, 2], true)) {
+                $query->where('ptj_id', $user->ptj_id);
+            }
+
+            $options = $query
+                ->orderBy('nama')
+                ->get()
+                ->mapWithKeys(fn (Pegawai $pegawai): array => [
+                    $pegawai->id => "{$pegawai->nama} ({$pegawai->nokp})",
+                ])
+                ->all();
+        }
+
+        if ($currentPegawaiId && ! array_key_exists($currentPegawaiId, $options)) {
+            $current = static::withoutGlobalScopes()->find($currentPegawaiId);
+
+            if ($current) {
+                $options[$current->id] = "{$current->nama} ({$current->nokp})";
+            }
+        }
+
+        return $options;
+    }
+
     public function isTidakLengkap(): bool
     {
+        return $this->tidakLengkapReasons() !== [];
+    }
+
+    /**
+     * Missing fields that make this pegawai "Tidak Lengkap".
+     *
+     * @return list<string>
+     */
+    public function tidakLengkapReasons(): array
+    {
+        $reasons = [];
+
         if ($this->ptj_id === null) {
-            return true;
+            $reasons[] = 'PTJ';
         }
 
         if ($this->ptj?->usesBahagianHierarchy() && $this->bahagian_id === null) {
-            return true;
+            $reasons[] = 'bahagian';
         }
 
-        // Unit: must be filled or "Tiada Unit" checked
-        if ($this->unit_id === null && (int) $this->ada_unit === 0) {
-            return true;
+        $missingUnit = $this->unit_id === null && (int) $this->ada_unit === 0;
+        $missingSubunit = $this->subunit_id === null && (int) $this->ada_subunit === 0;
+
+        if ($missingUnit && $missingSubunit) {
+            $reasons[] = 'unit/subunit';
+        } elseif ($missingUnit) {
+            $reasons[] = 'unit';
+        } elseif ($missingSubunit) {
+            $reasons[] = 'subunit';
         }
 
-        // Subunit: must be filled or "Tiada Subunit" checked
-        if ($this->subunit_id === null && (int) $this->ada_subunit === 0) {
-            return true;
+        // Kontrak and Jawatan Tanpa Waran do not need a waran assignment.
+        if ((int) $this->is_kontrak === 1 || (int) $this->is_jtw === 1) {
+            return $reasons;
         }
 
         $hasWaran = $this->waranJawatan()
@@ -127,10 +214,24 @@ class Pegawai extends Model
             ->exists();
 
         if (! $hasWaran) {
-            return true;
+            $reasons[] = 'waran';
         }
 
-        return false;
+        return $reasons;
+    }
+
+    /**
+     * Hover text for the "Tidak Lengkap" badge, e.g. "Sila tetapkan unit/subunit / waran."
+     */
+    public function tidakLengkapTooltip(): ?string
+    {
+        $reasons = $this->tidakLengkapReasons();
+
+        if ($reasons === []) {
+            return null;
+        }
+
+        return 'Sila tetapkan '.implode(' / ', $reasons).'.';
     }
 
     /**
@@ -151,7 +252,11 @@ class Pegawai extends Model
                 ->orWhere(function (Builder $q): void {
                     $q->whereNull('subunit_id')->where('ada_subunit', 0);
                 })
-                ->orWhereDoesntHave('waranJawatan.waran');
+                ->orWhere(function (Builder $q): void {
+                    $q->where('is_kontrak', 0)
+                        ->where('is_jtw', 0)
+                        ->whereDoesntHave('waranJawatan.waran');
+                });
         });
     }
 
@@ -173,6 +278,10 @@ class Pegawai extends Model
             ->where(function (Builder $q): void {
                 $q->whereNotNull('subunit_id')->orWhere('ada_subunit', 1);
             })
-            ->whereHas('waranJawatan.waran');
+            ->where(function (Builder $q): void {
+                $q->where('is_kontrak', 1)
+                    ->orWhere('is_jtw', 1)
+                    ->orWhereHas('waranJawatan.waran');
+            });
     }
 }
