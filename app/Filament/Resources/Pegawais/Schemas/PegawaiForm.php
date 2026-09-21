@@ -44,29 +44,28 @@ class PegawaiForm
                                 ->label('No Kad Pengenalan')
                                 ->required()
                                 ->disabled(fn (?Pegawai $record): bool => $record?->waranJawatan()->withoutGlobalScopes()->exists() ?? false)
+                                ->dehydrated() // keep value on save even when disabled (waran-assigned)
                                 ->maxLength(12)
                                 ->placeholder('Contoh: 780102027168')
                                 // ->helperText('Masukkan 12 digit No. KP - nama & jantina akan diisi automatik via API (jantina -> nama) jika ditemui.')
                                 ->live(debounce: 500)
                                 ->rules([
-                                    fn (?Pegawai $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($record): void {
+                                    fn (?Pegawai $record, $livewire): \Closure => function (string $attribute, $value, \Closure $fail) use ($record, $livewire): void {
                                         $normalized = str_replace('-', '', trim((string) $value));
 
                                         if (blank($normalized)) {
                                             return;
                                         }
 
-                                        $exists = Pegawai::withoutGlobalScopes()
-                                            ->where('nokp', $normalized)
-                                            ->when($record, fn ($q) => $q->where('id', '!=', $record->getKey()))
-                                            ->exists();
+                                        $ignoreId = $record?->getKey()
+                                            ?? (method_exists($livewire, 'getRecord') ? $livewire->getRecord()?->getKey() : null);
 
-                                        if ($exists) {
+                                        if (static::nokpAlreadyTaken($normalized, $ignoreId !== null ? (int) $ignoreId : null)) {
                                             $fail('Pegawai dengan No. Kad Pengenalan ini telah wujud dalam sistem.');
                                         }
                                     },
                                 ])
-                                ->afterStateUpdated(function (Get $get, Set $set, ?Pegawai $record, ?string $state) {
+                                ->afterStateUpdated(function (Get $get, Set $set, ?Pegawai $record, $livewire, ?string $state) {
                                     if (blank($state)) {
                                         return;
                                     }
@@ -76,12 +75,10 @@ class PegawaiForm
 
                                     // Immediate existence check for create (show message if pegawai already exists)
                                     if (preg_match('/^\d{12}$/', $noKp)) {
-                                        $exists = Pegawai::withoutGlobalScopes()
-                                            ->where('nokp', $noKp)
-                                            ->when($record, fn ($q) => $q->where('id', '!=', $record->getKey()))
-                                            ->exists();
+                                        $ignoreId = $record?->getKey()
+                                            ?? (method_exists($livewire, 'getRecord') ? $livewire->getRecord()?->getKey() : null);
 
-                                        if ($exists) {
+                                        if (static::nokpAlreadyTaken($noKp, $ignoreId !== null ? (int) $ignoreId : null)) {
                                             Notification::make()
                                                 ->title('Pegawai Telah Wujud')
                                                 ->body('Pegawai dengan No. Kad Pengenalan ini telah wujud dalam sistem.')
@@ -383,6 +380,8 @@ class PegawaiForm
                                     $set('bahagian_id', null);
                                     $set('unit_id', null);
                                     $set('subunit_id', null);
+                                    $set('aktiviti_id', null);
+                                    $set('program_id', null);
                                 }),
 
                             TextEntry::make('ptj')
@@ -960,18 +959,23 @@ class PegawaiForm
 
                                     return auth()->user()->role == 3;
                                 }),
+                            Hidden::make('program_id'),
                             Select::make('aktiviti_id')
                                 ->label('Aktiviti')
-                                ->options(
-                                    Aktiviti::orderBy('no_aktivit')
-                                        ->get()
-                                        ->mapWithKeys(fn ($aktiviti) => [
-                                            $aktiviti->id => "{$aktiviti->no_aktivit} - {$aktiviti->nama_aktiviti}",
-                                        ])
-                                )
+                                ->options(fn (Get $get): array => static::kontrakAktivitiOptions($get('ptj_id')))
                                 ->searchable()
                                 ->required()
+                                ->live()
                                 ->visible(fn (Get $get) => $get('is_kontrak'))
+                                ->disabled(fn (Get $get): bool => blank($get('ptj_id')))
+                                ->helperText(fn (Get $get): ?string => blank($get('ptj_id'))
+                                    ? 'Pilih PTJ dahulu untuk senarai aktiviti.'
+                                    : null)
+                                ->afterStateUpdated(function (Set $set, $state): void {
+                                    $set('program_id', filled($state)
+                                        ? Aktiviti::query()->whereKey($state)->value('program_id')
+                                        : null);
+                                })
                                 ->columnSpanFull(),
                             TextEntry::make('aktiviti')
                                 ->label('Aktiviti')
@@ -1082,5 +1086,37 @@ class PegawaiForm
                     )),
 
             ]);
+    }
+
+    /**
+     * Whether another active pegawai already uses this NOKP (ignoring the
+     * record being edited). Soft-deleted rows are ignored so re-created
+     * kontrak pegawai are not blocked by old deleted duplicates.
+     */
+    public static function nokpAlreadyTaken(string $normalizedNokp, ?int $ignorePegawaiId = null): bool
+    {
+        return Pegawai::query()
+            ->withoutGlobalScope('ptj_access')
+            ->where(function ($query) use ($normalizedNokp): void {
+                $query->where('nokp', $normalizedNokp)
+                    ->orWhereRaw("REPLACE(nokp, '-', '') = ?", [$normalizedNokp]);
+            })
+            ->when($ignorePegawaiId, fn ($query) => $query->whereKeyNot($ignorePegawaiId))
+            ->exists();
+    }
+
+    /**
+     * Aktiviti for kontrak penempatan: only those under programs assigned to the PTJ,
+     * and linked to that PTJ via aktiviti_ptj.
+     *
+     * @return array<int, string>
+     */
+    public static function kontrakAktivitiOptions(mixed $ptjId): array
+    {
+        if (blank($ptjId)) {
+            return [];
+        }
+
+        return Ptj::query()->find((int) $ptjId)?->aktivitiSelectOptions() ?? [];
     }
 }
