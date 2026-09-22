@@ -63,7 +63,7 @@
                 </span>
             </th>
             <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->ptj?->nama_ptj }}@if($record->ptj?->programs?->isNotEmpty())<span class="text-xs text-gray-500"> ({{ $record->ptj->programs->pluck('nama_program')->filter()->implode(', ') }})</span>@endif
+                {{ $record->ptj?->nama_ptj }}@if($record->ptj?->programs?->isNotEmpty())@endif
             </td>
         </tr>
         @if(filled($record->bahagian?->nama_bahagian))
@@ -83,7 +83,7 @@
             <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
                 <span class="inline-flex items-center gap-2">
                     <x-filament::icon icon="heroicon-o-squares-2x2" class="w-4 h-4 text-fg-yellow" />
-                    Unit
+                    Jabatan / KK / KP
                 </span>
             </th>
             <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
@@ -94,7 +94,7 @@
             <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
                 <span class="inline-flex items-center gap-2">
                     <x-filament::icon icon="heroicon-o-square-2-stack" class="w-4 h-4 text-fg-brand" />
-                    Sub Unit
+                    KD / KKIA / Wad / Klinik
                 </span>
             </th>
             <td class="border border-gray-200 dark:border-white/10 px-3 py-2">

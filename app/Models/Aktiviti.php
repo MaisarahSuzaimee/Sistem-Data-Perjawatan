@@ -26,6 +26,32 @@ class Aktiviti extends Model
         return $this->belongsToMany(Ptj::class, 'aktiviti_ptj')->withTimestamps();
     }
 
+    /**
+     * PTJs assigned to this aktiviti in the Program form.
+     *
+     * @return array<int, string>
+     */
+    public function ptjSelectOptions(): array
+    {
+        return $this->ptjs()
+            ->orderBy('nama_ptj')
+            ->get()
+            ->pluck('nama_ptj', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function ptjSelectOptionsFor(mixed $aktivitiId): array
+    {
+        if (blank($aktivitiId)) {
+            return [];
+        }
+
+        return static::query()->find((int) $aktivitiId)?->ptjSelectOptions() ?? [];
+    }
+
     public function butiran(): HasMany
     {
         return $this->hasMany(Butiran::class, 'aktiviti_id');

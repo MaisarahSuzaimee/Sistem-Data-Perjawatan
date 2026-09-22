@@ -28,6 +28,7 @@ AGENTS.md
 /storage/*.key
 /storage/pail
 /vendor
+/tests
 /tests/Browser/Screenshots
 /tests/Browser/ExampleTest.php
 /tests/Browser/LoginTest.php

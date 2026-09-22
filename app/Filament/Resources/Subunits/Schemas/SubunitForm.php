@@ -162,7 +162,17 @@ class SubunitForm
                             })
                             ->default(fn ($record) => $record?->unit_id)
                             ->visible(fn ($record) => $record === null)
-                            ->searchable(),
+                            ->searchable()
+                            ->live()
+                            ->afterStateUpdated(function (mixed $state, $livewire): void {
+                                if (
+                                    filled($state)
+                                    && method_exists($livewire, 'redirectToEditIfUnitHasSubunits')
+                                ) {
+                                    $livewire->redirectToEditIfUnitHasSubunits($state);
+                                }
+                            })
+                            ->helperText('Jika Unit sudah ada KD / KKIA / Wad / Klinik, anda akan diarah ke halaman kemaskini.'),
 
                         TextInput::make('unit_display')
                             ->label('Unit')

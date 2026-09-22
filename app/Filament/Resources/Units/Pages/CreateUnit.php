@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\Units\Pages;
 
 use App\Filament\Resources\Units\UnitResource;
+use App\Models\Unit;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -44,15 +46,63 @@ class CreateUnit extends CreateRecord
         return UnitResource::getUrl('index');
     }
 
+    public function redirectToEditIfParentHasUnits(?int $ptjId, ?int $bahagianId): void
+    {
+        $existing = $this->findExistingUnitForParent($ptjId, $bahagianId);
+
+        if (! $existing) {
+            return;
+        }
+
+        Notification::make()
+            ->title(filled($bahagianId)
+                ? 'Bahagian ini sudah mempunyai unit'
+                : 'PTJ ini sudah mempunyai unit')
+            ->body('Mengalihkan ke halaman kemaskini.')
+            ->info()
+            ->send();
+
+        $this->redirect(UnitResource::getUrl('edit', [
+            'record' => $existing,
+        ]));
+    }
+
+    protected function findExistingUnitForParent(?int $ptjId, ?int $bahagianId): ?Unit
+    {
+        if (filled($bahagianId)) {
+            return Unit::query()
+                ->where('bahagian_id', $bahagianId)
+                ->orderBy('id')
+                ->first();
+        }
+
+        if (blank($ptjId)) {
+            return null;
+        }
+
+        return Unit::query()
+            ->where('ptj_id', $ptjId)
+            ->whereNull('bahagian_id')
+            ->orderBy('id')
+            ->first();
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         $units = $data['units'] ?? null;
+        $ptjId = isset($data['ptj_id']) ? (int) $data['ptj_id'] : null;
+        $bahagianId = isset($data['bahagian_id']) ? (int) $data['bahagian_id'] : null;
+
+        $existing = $this->findExistingUnitForParent($ptjId, $bahagianId);
+
+        if ($existing) {
+            $this->redirectToEditIfParentHasUnits($ptjId, $bahagianId);
+
+            return $existing;
+        }
 
         // Bulk creation via Repeater - each unit has its own parlimen/dun
         if (is_array($units) && count($units) > 0) {
-            $ptjId = $data['ptj_id'] ?? null;
-            $bahagianId = $data['bahagian_id'] ?? null;
-
             $firstRecord = null;
 
             foreach ($units as $unitData) {
