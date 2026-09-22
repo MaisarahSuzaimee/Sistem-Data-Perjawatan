@@ -2,10 +2,11 @@
 
 namespace App\Filament\Resources\Warans\RelationManagers;
 
-use App\Filament\Resources\WaranJawatans\WaranJawatanResource;
+use App\Filament\Resources\WaranJawatans\Schemas\WaranJawatanInfolist;
 use App\Filament\Resources\Warans\Pages\ViewWaran;
 use App\Filament\Resources\Warans\WaranResource;
 use App\Filament\Support\BlockedPegawaiDelete;
+use App\Models\Aktiviti;
 use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
@@ -36,10 +37,8 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
@@ -97,6 +96,13 @@ class WaranJawatansRelationManager extends RelationManager
                                     })
                                     ->searchable()
                                     ->preload()
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('ptj_id', null);
+                                        $set('bahagian_id', null);
+                                        $set('unit_id', null);
+                                        $set('subunit_id', null);
+                                    })
                                     ->columns(1)
                                     ->disabled(
                                         fn () => ! auth()->user()?->isSuperadmin()
@@ -152,20 +158,21 @@ class WaranJawatansRelationManager extends RelationManager
 
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    ->options(
-                                        Ptj::query()
-                                            ->orderBy('nama_ptj')
-                                            ->pluck('nama_ptj', 'id')
-                                            ->toArray()
-                                    )
+                                    ->options(fn (Get $get): array => Aktiviti::ptjSelectOptionsFor($get('aktiviti_id')))
                                     ->searchable()
                                     ->preload()
                                     ->live()
                                     ->required()
                                     ->columnSpanFull()
+                                    ->helperText(fn (Get $get): ?string => blank($get('aktiviti_id'))
+                                        ? 'Sila pilih aktiviti dahulu'
+                                        : null)
                                     ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                        && ! auth()->user()?->isAdmin()
+                                        fn (Get $get): bool => blank($get('aktiviti_id'))
+                                            || (
+                                                ! auth()->user()?->isSuperadmin()
+                                                && ! auth()->user()?->isAdmin()
+                                            )
                                     )
                                     ->afterStateUpdated(function (Set $set): void {
                                         $set('bahagian_id', null);
@@ -214,7 +221,7 @@ class WaranJawatansRelationManager extends RelationManager
                                     }),
 
                                 Select::make('unit_id')
-                                    ->label('Unit')
+                                    ->label('Jabatan / KK / KP')
                                     ->options(function (Get $get): array {
                                         $ptjId = $get('ptj_id');
 
@@ -252,7 +259,7 @@ class WaranJawatansRelationManager extends RelationManager
                                     ->afterStateUpdated(fn (Set $set) => $set('subunit_id', null)),
 
                                 Select::make('subunit_id')
-                                    ->label('Subunit')
+                                    ->label('KD / KKIA / Wad / Klinik')
                                     ->options(function (Get $get): array {
                                         $unitId = $get('unit_id');
 
@@ -465,7 +472,20 @@ class WaranJawatansRelationManager extends RelationManager
                 $waran = $this->getOwnerRecord();
                 $user = auth()->user();
 
-                $query = WaranJawatan::query()->withoutGlobalScopes();
+                $query = WaranJawatan::query()
+                    ->withoutGlobalScopes()
+                    ->with([
+                        'aktiviti.program',
+                        'bahagian',
+                        'pegawai.jawatan_gred.jawatan',
+                        'pegawai.jawatan_gred.gred',
+                        'pegawai.ptj',
+                        'ptj',
+                        'subunit',
+                        'tbk',
+                        'unit',
+                        'waran',
+                    ]);
                 if ($user?->role == 3) {
                     $query->where('ptj_id', $user->ptj_id);
                 }
@@ -696,134 +716,14 @@ class WaranJawatansRelationManager extends RelationManager
                     ViewAction::make('view')
                         ->label('Paparan')
                         ->color('info')
-                        // ->url(fn($record) => WaranJawatanResource::getUrl('view', [
-                        //     'record' => $record,
-                        // ])),
-                        ->modalHeading(function ($record) {
-                            return $record->waran?->no_waran.' - '.$record->ptj?->nama_ptj;
+                        ->modalHeading(function (WaranJawatan $record): string {
+                            return $record->waran?->no_waran.' - '.($record->ptj?->nama_ptj ?? 'Tiada PTJ');
                         })
                         ->modalCloseButton(false)
-                        ->infolist([
-                            Grid::make(2)
-                                ->schema([
-                                    Tabs::make('Tabs')
-                                        ->tabs([
-                                            Tab::make('Maklumat Waran')
-                                                ->schema([
-                                                    TextEntry::make('waran.no_waran')
-                                                        ->label('No Waran'),
-                                                    TextEntry::make('butiran'),
-                                                    TextEntry::make('aktiviti_id')
-                                                        ->label('Aktiviti')
-                                                        ->formatStateUsing(function ($record) {
-                                                            return $record->aktiviti
-                                                                ? $record->aktiviti->no_aktivit.' - '.$record->aktiviti->nama_aktiviti
-                                                                : '-';
-                                                        }),
-
-                                                    TextEntry::make('jawatan_gred_display')
-                                                        ->label('Jawatan / Gred')
-                                                        ->state(function ($record) {
-                                                            return $record->jawatan_list.' , GRED '.$record->gred_list;
-                                                        })
-                                                        ->html(),
-
-                                                    TextEntry::make('ptj.nama_ptj')
-                                                        ->label('PTJ'),
-                                                    TextEntry::make('bahagian.nama_bahagian')
-                                                        ->label('Bahagian')
-                                                        ->placeholder('Tiada')
-                                                        ->visible(fn ($record): bool => (bool) $record->ptj?->usesBahagianHierarchy()),
-                                                    TextEntry::make('unit.nama_unit')
-                                                        ->label('Unit')
-                                                        ->placeholder('Tiada'),
-                                                    TextEntry::make('subunit.nama_subunit')
-                                                        ->label('Subunit')
-                                                        ->placeholder('Tiada'),
-
-                                                    TextEntry::make('status')
-                                                        ->label('Status')
-                                                        ->badge()
-                                                        ->size('lg')
-                                                        ->formatStateUsing(fn ($state) => match ($state) {
-                                                            'removed' => 'Dibuang',
-                                                            'pindaan nama' => 'Pindaan Nama',
-                                                            'batal nama' => 'Batal Nama',
-                                                            default => 'Aktif',
-                                                        })
-                                                        ->color(
-                                                            fn ($state) => match ($state) {
-                                                                'removed' => 'danger',
-                                                                'pindaan nama' => 'info',
-                                                                'batal nama' => 'primary',
-                                                                default => 'success',
-                                                            }
-                                                        ),
-
-                                                    TextEntry::make('tarikh_kuatkuasa')
-                                                        ->label('Tarikh Kuatkuasa Waran')
-                                                        ->date('d F Y')
-                                                        ->placeholder('Tiada'),
-                                                ]),
-
-                                            Tab::make('Maklumat Penyandang')
-                                                ->schema([
-                                                    TextEntry::make('pegawai.nama')
-                                                        ->label('Nama Pegawai')
-                                                        ->state(fn ($record) => $record->pegawai?->nama)
-                                                        ->placeholder('Tiada Penyandang')
-                                                        ->columnSpanFull(),
-                                                    TextEntry::make('pegawai.nokp')
-                                                        ->label('No Kad Pengenalan')
-                                                        ->state(fn ($record) => $record->pegawai?->nokp)
-                                                        ->placeholder('Tiada')
-                                                        ->visible(fn ($record) => $record->pegawai_id !== null),
-                                                    // TextEntry::make('pegawai')
-                                                    //     ->label('Jawatan / Gred')
-                                                    //     ->formatStateUsing(
-                                                    //         fn($record) =>
-                                                    //         $record->pegawai?->jawatan_gred?->jawatan?->desc_jawatan . ', ' .
-                                                    //         $record->pegawai?->jawatan_gred?->gred?->kod_gred
-                                                    //     )
-                                                    //     ->wrap(),
-                                                    TextEntry::make('pegawai')
-                                                        ->label('Jawatan / Gred')
-                                                        ->formatStateUsing(function ($record) {
-
-                                                            $jawatan = $record->pegawai?->jawatan_gred?->jawatan?->desc_jawatan;
-                                                            $gred = $record->pegawai?->jawatan_gred?->gred?->kod_gred;
-
-                                                            $tbk = $record->tbk?->tbk;
-
-                                                            return $jawatan.', '.$gred.
-                                                                ($tbk ? " (TBK{$tbk})" : '');
-                                                        })
-                                                        ->wrap()
-                                                        ->visible(fn ($record) => $record->pegawai_id !== null),
-                                                    // TextEntry::make('ptj_asal')
-                                                    //     ->label('PTJ')
-                                                    //     ->getStateUsing(fn ($record) => $record->pegawai?->ptj?->nama_ptj)
-                                                    //     ->placeholder('Tiada')
-                                                    //     ->columnSpanFull()
-                                                    //     ->visible(fn ($record) => $record->pegawai_id !== null),
-                                                    // TextEntry::make('unit_asal')
-                                                    //     ->label('Unit')
-                                                    //     ->getStateUsing(fn ($record) => $record->pegawai?->unit?->nama_unit)
-                                                    //     ->placeholder('Tiada')
-                                                    //     ->visible(fn ($record) => $record->pegawai_id !== null),
-                                                    // TextEntry::make('subunit_asal')
-                                                    //     ->label('Subunit')
-                                                    //     ->getStateUsing(fn ($record) => $record->pegawai?->subunit?->nama_subunit)
-                                                    //     ->placeholder('Tiada')
-                                                    //     ->visible(fn ($record) => $record->pegawai_id !== null),
-
-                                                ]),
-                                        ])
-                                        ->columns(2)
-                                        ->columnSpanFull(),
-                                ]),
-
+                        ->extraModalWindowAttributes(fn (WaranJawatan $record): array => [
+                            'class' => WaranJawatanInfolist::programWindowClass($record),
                         ])
+                        ->schema(fn (Schema $schema): Schema => WaranJawatanInfolist::configure($schema, jawatanTabFirst: true))
                         ->extraModalFooterActions([
 
                             EditAction::make()

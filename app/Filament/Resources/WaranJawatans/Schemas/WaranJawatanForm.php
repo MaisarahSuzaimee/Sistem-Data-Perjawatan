@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WaranJawatans\Schemas;
 
+use App\Models\Aktiviti;
 use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
@@ -135,6 +136,13 @@ class WaranJawatanForm
                                     })
                                     ->searchable()
                                     ->preload()
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('ptj_id', null);
+                                        $set('bahagian_id', null);
+                                        $set('unit_id', null);
+                                        $set('subunit_id', null);
+                                    })
                                     ->columns(1)
                                     ->disabled(
                                         fn () => ! auth()->user()?->isSuperadmin()
@@ -197,20 +205,21 @@ class WaranJawatanForm
 
                                 Select::make('ptj_id')
                                     ->label('PTJ')
-                                    ->options(
-                                        Ptj::query()
-                                            ->orderBy('nama_ptj')
-                                            ->pluck('nama_ptj', 'id')
-                                            ->toArray()
-                                    )
+                                    ->options(fn (Get $get): array => Aktiviti::ptjSelectOptionsFor($get('aktiviti_id')))
                                     ->searchable()
                                     ->preload()
                                     ->live()
                                     ->required()
                                     ->columnSpanFull()
+                                    ->helperText(fn (Get $get): ?string => blank($get('aktiviti_id'))
+                                        ? 'Sila pilih aktiviti dahulu'
+                                        : null)
                                     ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                        && ! auth()->user()?->isAdmin()
+                                        fn (Get $get): bool => blank($get('aktiviti_id'))
+                                            || (
+                                                ! auth()->user()?->isSuperadmin()
+                                                && ! auth()->user()?->isAdmin()
+                                            )
                                     )
                                     ->afterStateUpdated(function (Set $set): void {
                                         $set('bahagian_id', null);

@@ -38,7 +38,7 @@ class UnitForm
                             ->live()
                             ->searchable()
                             ->preload()
-                            ->afterStateUpdated(function (Get $get, Set $set): void {
+                            ->afterStateUpdated(function (Get $get, Set $set, $livewire): void {
                                 $set('bahagian_id', null);
 
                                 $ptjId = $get('ptj_id');
@@ -47,7 +47,19 @@ class UnitForm
                                 ));
 
                                 static::clearRepeaterAktiviti($get, $set);
+
+                                if (
+                                    filled($ptjId)
+                                    && ! Ptj::usesBahagianHierarchyFor((int) $ptjId)
+                                    && method_exists($livewire, 'redirectToEditIfParentHasUnits')
+                                ) {
+                                    $livewire->redirectToEditIfParentHasUnits(
+                                        ptjId: (int) $ptjId,
+                                        bahagianId: null,
+                                    );
+                                }
                             })
+                            ->helperText('Jika PTJ/Bahagian sudah ada unit, anda akan diarah ke halaman kemaskini.')
                             ->visible(fn ($record) => $record === null)
                             ->columnSpanFull(),
 
@@ -86,6 +98,17 @@ class UnitForm
                             ->searchable()
                             ->preload()
                             ->live()
+                            ->afterStateUpdated(function (mixed $state, Get $get, $livewire): void {
+                                if (
+                                    filled($state)
+                                    && method_exists($livewire, 'redirectToEditIfParentHasUnits')
+                                ) {
+                                    $livewire->redirectToEditIfParentHasUnits(
+                                        ptjId: filled($get('ptj_id')) ? (int) $get('ptj_id') : null,
+                                        bahagianId: (int) $state,
+                                    );
+                                }
+                            })
                             ->columnSpanFull(),
 
                         TextInput::make('ptj_display')
@@ -123,7 +146,7 @@ class UnitForm
                             ->columnSpanFull(),
 
                         Repeater::make('units')
-                            ->label('Senarai jabatan / KK / KP')
+                            ->label('Senarai Jabatan / KK / KP')
                             ->columnSpanFull()
                             ->minItems(1)
                             ->defaultItems(1)
@@ -201,8 +224,8 @@ class UnitForm
                                         }
                                     )
                                     ->validationMessages([
-                                        'distinct' => 'Nama unit tidak boleh duplikat dalam senarai ini.',
-                                        'unique' => 'Nama unit telah wujud untuk PTJ/Bahagian ini.',
+                                        'distinct' => 'Nama Jabatan / KK / KP tidak boleh duplikat dalam senarai ini.',
+                                        'unique' => 'Nama Jabatan / KK / KP telah wujud untuk PTJ/Bahagian ini.',
                                     ])
                                     ->dehydrateStateUsing(fn (?string $state): string => $state ? strtoupper($state) : '')
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
@@ -247,7 +270,7 @@ class UnitForm
                                     ->disabled(fn (Get $get): bool => blank($get('parlimen_id')))
                                     ->helperText('Sila pilih Parlimen dahulu'),
                             ])
-                            ->itemLabel(fn (array $state): ?string => filled($state['nama_unit'] ?? null) ? strtoupper($state['nama_unit']) : 'Unit baharu')
+                            ->itemLabel(fn (array $state): ?string => filled($state['nama_unit'] ?? null) ? strtoupper($state['nama_unit']) : 'Jabatan / KK / KP baharu')
                             ->collapsed()
                             ->collapsible()
                             ->deleteAction(function (Action $action): Action {
@@ -258,9 +281,9 @@ class UnitForm
                                         $item = $items[$arguments['item']] ?? [];
                                         $nama = trim((string) ($item['nama_unit'] ?? ''));
 
-                                        return $nama !== '' ? "Padam {$nama}?" : 'Padam unit ini?';
+                                        return $nama !== '' ? "Padam {$nama}?" : 'Padam Jabatan / KK / KP ini?';
                                     })
-                                    ->modalDescription('Adakah anda pasti mahu memadam unit ini? Tindakan ini tidak boleh dibatalkan.')
+                                    ->modalDescription('Adakah anda pasti mahu memadam Jabatan / KK / KPini? Tindakan ini tidak boleh dibatalkan.')
                                     ->modalSubmitActionLabel('Ya, Padam')
                                     ->modalCancelActionLabel('Batal');
                             }),

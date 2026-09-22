@@ -26,11 +26,11 @@ class PtjResource extends Resource
 
     protected static ?int $navigationSort = 21;
 
-    protected static ?string $navigationLabel = 'Program & PTJ';
+    protected static ?string $navigationLabel = 'PTJ';
 
-    protected static ?string $pluralModelLabel = 'Program & PTJ';
+    protected static ?string $pluralModelLabel = 'PTJ';
 
-    protected static ?string $modelLabel = 'Program & PTJ';
+    protected static ?string $modelLabel = 'PTJ';
 
     public static function form(Schema $schema): Schema
     {

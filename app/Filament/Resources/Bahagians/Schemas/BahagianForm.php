@@ -25,20 +25,20 @@ class BahagianForm
             ->components([
                 Section::make('Maklumat Bahagian')
                     ->schema([
-                        Select::make('program_id')
-                            ->label('Program')
-                            ->options(
-                                Program::query()
-                                    ->orderBy('nama_program')
-                                    ->pluck('nama_program', 'id')
-                            )
-                            ->live()
-                            ->searchable()
-                            ->preload()
-                            ->dehydrated(false)
-                            ->afterStateUpdated(fn (Set $set) => $set('ptj_id', null))
-                            ->visible(fn ($record) => $record === null)
-                            ->columnSpanFull(),
+                        // Select::make('program_id')
+                        //     ->label('Program')
+                        //     ->options(
+                        //         Program::query()
+                        //             ->orderBy('nama_program')
+                        //             ->pluck('nama_program', 'id')
+                        //     )
+                        //     ->live()
+                        //     ->searchable()
+                        //     ->preload()
+                        //     ->dehydrated(false)
+                        //     ->afterStateUpdated(fn (Set $set) => $set('ptj_id', null))
+                        //     ->visible(fn ($record) => $record === null)
+                        //     ->columnSpanFull(),
 
                         Select::make('ptj_id')
                             ->label('PTJ')
@@ -58,7 +58,13 @@ class BahagianForm
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->helperText('Hanya PTJ JKN (termasuk VEKTOR) menggunakan hierarki Bahagian.')
+                            ->live()
+                            ->afterStateUpdated(function (mixed $state, $livewire): void {
+                                if (method_exists($livewire, 'redirectToEditIfPtjHasBahagian')) {
+                                    $livewire->redirectToEditIfPtjHasBahagian($state);
+                                }
+                            })
+                            ->helperText('Hanya PTJ JKN (termasuk VEKTOR) sahaja. Jika PTJ sudah ada bahagian, anda akan diarah ke halaman kemaskini.')
                             ->visible(fn ($record) => $record === null)
                             ->columnSpanFull(),
 

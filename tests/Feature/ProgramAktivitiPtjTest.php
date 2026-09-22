@@ -91,3 +91,22 @@ it('lists only aktiviti assigned to the chosen ptj', function () {
         $assigned->id => '1.1.1 - PENGURUSAN',
     ]);
 });
+
+it('lists only ptjs assigned to an aktiviti', function () {
+    $program = Program::create(['nama_program' => 'PROGRAM 1']);
+    $aktiviti = Aktiviti::create([
+        'program_id' => $program->id,
+        'no_aktivit' => '1.1.1',
+        'nama_aktiviti' => 'PENGURUSAN',
+    ]);
+
+    $assigned = Ptj::create(['nama_ptj' => 'PTJ ASSIGNED', 'kod_ptj' => 1]);
+    $other = Ptj::create(['nama_ptj' => 'PTJ OTHER', 'kod_ptj' => 2]);
+
+    $aktiviti->ptjs()->attach($assigned->id);
+
+    expect(Aktiviti::ptjSelectOptionsFor($aktiviti->id))
+        ->toBe([$assigned->id => 'PTJ ASSIGNED'])
+        ->and(Aktiviti::ptjSelectOptionsFor(null))->toBe([])
+        ->and(array_key_exists($other->id, Aktiviti::ptjSelectOptionsFor($aktiviti->id)))->toBeFalse();
+});

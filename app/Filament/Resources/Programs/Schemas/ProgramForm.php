@@ -55,8 +55,16 @@ class ProgramForm
                                 TextInput::make('no_aktivit')
                                     ->label('No Aktiviti')
                                     ->required()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (?string $state, callable $set): void {
+                                        $set('no_aktivit', filled($state) ? strtoupper($state) : null);
+                                    })
                                     ->dehydrateStateUsing(fn ($state) => $state ? strtoupper($state) : null)
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                                    ->distinct()
+                                    ->validationMessages([
+                                        'distinct' => 'No aktiviti ini sudah wujud dalam program yang sama.',
+                                    ]),
                                 TextInput::make('nama_aktiviti')
                                     ->label('Nama Aktiviti')
                                     ->dehydrateStateUsing(fn ($state) => $state ? strtoupper($state) : null)

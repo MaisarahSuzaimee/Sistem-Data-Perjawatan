@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Bahagians\Pages;
 
 use App\Filament\Resources\Bahagians\BahagianResource;
+use App\Models\Bahagian;
 use App\Models\Ptj;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -46,6 +48,32 @@ class CreateBahagian extends CreateRecord
         return BahagianResource::getUrl('index');
     }
 
+    public function redirectToEditIfPtjHasBahagian(mixed $ptjId): void
+    {
+        if (blank($ptjId)) {
+            return;
+        }
+
+        $existing = Bahagian::query()
+            ->where('ptj_id', $ptjId)
+            ->orderBy('id')
+            ->first();
+
+        if (! $existing) {
+            return;
+        }
+
+        Notification::make()
+            ->title('PTJ ini sudah mempunyai bahagian')
+            ->body('Mengalihkan ke halaman kemaskini.')
+            ->info()
+            ->send();
+
+        $this->redirect(BahagianResource::getUrl('edit', [
+            'record' => $existing,
+        ]));
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         $ptjId = isset($data['ptj_id']) ? (int) $data['ptj_id'] : null;
@@ -56,11 +84,20 @@ class CreateBahagian extends CreateRecord
             ]);
         }
 
+        $existing = Bahagian::query()
+            ->where('ptj_id', $ptjId)
+            ->orderBy('id')
+            ->first();
+
+        if ($existing) {
+            $this->redirectToEditIfPtjHasBahagian($ptjId);
+
+            return $existing;
+        }
+
         $items = $data['bahagians'] ?? null;
 
         if (is_array($items) && count($items) > 0) {
-            $ptjId = $data['ptj_id'] ?? null;
-
             $first = null;
 
             foreach ($items as $row) {

@@ -10,31 +10,35 @@ use Filament\Schemas\Schema;
 
 class WaranJawatanInfolist
 {
-    public static function configure(Schema $schema): Schema
+    public static function configure(Schema $schema, bool $jawatanTabFirst = false): Schema
     {
+        $jawatanTab = Tab::make('Maklumat Jawatan')
+            ->icon('heroicon-o-briefcase')
+            ->schema([
+                ViewEntry::make('maklumat_jawatan')
+                    ->hiddenLabel()
+                    ->view('filament.infolists.maklumat-jawatan-table')
+                    ->columnSpanFull(),
+            ]);
+
+        $penyandangTab = Tab::make('Maklumat Penyandang')
+            ->icon('heroicon-o-user-circle')
+            ->schema([
+                ViewEntry::make('maklumat_penyandang')
+                    ->hiddenLabel()
+                    ->view('filament.infolists.maklumat-penyandang-table')
+                    ->columnSpanFull(),
+            ]);
+
         return $schema
             ->components([
                 Tabs::make('Tabs')
                     ->extraAttributes(fn (WaranJawatan $record): array => [
                         'class' => static::programWindowClass($record),
                     ])
-                    ->tabs([
-                        Tab::make('Maklumat Penyandang')
-                            ->icon('heroicon-o-user-circle')
-                            ->schema([
-                                ViewEntry::make('maklumat_penyandang')
-                                    ->view('filament.infolists.maklumat-penyandang-table')
-                                    ->columnSpanFull(),
-                            ]),
-
-                        Tab::make('Maklumat Jawatan')
-                            ->icon('heroicon-o-briefcase')
-                            ->schema([
-                                ViewEntry::make('maklumat_jawatan')
-                                    ->view('filament.infolists.maklumat-jawatan-table')
-                                    ->columnSpanFull(),
-                            ]),
-                    ])
+                    ->tabs($jawatanTabFirst
+                        ? [$jawatanTab, $penyandangTab]
+                        : [$penyandangTab, $jawatanTab])
                     ->columns(2)
                     ->columnSpanFull(),
             ]);

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DataKeseluruhanExportController;
 use App\Http\Controllers\DataKontrakExportController;
+use App\Http\Controllers\FasilitiByParlimenExportController;
 use App\Http\Controllers\JikByJawatanExportController;
 use App\Http\Controllers\L3ExportController;
 use App\Http\Controllers\L4ExportController;
@@ -46,27 +47,31 @@ Route::get('/export-l3', [L3ExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.l3');
 
-//L4
+// L4
 Route::get('export-l4', [L4ExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.l4');
 
-//L5
+// L5
 Route::get('/export-jik-by-jawatan', [JikByJawatanExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.jikByJawatan');
 
-//L6
+// L6
 Route::get('export-l6', [L6ExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.l6');
 
-//L7
+// L7
 Route::get('export-l7', [L7ExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.l7');
 
-//L8
+// L8
 Route::get('export-l8', [L8ExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.l8');
+
+Route::get('/export-fasiliti-by-parlimen', [FasilitiByParlimenExportController::class, 'export'])
+    ->middleware('auth')
+    ->name('export.fasilitiByParlimen');

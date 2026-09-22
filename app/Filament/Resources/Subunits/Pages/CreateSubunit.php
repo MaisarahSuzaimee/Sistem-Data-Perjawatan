@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\Subunits\Pages;
 
 use App\Filament\Resources\Subunits\SubunitResource;
+use App\Models\Subunit;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -44,13 +46,48 @@ class CreateSubunit extends CreateRecord
         return SubunitResource::getUrl('index');
     }
 
+    public function redirectToEditIfUnitHasSubunits(mixed $unitId): void
+    {
+        if (blank($unitId)) {
+            return;
+        }
+
+        $existing = Subunit::query()
+            ->where('unit_id', $unitId)
+            ->orderBy('id')
+            ->first();
+
+        if (! $existing) {
+            return;
+        }
+
+        Notification::make()
+            ->title('Unit ini sudah mempunyai KD / KKIA / Wad / Klinik')
+            ->body('Mengalihkan ke halaman kemaskini.')
+            ->info()
+            ->send();
+
+        $this->redirect(SubunitResource::getUrl('edit', [
+            'record' => $existing,
+        ]));
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         $items = $data['subunits'] ?? null;
+        $unitId = $data['unit_id'] ?? null;
+
+        $existing = filled($unitId)
+            ? Subunit::query()->where('unit_id', $unitId)->orderBy('id')->first()
+            : null;
+
+        if ($existing) {
+            $this->redirectToEditIfUnitHasSubunits($unitId);
+
+            return $existing;
+        }
 
         if (is_array($items) && count($items) > 0) {
-            $unitId = $data['unit_id'] ?? null;
-
             $first = null;
 
             foreach ($items as $row) {

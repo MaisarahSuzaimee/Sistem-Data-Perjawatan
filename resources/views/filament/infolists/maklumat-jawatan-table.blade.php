@@ -23,123 +23,53 @@
     ])->filter()->implode(' , ') ?: '-';
 
     $showBahagian = (bool) $record->ptj?->usesBahagianHierarchy();
+
+    $rows = [
+        ['icon' => 'heroicon-o-document-text', 'iconClass' => 'text-fg-indigo', 'label' => 'No Waran', 'value' => $record->waran?->no_waran ?: '-'],
+        ['icon' => 'heroicon-o-clipboard-document-list', 'iconClass' => 'text-fg-pink', 'label' => 'Butiran', 'value' => $record->butiran ?: '-'],
+        ['icon' => 'heroicon-o-calendar-days', 'iconClass' => 'text-fg-brand', 'label' => 'Tarikh Kuatkuasa Waran', 'value' => $record->tarikh_kuatkuasa ? \Illuminate\Support\Carbon::parse($record->tarikh_kuatkuasa)->translatedFormat('d F Y') : 'Tiada'],
+        ['icon' => 'heroicon-o-bolt', 'iconClass' => 'text-fg-warning-subtle', 'label' => 'Aktiviti', 'value' => $aktiviti],
+        ['icon' => 'heroicon-o-briefcase', 'iconClass' => 'text-fg-purple', 'label' => 'Jawatan / Gred', 'value' => $jawatanGred],
+        ['icon' => 'heroicon-o-building-office-2', 'iconClass' => 'text-fg-cyan', 'label' => 'PTJ', 'value' => $record->ptj?->nama_ptj ?: '-'],
+    ];
+
+    if ($showBahagian) {
+        $rows[] = ['icon' => 'heroicon-o-building-office', 'iconClass' => 'text-fg-cyan', 'label' => 'Bahagian', 'value' => $record->bahagian?->nama_bahagian ?: 'Tiada'];
+    }
+
+    $rows[] = ['icon' => 'heroicon-o-squares-2x2', 'iconClass' => 'text-fg-yellow', 'label' => 'Jabatan / KK / KP', 'value' => $record->unit?->nama_unit ?: 'Tiada'];
+    $rows[] = ['icon' => 'heroicon-o-square-2-stack', 'iconClass' => 'text-fg-brand', 'label' => 'KD / KKIA / Wad / Klinik', 'value' => $record->subunit?->nama_subunit ?: 'Tiada'];
 @endphp
 
-<table class="w-full border-collapse text-sm">
-    <tbody>
-        <tr>
-            <th class="w-1/3 border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-document-text" class="w-4 h-4 text-fg-indigo" />
-                    No Waran
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->waran?->no_waran ?: '-' }}
-            </td>
-        </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-clipboard-document-list" class="w-4 h-4 text-fg-pink" />
-                    Butiran
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->butiran ?: '-' }}
-            </td>
-        </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-calendar-days" class="w-4 h-4 text-fg-brand" />
-                    Tarikh Kuatkuasa Waran
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->tarikh_kuatkuasa ? \Illuminate\Support\Carbon::parse($record->tarikh_kuatkuasa)->translatedFormat('d F Y') : 'Tiada' }}
-            </td>
-        </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-bolt" class="w-4 h-4 text-fg-warning-subtle" />
-                    Aktiviti
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $aktiviti }}
-            </td>
-        </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-briefcase" class="w-4 h-4 text-fg-purple" />
-                    Jawatan / Gred
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $jawatanGred }}
-            </td>
-        </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-building-office-2" class="w-4 h-4 text-fg-cyan" />
-                    PTJ
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->ptj?->nama_ptj ?: '-' }}
-            </td>
-        </tr>
-        @if($showBahagian)
-            <tr>
-                <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                    <span class="inline-flex items-center gap-2">
-                        <x-filament::icon icon="heroicon-o-building-office" class="w-4 h-4 text-fg-cyan" />
-                        Bahagian
-                    </span>
-                </th>
-                <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                    {{ $record->bahagian?->nama_bahagian ?: 'Tiada' }}
-                </td>
-            </tr>
-        @endif
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-squares-2x2" class="w-4 h-4 text-fg-yellow" />
-                    Unit
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->unit?->nama_unit ?: 'Tiada' }}
-            </td>
-        </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-square-2-stack" class="w-4 h-4 text-fg-brand" />
-                    Subunit
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                {{ $record->subunit?->nama_subunit ?: 'Tiada' }}
-            </td>
-        </tr>
-        <tr>
-            <th class="border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">
-                <span class="inline-flex items-center gap-2">
-                    <x-filament::icon icon="heroicon-o-check-badge" class="w-4 h-4 text-fg-warning" />
-                    Status
-                </span>
-            </th>
-            <td class="border border-gray-200 dark:border-white/10 px-3 py-2">
-                <span class="fi-badge inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium" style="{{ $statusStyle }}">
-                    {{ $statusLabel }}
-                </span>
-            </td>
-        </tr>
-    </tbody>
-</table>
+{{-- <div class="space-y-4"> --}}
+    {{-- <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-white px-4 py-3 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+        <div class="min-w-0">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Jawatan Waran</p>
+            <p class="mt-1 text-base font-semibold text-gray-950 dark:text-white">{{ $jawatanGred }}</p>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ $record->ptj?->nama_ptj ?: 'Tiada PTJ' }}</p>
+        </div>
+        <span class="fi-badge inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium" style="{{ $statusStyle }}">
+            {{ $statusLabel }}
+        </span>
+    </div> --}}
+
+    <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-white/10">
+        <table class="w-full border-collapse text-sm">
+            <tbody>
+                @foreach($rows as $index => $row)
+                    <tr class="{{ $index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-gray-50/70 dark:bg-white/[0.02]' }}">
+                        <th class="w-1/3 border-b border-gray-200 px-3 py-2.5 text-left font-medium text-gray-500 dark:border-white/10 dark:text-gray-400">
+                            <span class="inline-flex items-center gap-2">
+                                <x-filament::icon :icon="$row['icon']" @class(['w-4 h-4', $row['iconClass']]) />
+                                {{ $row['label'] }}
+                            </span>
+                        </th>
+                        <td class="border-b border-gray-200 px-3 py-2.5 text-gray-950 dark:border-white/10 dark:text-white">
+                            {{ $row['value'] }}
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+{{-- </div> --}}
