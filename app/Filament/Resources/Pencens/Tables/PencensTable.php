@@ -112,7 +112,7 @@ class PencensTable
                         ->modalHeading(fn($record) => $record->nama)
                         ->extraModalFooterActions([
                             Action::make('edit')
-                                ->label('Edit')
+                                ->label('Kemaskini')
                                 ->url(fn($record) => PencenResource::getUrl('edit', [
                                     'record' => $record,
                                 ])),

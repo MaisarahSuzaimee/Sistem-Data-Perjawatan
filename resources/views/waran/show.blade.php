@@ -21,7 +21,7 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('waran.edit', $waran) }}" class="btn btn-warning btn-sm">
-            <i class="bx bx-edit me-1"></i> Edit Waran
+            <i class="bx bx-edit me-1"></i> Kemaskini Waran
         </a>
     </div>
 </div>
@@ -135,7 +135,7 @@
                         <div class="d-flex justify-content-center gap-1">
                             <button class="btn btn-sm btn-icon btn-text-warning"
                                 onclick="openEditModal({{ $jaw->id }})"
-                                title="Edit">
+                                title="Kemaskini">
                                 <i class="bx bx-edit"></i>
                             </button>
                             <button class="btn btn-sm btn-icon btn-text-danger"
@@ -186,7 +186,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit Jawatan</h5>
+                <h5 class="modal-title">Kemaskini Jawatan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="editModalBody">

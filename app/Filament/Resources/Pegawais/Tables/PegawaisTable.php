@@ -222,7 +222,7 @@ class PegawaisTable
                         ])
                         ->extraModalFooterActions([
                             Action::make('edit')
-                                ->label('Edit')
+                                ->label('Kemaskini')
                                 ->url(fn ($record) => PegawaiResource::getUrl('edit', [
                                     'record' => $record,
                                 ])),

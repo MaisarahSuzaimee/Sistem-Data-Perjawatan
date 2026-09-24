@@ -3,16 +3,24 @@
 namespace App\Filament\Resources\Warans\Tables;
 
 use App\Filament\Support\BlockedPegawaiDelete;
+use App\Models\Aktiviti;
+use App\Models\Program;
+use App\Models\Ptj;
 use App\Models\User;
 use App\Models\Waran;
-use App\Models\WaranJawatan;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 
 class WaransTable
@@ -183,25 +191,119 @@ class WaransTable
             ])
 
             ->filters([
-                SelectFilter::make('program')
-                    ->label('Program')
-                    ->relationship('waranJawatan.aktiviti.program', 'nama_program')
-                    ->searchable()
-                    ->preload(),
+                Filter::make('program_aktiviti')
+                    ->label('Program / Aktiviti / PTJ')
+                    ->schema([
+                        Select::make('program_id')
+                            ->label('Program')
+                            ->options(fn (): array => Program::query()
+                                ->orderBy('nama_program')
+                                ->pluck('nama_program', 'id')
+                                ->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->afterStateUpdated(function (Set $set): void {
+                                $set('aktiviti_id', null);
+                                $set('ptj_id', null);
+                            }),
+                        Select::make('aktiviti_id')
+                            ->label('Aktiviti')
+                            ->options(function (Get $get): array {
+                                $programId = $get('program_id');
 
-                SelectFilter::make('aktiviti')
-                    ->label('Aktiviti')
-                    ->relationship('waranJawatan.aktiviti', 'nama_aktiviti')
-                    ->getOptionLabelFromRecordUsing(
-                        fn ($record) => $record->no_aktivit.' - '.$record->nama_aktiviti
-                    )
-                    ->searchable()
-                    ->preload(),
+                                if (blank($programId)) {
+                                    return [];
+                                }
 
-            ])
+                                return Aktiviti::query()
+                                    ->where('program_id', $programId)
+                                    ->orderBy('no_aktivit')
+                                    ->get()
+                                    ->mapWithKeys(fn (Aktiviti $aktiviti): array => [
+                                        $aktiviti->id => $aktiviti->no_aktivit.' - '.$aktiviti->nama_aktiviti,
+                                    ])
+                                    ->toArray();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->disabled(fn (Get $get): bool => blank($get('program_id')))
+                            ->helperText('Sila pilih Program dahulu')
+                            ->afterStateUpdated(fn (Set $set) => $set('ptj_id', null)),
+                        Select::make('ptj_id')
+                            ->label('PTJ')
+                            ->options(function (Get $get): array {
+                                $aktivitiId = $get('aktiviti_id');
+
+                                if (filled($aktivitiId)) {
+                                    return Aktiviti::ptjSelectOptionsFor($aktivitiId);
+                                }
+
+                                $programId = $get('program_id');
+                                $query = Ptj::query()->orderBy('nama_ptj');
+
+                                if (filled($programId)) {
+                                    $query->whereHas('programs', fn ($q) => $q->whereKey($programId));
+                                }
+
+                                return $query->pluck('nama_ptj', 'id')->toArray();
+                            })
+                            ->searchable()
+                            ->preload(),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['program_id'] ?? null,
+                                fn (Builder $q, $programId): Builder => $q->whereHas(
+                                    'waranJawatan.aktiviti',
+                                    fn (Builder $aktiviti): Builder => $aktiviti->where('program_id', $programId)
+                                )
+                            )
+                            ->when(
+                                $data['aktiviti_id'] ?? null,
+                                fn (Builder $q, $aktivitiId): Builder => $q->whereHas(
+                                    'waranJawatan',
+                                    fn (Builder $waranJawatan): Builder => $waranJawatan->where('aktiviti_id', $aktivitiId)
+                                )
+                            )
+                            ->when(
+                                $data['ptj_id'] ?? null,
+                                fn (Builder $q, $ptjId): Builder => $q->whereHas(
+                                    'waranJawatan',
+                                    fn (Builder $waranJawatan): Builder => $waranJawatan->where('ptj_id', $ptjId)
+                                )
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if (filled($data['program_id'] ?? null)) {
+                            $program = Program::find($data['program_id']);
+                            $indicators[] = 'Program: '.($program?->nama_program ?? $data['program_id']);
+                        }
+
+                        if (filled($data['aktiviti_id'] ?? null)) {
+                            $aktiviti = Aktiviti::find($data['aktiviti_id']);
+                            $indicators[] = 'Aktiviti: '.($aktiviti
+                                ? $aktiviti->no_aktivit.' - '.$aktiviti->nama_aktiviti
+                                : $data['aktiviti_id']);
+                        }
+
+                        if (filled($data['ptj_id'] ?? null)) {
+                            $ptj = Ptj::find($data['ptj_id']);
+                            $indicators[] = 'PTJ: '.($ptj?->nama_ptj ?? $data['ptj_id']);
+                        }
+
+                        return $indicators;
+                    }),
+            ], layout: FiltersLayout::Modal)
+            ->filtersApplyAction(fn (Action $action) => $action->label('Cari'))
             ->recordActions([
                 ActionGroup::make([
-                    EditAction::make(),
+                    EditAction::make()
+                        ->label('Kemaskini'),
                     DeleteAction::make()
                         ->label('Padam')
                         ->before(function (DeleteAction $action, Waran $record): void {

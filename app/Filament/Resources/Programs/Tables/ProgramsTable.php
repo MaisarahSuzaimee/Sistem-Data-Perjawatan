@@ -66,7 +66,7 @@ class ProgramsTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit')
+                        ->label('Kemaskini')
                         ->tooltip('Edit'),
                     DeleteAction::make()
                         ->label('Padam')
