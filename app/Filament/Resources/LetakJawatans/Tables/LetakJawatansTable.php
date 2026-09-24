@@ -97,7 +97,7 @@ class LetakJawatansTable
                         ->modalHeading(fn ($record) => $record->nama)
                         ->extraModalFooterActions([
                             Action::make('edit')
-                                ->label('Edit')
+                                ->label('Kemaskini')
                                 ->url(fn ($record) => LetakJawatanResource::getUrl('edit', [
                                     'record' => $record,
                                 ])),

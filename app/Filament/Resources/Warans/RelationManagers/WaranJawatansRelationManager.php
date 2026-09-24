@@ -74,6 +74,7 @@ class WaranJawatansRelationManager extends RelationManager
                         Tab::make('Maklumat Waran')
                             ->schema([
                                 Select::make('aktiviti_id')
+                                    ->label('Aktiviti')
                                     ->required()
                                     ->options(function () {
 
@@ -525,6 +526,7 @@ class WaranJawatansRelationManager extends RelationManager
                     ),
                 TextColumn::make('butiran')
                     ->label('Butiran')
+                    ->searchable()
                     ->color(
                         fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
                     ),
@@ -534,6 +536,12 @@ class WaranJawatansRelationManager extends RelationManager
                         return $record->aktiviti
                             ? $record->aktiviti->no_aktivit.' - '.$record->aktiviti->nama_aktiviti
                             : '-';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('aktiviti', function (Builder $aktiviti) use ($search): void {
+                            $aktiviti->where('no_aktivit', 'like', "%{$search}%")
+                                ->orWhere('nama_aktiviti', 'like', "%{$search}%");
+                        });
                     })
                     ->color(
                         fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
@@ -546,6 +554,28 @@ class WaranJawatansRelationManager extends RelationManager
                     })
                     ->html()
                     ->wrap()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $jawatanIds = Jawatan::query()
+                            ->where('desc_jawatan', 'like', "%{$search}%")
+                            ->pluck('id');
+                        $gredIds = Gred::query()
+                            ->where('kod_gred', 'like', "%{$search}%")
+                            ->pluck('id');
+
+                        if ($jawatanIds->isEmpty() && $gredIds->isEmpty()) {
+                            return $query->whereRaw('0 = 1');
+                        }
+
+                        return $query->where(function (Builder $q) use ($jawatanIds, $gredIds): void {
+                            foreach ($jawatanIds as $jawatanId) {
+                                $q->orWhereJsonContains('jawatan_ids', (int) $jawatanId);
+                            }
+
+                            foreach ($gredIds as $gredId) {
+                                $q->orWhereJsonContains('gred_ids', (int) $gredId);
+                            }
+                        });
+                    })
                     ->color(
                         fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
                     ),
@@ -631,9 +661,9 @@ class WaranJawatansRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Tambah Jawatan')
-                    // ->modalHeading('Tambah Jawatan')
-                    // ->modalSubmitActionLabel('Tambah')
-                    // ->modalCancelActionLabel('Batal')
+                    ->modalHeading('Tambah Penempatan / Jawatan')
+                    ->modalSubmitActionLabel('Tambah')
+                    ->modalCancelActionLabel('Batal')
                     ->createAnother(false)
                     ->visible(
                         fn () => $this->getOwnerRecord()?->jenis === 'Tambah'
@@ -680,6 +710,8 @@ class WaranJawatansRelationManager extends RelationManager
 
             ->recordActions([
                 EditAction::make()
+                    ->label('Kemaskini')
+                    ->modalHeading(fn (WaranJawatan $record): string => 'Kemaskini Butiran '.($record->butiran ?? ''))
                     ->visible(fn ($record) => $record->status !== 'removed'),
                 DissociateAction::make(),
                 DeleteAction::make()
@@ -727,7 +759,8 @@ class WaranJawatansRelationManager extends RelationManager
                         ->extraModalFooterActions([
 
                             EditAction::make()
-                                ->label('Edit')
+                                ->label('Kemaskini')
+                                ->modalHeading(fn (WaranJawatan $record): string => 'Kemaskini Butiran '.($record->butiran ?? ''))
                                 ->visible(fn () => $this->getOwnerRecord()->jenis === 'Tambah')
                                 ->modalCancelActionLabel('Batal')
                                 ->modalSubmitAction(
@@ -845,6 +878,8 @@ class WaranJawatansRelationManager extends RelationManager
                         ]),
 
                     EditAction::make()
+                        ->label('Kemaskini')
+                        ->modalHeading(fn (WaranJawatan $record): string => 'Kemaskini Butiran '.($record->butiran ?? ''))
                         ->modalCancelActionLabel('Batal')
                         ->modalSubmitAction(
                             fn ($action) => $action

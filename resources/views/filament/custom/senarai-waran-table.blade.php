@@ -113,7 +113,7 @@
                     <td class="px-6 py-4">
                         <button type="button" onclick="Livewire.dispatch('setWaran', { id: {{ $waran->id }} })"
                             class="text-fg-brand hover:underline">
-                            Edit
+                            Kemaskini
                         </button>
                     </td>
                 </tr>
@@ -181,7 +181,7 @@
                         <td class="px-6 py-4">
                             <button type="button" onclick="Livewire.dispatch('setWaran', { id: {{ $child->id }} })"
                                 class="text-fg-brand hover:underline">
-                                Edit
+                                Kemaskini
                             </button>
                         </td>
                     </tr>

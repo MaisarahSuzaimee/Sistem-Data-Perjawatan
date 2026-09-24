@@ -230,7 +230,7 @@ class WaranJawatansTable
                         ])
                         ->extraModalFooterActions([
                             Action::make('edit')
-                                ->label('Edit')
+                                ->label('Kemaskini')
                                 ->url(fn ($record) => WaranJawatanResource::getUrl('edit', [
                                     'record' => $record,
                                 ])),
