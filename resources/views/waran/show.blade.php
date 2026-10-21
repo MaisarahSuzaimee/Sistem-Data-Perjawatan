@@ -21,7 +21,7 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('waran.edit', $waran) }}" class="btn btn-warning btn-sm">
-            <i class="bx bx-edit me-1"></i> Edit Waran
+            <i class="bx bx-edit me-1"></i> Kemaskini Waran
         </a>
     </div>
 </div>
@@ -40,7 +40,7 @@
         <div class="card text-center h-100">
             <div class="card-body py-3">
                 <small class="text-muted d-block mb-1">Jenis</small>
-                <span class="badge {{ $waran->jenis === 'tambah' ? 'bg-label-success' : 'bg-label-warning' }} fs-6">
+                <span class="badge {{ $waran->jenis === 'Tambah' ? 'bg-label-success' : 'bg-label-warning' }} fs-6">
                     {{ ucfirst($waran->jenis) }}
                 </span>
             </div>
@@ -82,7 +82,7 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Senarai Jawatan</h5>
-        @if($waran->jenis === 'tambah')
+        @if($waran->jenis === 'Tambah')
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahJawatan">
             <i class="bx bx-plus me-1"></i> Tambah Jawatan
         </button>
@@ -135,7 +135,7 @@
                         <div class="d-flex justify-content-center gap-1">
                             <button class="btn btn-sm btn-icon btn-text-warning"
                                 onclick="openEditModal({{ $jaw->id }})"
-                                title="Edit">
+                                title="Kemaskini">
                                 <i class="bx bx-edit"></i>
                             </button>
                             <button class="btn btn-sm btn-icon btn-text-danger"
@@ -186,7 +186,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit Jawatan</h5>
+                <h5 class="modal-title">Kemaskini Jawatan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="editModalBody">
@@ -212,13 +212,7 @@ function openEditModal(id) {
 }
 
 function initCascading() {
-    // PTJ → Bahagian
-    const ptjSelect = document.querySelector('[name="ptj_id"]');
-    if (ptjSelect) {
-        ptjSelect.addEventListener('change', function() {
-            fetchOptions('/api/bahagian?ptj_id=' + this.value, 'bahagian_id');
-        });
-    }
+    // Org hierarchy no longer cascades Bahagian from PTJ
 }
 </script>
 @endpush

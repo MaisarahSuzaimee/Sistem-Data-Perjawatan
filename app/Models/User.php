@@ -3,17 +3,24 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Observers\UserObserver;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Ptj;
+use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'email', 'password', 'ptj_id', 'nokp', 'phone_number', 'status', 'role'])]
+#[Fillable(['name', 'email', 'password', 'ptj_id', 'nokp', 'phone_number', 'status', 'role', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+// #[ObservedBy(UserObserver::class)]
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -49,5 +56,26 @@ class User extends Authenticatable
     public function isUser()
     {
         return $this->role === 3;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return (int) $this->status === 1;
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        if ($this->avatar) {
+            return Storage::disk('public')->url($this->avatar);
+        }
+
+        return 'https://ui-avatars.com/api/?name='.urlencode($this->name);
+    }
+
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => mb_strtoupper(trim($value), 'UTF-8'),
+        );
     }
 }

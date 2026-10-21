@@ -3,42 +3,56 @@
 namespace App\Filament\Resources\Warans\Widgets;
 
 use App\Models\Waran;
-use App\Models\WaranJawatan;
+use DB;
 use Filament\Widgets\StatsOverviewWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class WaranStats extends StatsOverviewWidget
 {
-    protected function getStats(): array
+    protected string $view = 'filament.widgets.waran-stats';
+
+    public int $totalWaran = 0;
+    public int $seimbang = 0;
+    public int $tidakSeimbang = 0;
+    public float $seimbangPct = 0;
+    public float $tidakSeimbangPct = 0;
+
+    public function mount(): void
     {
-        $kosong = WaranJawatan::whereNull('pegawai_id')->count();
-        $terisi = WaranJawatan::whereNotNull('pegawai_id')->count();
-        $total = WaranJawatan::count();
+        $seimbang = Waran::leftJoin('waran_jawatans', function ($join) {
+            $join->on(function ($query) {
+                $query->on('warans.id', '=', 'waran_jawatans.waran_id')
+                    ->orOn('warans.id', '=', 'waran_jawatans.waran_tolak_id');
+            });
+        })
+            ->select(
+                'warans.id',
+                'warans.jik',
+                'warans.jenis',
+                DB::raw("
+        SUM(
+            CASE
+                WHEN warans.jenis = 'Tambah'
+                     AND waran_jawatans.waran_id = warans.id
+                     AND waran_jawatans.pegawai_id IS NOT NULL
+                THEN 1
 
-        return [
-            Stat::make('Jumlah Waran', Waran::count())
-            ->chart([10, 12, 9, 14, Waran::count(), Waran::count() + 2, Waran::count() + 1]),
+                WHEN warans.jenis = 'Tolak'
+                     AND waran_jawatans.waran_tolak_id = warans.id
+                THEN 1
 
-            Stat::make('Jawatan Diisi', $terisi)
-                ->description(
-                    $total
-                    ? round(($terisi / $total) * 100, 1) . '% dari keseluruhan'
-                    : '0%'
-                )
-                // ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->chart([5, 8, 10, 12, $terisi, $terisi + 1, $terisi + 3])
-                ->color('success'),
+                ELSE 0
+            END
+        ) AS jumlah
+    ")
+            )
+            ->groupBy('warans.id', 'warans.jik', 'warans.jenis')
+            ->havingRaw('jumlah = warans.jik')
+            ->count();
 
-            Stat::make('Kekosongan', $kosong)
-                ->description(
-                    $total
-                    ? round(($kosong / $total) * 100, 1) . '% dari keseluruhan'
-                    : '0%'
-                )
-                // ->descriptionIcon('heroicon-m-arrow-trending-down')
-                ->chart([10, 12, 9, 14, $kosong, $kosong + 2, $kosong + 1])
-                ->color('danger'),
-        ];
-
+        $this->totalWaran = Waran::count();
+        $this->seimbang = $seimbang;
+        $this->tidakSeimbang = $this->totalWaran - $seimbang;
+        $this->seimbangPct = $this->totalWaran ? round(($seimbang / $this->totalWaran) * 100, 1) : 0;
+        $this->tidakSeimbangPct = $this->totalWaran ? round(($this->tidakSeimbang / $this->totalWaran) * 100, 1) : 0;
     }
 }

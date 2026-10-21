@@ -71,7 +71,7 @@
         arguments: { id: {{ $item->id }} }
     })"
 >
-    Edit
+    Kemaskini
 </x-filament::link>
                             <a href="#"
                                 class="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">

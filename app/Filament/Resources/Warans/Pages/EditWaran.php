@@ -8,12 +8,19 @@ use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
+use Filament\Notifications\Notification;
 
 class EditWaran extends EditRecord
 {
     protected static string $resource = WaranResource::class;
 
-
+    protected function getCancelFormAction(): Action
+    {
+        return parent::getCancelFormAction()
+            ->label('Batal');
+    }
 
     protected function getListeners(): array
     {
@@ -32,6 +39,34 @@ class EditWaran extends EditRecord
             'waranJawatans' => $waran?->waranJawatans->toArray(),
         ]);
     }
+
+    public function getBreadcrumbs(): array
+    {
+        // The back button (see getHeading()) replaces the need for a
+        // breadcrumb trail on this page.
+        return [];
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return 'Kemaskini '.$this->getRecordTitle();
+    }
+
+    public function getContentTabLabel(): ?string
+    {
+        return 'Kemaskini';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return new HtmlString(
+            '<button type="button" onclick="window.history.back()" class="mystaff-back-btn" aria-label="Kembali">'.
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>'.
+            '</button>'.
+            '<span>'.e($this->getTitle()).'</span>'
+        );
+    }
+
     protected function getHeaderActions(): array
     {
 
@@ -99,12 +134,27 @@ class EditWaran extends EditRecord
         ];
     }
 
+    public function mount(int|string $record): void
+{
+    parent::mount($record);
+
+    if (! (auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin())) {
+        Notification::make()
+            ->title('PTJ tidak mempunyai akses untuk mengemaskini maklumat waran')
+            ->warning()
+            ->send();
+    }
+}
+
     protected function getSaveFormAction(): Action
     {
         return parent::getSaveFormAction()
-            ->label('Kemaskini Waran');
+            ->label('Kemaskini Waran')
+            ->visible(fn () => auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin());
     }
 
-
-
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return true;
+    }
 }

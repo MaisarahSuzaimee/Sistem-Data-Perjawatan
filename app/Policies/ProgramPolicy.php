@@ -13,7 +13,7 @@ class ProgramPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        return $user->isSuperAdmin() || $user->isAdmin();
     }
 
     /**
@@ -21,7 +21,7 @@ class ProgramPolicy
      */
     public function view(User $user, Program $program): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        return $user->isSuperAdmin() || $user->isAdmin() ;
     }
 
     /**

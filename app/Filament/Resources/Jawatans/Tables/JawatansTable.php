@@ -12,7 +12,6 @@ use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Pest\Support\View;
 
 class JawatansTable
 {
@@ -22,16 +21,17 @@ class JawatansTable
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')
-                    ->rowIndex(),
+                    ->rowIndex()
+                    ->width(1),
                 TextColumn::make('desc_jawatan')
                     ->label('Jawatan')
                     ->sortable()
                     ->searchable()
                     ->wrap(),
-                TextColumn::make('kod_jawatan')
-                    ->label('Kod Jawatan')
-                    ->sortable()
-                    ->searchable(),
+                // TextColumn::make('kod_jawatan')
+                //     ->label('Kod Jawatan')
+                //     ->sortable()
+                //     ->searchable(),
                 // ->badge(),
                 // TextColumn::make('greds.kod_gred')
                 //     ->label('Gred')
@@ -48,7 +48,8 @@ class JawatansTable
                 //     ]),
                 TextColumn::make('greds.kod_gred')
                     ->label('Gred')
-                    ->formatStateUsing(fn($state) => collect($state)->unique()->implode(' / '))
+                    ->searchable()
+                    ->formatStateUsing(fn ($state) => collect($state)->unique()->implode(' / '))
                     ->badge()
                     ->wrap()
                     ->color(function ($record) {
@@ -63,9 +64,10 @@ class JawatansTable
                             5 => 'secondary',
                             default => 'gray',
                         };
-                    })
+                    }),
 
             ])
+            ->defaultSort('updated_at', 'desc')
             ->filters([
                 //
             ])
@@ -81,19 +83,23 @@ class JawatansTable
                 //         ->hiddenLabel(),
                 // ])
                 // ->buttonGroup(),
-                ViewAction::make()
-                    ->modal()
-                    ->label('')
-                    ->tooltip('View')
-                    ->color('info'),
-                EditAction::make()
-                    ->modal()
-                    ->label('')
-                    ->tooltip('Edit'),
-                DeleteAction::make()
-                    ->modal()
-                    ->label('')
-                    ->tooltip('Delete'),
+                ActionGroup::make([
+                    // ViewAction::make(),
+                    EditAction::make()
+                        // ->label('Kemaskini')
+                        ->modal()
+                        // ->modalHeading('Kemaskini Rekod')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalCancelActionLabel('Batal'),
+
+                    DeleteAction::make()
+                        ->label('Padam')
+                        ->modalHeading(fn ($record) => "Padam {$record->desc_jawatan}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal'),
+                ]),
+
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

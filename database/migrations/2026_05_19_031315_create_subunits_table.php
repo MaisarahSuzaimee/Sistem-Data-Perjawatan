@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('subunits', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('unit_id');
-            $table->integer('dun_id');
+            $table->integer('dun_id')->nullable();
             $table->string('nama_subunit')->nullable();
             $table->timestamps();
         });

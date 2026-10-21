@@ -2,6 +2,11 @@
 
 namespace App\Filament\Resources\Warans\RelationManagers;
 
+use App\Filament\Resources\WaranJawatans\Schemas\WaranJawatanInfolist;
+use App\Filament\Resources\Warans\Pages\ViewWaran;
+use App\Filament\Resources\Warans\WaranResource;
+use App\Filament\Support\BlockedPegawaiDelete;
+use App\Models\Aktiviti;
 use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
@@ -11,10 +16,10 @@ use App\Models\Program;
 use App\Models\Ptj;
 use App\Models\Subunit;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\WaranJawatan;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\AssociateAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -28,9 +33,11 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -39,238 +46,429 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Livewire\Attributes\Reactive;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class WaranJawatansRelationManager extends RelationManager
 {
     protected static string $relationship = 'waranJawatan';
+
+    protected static ?string $title = 'Penempatan';
+
     public ?int $aktivitiFilter = null;
+
     public ?string $butiranFilter = null;
 
     public string $viewMode = 'active';
+
     public function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Select::make('aktiviti_id')
-                    ->required()
-                    ->options(function () {
+                Tabs::make('Tabs')
+                    ->tabs([
+                        Tab::make('Maklumat Waran')
+                            ->schema([
+                                Select::make('aktiviti_id')
+                                    ->label('Aktiviti')
+                                    ->required()
+                                    ->options(function () {
 
-                        return Program::with('aktiviti')
-                            ->orderBy('nama_program')
-                            ->get()
-                            ->mapWithKeys(function ($program) {
+                                        return Program::with('aktiviti')
+                                            ->orderBy('nama_program')
+                                            ->get()
+                                            ->mapWithKeys(function ($program) {
 
-                                return [
-                                    $program->nama_program => $program->aktiviti
-                                        ->mapWithKeys(function ($aktiviti) {
-                                            return [
-                                                $aktiviti->id => $aktiviti->no_aktivit . ' - ' . $aktiviti->nama_aktiviti
-                                            ];
-                                        })
-                                        ->toArray(),
-                                ];
-                            })
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->preload()
-                    ->columns(1)
-                    ->disabled(
-                        fn() =>
-                        ! auth()->user()?->isSuperadmin()
-                            && ! auth()->user()?->isAdmin()
-                    ),
+                                                return [
+                                                    $program->nama_program => $program->aktiviti
+                                                        ->mapWithKeys(function ($aktiviti) {
+                                                            return [
+                                                                $aktiviti->id => $aktiviti->no_aktivit.' - '.$aktiviti->nama_aktiviti,
+                                                            ];
+                                                        })
+                                                        ->toArray(),
+                                                ];
+                                            })
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('ptj_id', null);
+                                        $set('bahagian_id', null);
+                                        $set('unit_id', null);
+                                        $set('subunit_id', null);
+                                    })
+                                    ->columns(1)
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin()
+                                    ),
 
-                TextInput::make('butiran')
-                    ->required()
-                    ->maxLength(255)
-                    ->readonly(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
+                                TextInput::make('butiran')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->readonly(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin()
+                                    ),
 
-                Select::make('jawatan_ids')
-                    ->label('Jawatan')
-                    ->multiple()
-                    ->options(
-                        Jawatan::orderBy('desc_jawatan')
-                            ->pluck('desc_jawatan', 'id')
-                            ->toArray()
-                    )
-                    ->searchable()
-                    ->preload()
-                    ->live()
-                    ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
-                Select::make('gred_ids')
-                    ->label('Gred')
-                    ->multiple()
-                    ->options(function (Get $get) {
+                                Select::make('jawatan_ids')
+                                    ->label('Jawatan')
+                                    ->multiple()
+                                    ->options(
+                                        Jawatan::orderBy('desc_jawatan')
+                                            ->pluck('desc_jawatan', 'id')
+                                            ->toArray()
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin()
+                                    ),
+                                Select::make('gred_ids')
+                                    ->label('Gred')
+                                    ->multiple()
+                                    ->options(function (Get $get) {
 
-                        $jawatanIds = $get('jawatan_ids');
+                                        $jawatanIds = $get('jawatan_ids');
 
-                        if (blank($jawatanIds)) {
-                            return [];
-                        }
+                                        if (blank($jawatanIds)) {
+                                            return [];
+                                        }
 
-                        return Jawatan_Gred::query()
-                            ->whereIn('jawatan_id', $jawatanIds)
-                            ->join('greds', 'jawatan__greds.gred_id', '=', 'greds.id')
-                            ->orderBy('greds.kod_gred')
-                            ->pluck('greds.kod_gred', 'greds.id')
-                            ->toArray();
-                    })
-                    ->disabled(fn(Get $get) => blank($get('jawatan_ids')))
-                    ->searchable()
-                    ->preload()
-                    ->multiple()
-                    ->live(),
+                                        return Jawatan_Gred::query()
+                                            ->whereIn('jawatan_id', $jawatanIds)
+                                            ->join('greds', 'jawatan__greds.gred_id', '=', 'greds.id')
+                                            ->orderBy('greds.kod_gred')
+                                            ->pluck('greds.kod_gred', 'greds.id')
+                                            ->toArray();
+                                    })
+                                    ->disabled(fn (Get $get) => blank($get('jawatan_ids')))
+                                    ->searchable()
+                                    ->preload()
+                                    ->multiple()
+                                    ->live(),
 
-                Select::make('ptj_id')
-                    ->label('PTJ')
-                    ->options(
-                        Ptj::pluck('nama_ptj', 'id')
-                    )
-                    ->searchable()
-                    ->preload()
-                    ->live()
-                    ->required()
-                    ->columnSpanFull()
-                    ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
+                                Select::make('ptj_id')
+                                    ->label('PTJ')
+                                    ->options(fn (Get $get): array => Aktiviti::ptjSelectOptionsFor(
+                                        $get('aktiviti_id'),
+                                        $get('ptj_id'),
+                                    ))
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->required()
+                                    ->columnSpanFull()
+                                    ->helperText(fn (Get $get): ?string => blank($get('aktiviti_id'))
+                                        ? 'Sila pilih aktiviti dahulu'
+                                        : null)
+                                    ->disabled(
+                                        fn (Get $get): bool => blank($get('aktiviti_id'))
+                                            || (
+                                                ! auth()->user()?->isSuperadmin()
+                                                && ! auth()->user()?->isAdmin()
+                                            )
+                                    )
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('bahagian_id', null);
+                                        $set('unit_id', null);
+                                        $set('subunit_id', null);
+                                    }),
 
-                Select::make('bahagian_id')
-                    ->label('Bahagian')
-                    ->options(function (Get $get) {
+                                Select::make('bahagian_id')
+                                    ->label('Bahagian')
+                                    ->options(function (Get $get): array {
+                                        $ptjId = $get('ptj_id');
 
-                        $ptjId = $get('ptj_id');
+                                        if (! $ptjId || ! Ptj::usesBahagianHierarchyFor((int) $ptjId)) {
+                                            return [];
+                                        }
 
-                        if (blank($ptjId)) {
-                            return [];
-                        }
+                                        return Bahagian::query()
+                                            ->where('ptj_id', $ptjId)
+                                            ->orderBy('nama_bahagian')
+                                            ->pluck('nama_bahagian', 'id')
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->required(fn (Get $get): bool => Ptj::usesBahagianHierarchyFor(
+                                        filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                    ))
+                                    ->visible(fn (Get $get): bool => Ptj::usesBahagianHierarchyFor(
+                                        filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                    ))
+                                    ->dehydrated()
+                                    ->dehydrateStateUsing(function ($state, Get $get) {
+                                        return Ptj::usesBahagianHierarchyFor(
+                                            filled($get('ptj_id')) ? (int) $get('ptj_id') : null
+                                        ) ? $state : null;
+                                    })
+                                    ->columnSpanFull()
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin()
+                                    )
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('unit_id', null);
+                                        $set('subunit_id', null);
+                                    }),
 
-                        return Bahagian::query()
-                            ->where('ptj_id', $ptjId)
-                            ->orderBy('nama_bahagian')
-                            ->pluck('nama_bahagian', 'id')
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->preload()
-                    ->live()
-                    ->disabled(fn(Get $get) => blank($get('ptj_id')))
+                                Select::make('unit_id')
+                                    ->label('Jabatan / KK / KP')
+                                    ->options(function (Get $get): array {
+                                        $ptjId = $get('ptj_id');
+
+                                        if (! $ptjId) {
+                                            return [];
+                                        }
+
+                                        $query = Unit::query()->orderBy('nama_unit');
+
+                                        if (Ptj::usesBahagianHierarchyFor((int) $ptjId)) {
+                                            $bahagianId = $get('bahagian_id');
+
+                                            if (! $bahagianId) {
+                                                return [];
+                                            }
+
+                                            return $query->where('bahagian_id', $bahagianId)
+                                                ->pluck('nama_unit', 'id')
+                                                ->toArray();
+                                        }
+
+                                        return $query->where('ptj_id', $ptjId)
+                                            ->pluck('nama_unit', 'id')
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->nullable()
+                                    ->columnSpanFull()
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin()
+                                    )
+                                    ->afterStateUpdated(fn (Set $set) => $set('subunit_id', null)),
+
+                                Select::make('subunit_id')
+                                    ->label('KD / KKIA / Wad / Klinik')
+                                    ->options(function (Get $get): array {
+                                        $unitId = $get('unit_id');
+
+                                        if (! $unitId) {
+                                            return [];
+                                        }
+
+                                        return Subunit::query()
+                                            ->where('unit_id', $unitId)
+                                            ->orderBy('nama_subunit')
+                                            ->pluck('nama_subunit', 'id')
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable()
+                                    ->columnSpanFull()
+                                    ->disabled(function (Get $get): bool {
+                                        if (blank($get('unit_id'))) {
+                                            return true;
+                                        }
+
+                                        return ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin();
+                                    }),
+
+                                Select::make('status')
+                                    ->required()
+                                    ->label('Status')
+                                    ->default('active')
+                                    // ->disabled(
+                                    //     fn () => ! auth()->user()?->isSuperadmin()
+                                    //     && ! auth()->user()?->isAdmin()
+                                    // )
+                                    ->options([
+                                        'active' => 'Aktif',
+                                        'pindaan nama' => 'Pindaan Nama',
+                                        'batal nama' => 'Batal Nama',
+                                        // 'removed' => 'Buang Jawatan',
+                                    ])
+                                    ->searchable()
+                                    ->preload(),
+
+                                DatePicker::make('tarikh_kuatkuasa')
+                                    ->label('Tarikh Kuatkuasa Waran')
+                                    ->native(false)
+                                    ->displayFormat('d F Y')
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin()
+                                    ),
+
+                            ]),
+
+                        Tab::make('Nama Penyandang')
+                            ->schema([
+                                // Select::make('pegawai_id')
+                                //     ->label('Pegawai')
+                                //     ->required(fn(Get $get) => $get('is_kup'))
+                                //     ->options(function (Get $get, ?WaranJawatan $record) {
+
+                                //         $jawatanIds = $get('jawatan_ids');
+                                //         $gredIds = $get('gred_ids');
+
+                                //         if (blank($jawatanIds) || blank($gredIds)) {
+                                //             return [];
+                                //         }
+
+                                //         $jawatanGredIds = Jawatan_Gred::query()
+                                //             ->whereIn('jawatan_id', $jawatanIds)
+                                //             ->whereIn('gred_id', $gredIds)
+                                //             ->pluck('id');
+
+                                //         return Pegawai::query()
+                                //             ->whereIn('jawatan_gred_id', $jawatanGredIds)
+                                //             ->where(function ($query) {
+                                //                 $query->where('is_kontrak', false);
+
+                                //             })
+                                //             ->where(function ($query) use ($record) {
+
+                                //                 $query->whereNotIn('id', function ($q) use ($record) {
+
+                                //                     $q->select('pegawai_id')
+                                //                         ->from('waran_jawatans')
+                                //                         ->whereNotNull('pegawai_id')
+                                //                         ->where('status', 'active') // ✅ only active assignments
+                                //                         ->whereNull('deleted_at');  // ✅ ignore soft deleted
+
+                                //                     // exclude current record if editing
+                                //                     if ($record) {
+                                //                         $q->where('id', '!=', $record->id);
+                                //                     }
+                                //                 });
+
+                                //                 // keep currently selected pegawai visible in dropdown
+                                //                 if ($record?->pegawai_id) {
+                                //                     $query->orWhere('id', $record->pegawai_id);
+                                //                 }
+
+                                //             })
+
+                                //             ->orderBy('nama')
+                                //             ->pluck('nama', 'id')
+                                //             ->toArray();
+
+                                //     })
+                                //     ->searchable()
+                                //     ->live()
+                                //     ->preload()
+                                //     ->columnSpanFull()
+
+                                //     ->disabled(function (Get $get, ?WaranJawatan $record) {
+                                //         // Only applies when editing
+                                //         if (!$record) {
+                                //             return false;
+                                //         }
+
+                                //         // Role 3 cannot edit if KUP is checked
+                                //         return auth()->user()?->role == 3 && $get('is_kup');
+                                //     }),
+
+                                Select::make('pegawai_id')
+                                    ->live()
+                                    ->label('Pegawai')
+                                    ->options(fn (Get $get, $record): array => Pegawai::penyandangOptions(
+                                        $get('jawatan_ids') ?? [],
+                                        $get('gred_ids') ?? [],
+                                        $record?->id,
+                                        $record?->pegawai_id,
+                                    ))
+                                    ->disabled(function ($record, Get $get) {
+
+                                        $user = auth()->user();
+
+                                        // Admin & Superadmin can always edit
+                                        if (in_array($user->role, [1, 2])) {
+                                            return false;
+                                        }
+
+                                        // Role 3 cannot edit when is_kup is true
+                                        if ($user->role == 3 && ($record?->is_kup || $get('is_kup'))) {
+                                            return true;
+                                        }
+
+                                        if (! $record?->pegawai_id) {
+                                            return false;
+                                        }
+
+                                        $pegawai = Pegawai::withoutGlobalScopes()
+                                            ->find($record->pegawai_id);
+
+                                        return $pegawai?->ptj_id != $user->ptj_id;
+                                    })
+                                    ->dehydrated(fn ($record, Get $get): bool => ! (
+                                        auth()->user()?->role == 3
+                                        && ($record?->is_kup || $get('is_kup'))
+                                    ))
+
+                                    ->afterStateUpdated(function ($state, Get $get, Set $set) {
+
+                                        if (blank($state) || blank($get('gred_ids'))) {
+                                            $set('tbk', null);
+                                            $set('tbk_gred_id', null);
+
+                                            return;
+                                        }
+
+                                        $pegawai = Pegawai::withoutGlobalScopes()->with('jawatan_gred')->find($state);
+
+                                        if (! $pegawai) {
+                                            return;
+                                        }
+
+                                        $selectedGreds = Gred::query()->whereIn('id', $get('gred_ids'))->orderBy('kod_gred')->pluck('id')->values();
+                                        $lowestGredId = $selectedGreds->first();
+                                        $tbk = $selectedGreds->search($pegawai->jawatan_gred->gred_id);
+
+                                        if ($tbk === false) {
+                                            $set('tbk', null);
+                                            $set('tbk_gred_id', null);
+
+                                            return;
+                                        }
+
+                                        $set('tbk', $tbk);
+                                        $set('tbk_gred_id', $lowestGredId);
+
+                                    })->columnSpanFull()->searchable(),
+
+                                Checkbox::make('is_kup')
+                                    ->label('Khas Untuk Penyandang (KUP)')
+                                    ->disabled(fn () => auth()->user()?->role == 3)
+                                    ->dehydrated(fn () => auth()->user()?->role != 3),
+
+                                Textarea::make('catatan_jawatan')
+                                    ->label('Catatan')
+                                    ->columnSpanFull(),
+                            ]),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
 
-                Select::make('unit_id')
-                    ->label('Unit')
-                    ->options(function (Get $get) {
-                        $bahagianId = $get('bahagian_id');
-
-                        if (blank($bahagianId)) {
-                            return [];
-                        }
-
-                        return Unit::query()
-                            ->where('bahagian_id', $bahagianId)
-                            ->orderBy('nama_unit')
-                            ->pluck('nama_unit', 'id')
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->live()
-                    ->preload()
-                    ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
-
-                Select::make('subunit_id')
-                    ->label('Subunit')
-                    ->options(function (Get $get) {
-                        $unitId = $get('unit_id');
-
-                        if (blank($unitId)) {
-                            return [];
-                        }
-
-                        return Subunit::query()
-                            ->where('unit_id', $unitId)
-                            ->orderBy('nama_subunit')
-                            ->pluck('nama_subunit', 'id')
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->preload()
-                    ->disabled(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
-                                    && ! auth()->user()?->isAdmin()
-                            ),
-
-                Select::make('pegawai_id')
-                    ->label('Pegawai')
-                    ->options(function (Get $get) {
-
-                        $jawatanIds = $get('jawatan_ids');
-                        $gredIds = $get('gred_ids');
-
-                        if (blank($jawatanIds) || blank($gredIds)) {
-                            return [];
-                        }
-
-                        $jawatanGredIds = Jawatan_Gred::query()
-                            ->whereIn('jawatan_id', $jawatanIds)
-                            ->whereIn('gred_id', $gredIds)
-                            ->pluck('id');
-
-                        return Pegawai::query()
-                            ->whereIn('jawatan_gred_id', $jawatanGredIds)
-                            ->whereNotIn('id', function ($q) {
-                                $q->select('pegawai_id')
-                                    ->from('waran_jawatans')
-                                    ->whereNotNull('pegawai_id');
-                            })
-                            ->orderBy('nama')
-                            ->pluck('nama', 'id')
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->live()
-                    ->preload()
-                    ->columnSpanFull()
-                    ->formatStateUsing(
-                                    fn($get) =>
-                                    WaranJawatan::with('pegawai')
-                                        ->find($get('id'))
-                                        ?->ptj?->nama
-                                ),
-                    
-
-                Checkbox::make('is_kup')
-                    ->label('Khas Untuk Penyandang (KUP)'),
-
-                Textarea::make('catatan_jawatan')
-                    ->label('Catatan')
-
-                    ->columnSpanFull(),
             ]);
     }
-
 
     public function table(Table $table): Table
     {
@@ -281,33 +479,60 @@ class WaranJawatansRelationManager extends RelationManager
             ->modifyQueryUsing(function (Builder $query) {
 
                 $waran = $this->getOwnerRecord();
+                $user = auth()->user();
 
-                $query = WaranJawatan::query()->withoutGlobalScopes();
-
-                if ($waran->jenis !== 'tolak') {
-
-                    return $query
-                        ->where('waran_id', $waran->id)
-                        ->where('status', '!=', 'deleted')
-                        ->orderByRaw("status = 'removed' ASC")
-                        ->orderBy('id', 'asc');
+                $query = WaranJawatan::query()
+                    ->withoutGlobalScopes()
+                    ->with([
+                        'aktiviti.program',
+                        'bahagian',
+                        'pegawai.jawatan_gred.jawatan',
+                        'pegawai.jawatan_gred.gred',
+                        'pegawai.ptj',
+                        'ptj',
+                        'subunit',
+                        'tbk',
+                        'unit',
+                        'waran',
+                    ]);
+                if ($user?->role == 3) {
+                    $query->where('ptj_id', $user->ptj_id);
                 }
 
-                if ($this->viewMode === 'active') {
+                if ($waran->jenis !== 'Tolak') {
+
+                    $sortColumn = $this->getTableSortColumn();
+
+                    $query = $query
+                        ->where('waran_id', $waran->id)
+                        ->listed()
+                        ->where('status', '!=', 'deleted');
+
+                    if ($sortColumn !== 'status') {
+                        $query->orderByRaw("status = 'removed' ASC");
+                    }
+
+                    if (blank($sortColumn)) {
+                        $query->orderBy('id', 'asc');
+                    }
+
+                    return $query;
+                }
+
+                if ($this->viewMode === 'inactive') {
                     return $query->whereNull('deleted_at')
                         ->where('status', '!=', 'deleted');
                 }
 
-                if ($this->viewMode === 'inactive') {
+                if ($this->viewMode === 'active') {
                     return $query
                         ->where('waran_tolak_id', $waran->id)
                         ->whereNotNull('deleted_at')
                         ->where('status', 'removed');
                 }
 
-                return $query;
+                return $query->whereNull('deleted_at');
             })
-
 
             ->columns([
 
@@ -315,44 +540,101 @@ class WaranJawatansRelationManager extends RelationManager
                     ->label('Bil')
                     ->rowIndex()
                     ->color(
-                        fn($record) =>
-                        $record->status === 'removed' ? 'gray' : 'default'
+                        fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
                     ),
                 TextColumn::make('butiran')
                     ->label('Butiran')
+                    ->searchable()
+                    ->sortable()
                     ->color(
-                        fn($record) =>
-                        $record->status === 'removed' ? 'gray' : 'default'
+                        fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
                     ),
                 TextColumn::make('aktiviti')
                     ->label('Aktiviti')
                     ->formatStateUsing(function ($record) {
                         return $record->aktiviti
-                            ? $record->aktiviti->no_aktivit . ' - ' . $record->aktiviti->nama_aktiviti
+                            ? $record->aktiviti->no_aktivit.' - '.$record->aktiviti->nama_aktiviti
                             : '-';
                     })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('aktiviti', function (Builder $aktiviti) use ($search): void {
+                            $aktiviti->where('no_aktivit', 'like', "%{$search}%")
+                                ->orWhere('nama_aktiviti', 'like', "%{$search}%");
+                        });
+                    })
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->orderBy(
+                            Aktiviti::select('no_aktivit')
+                                ->whereColumn('aktivitis.id', 'waran_jawatans.aktiviti_id'),
+                            $direction
+                        );
+                    })
                     ->color(
-                        fn($record) =>
-                        $record->status === 'removed' ? 'gray' : 'default'
+                        fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
                     )
                     ->wrap(),
                 TextColumn::make('jawatan_gred_display')
                     ->label('Jawatan / Gred')
-                    ->state(function ($record) {
-                        return $record->jawatan_list . '<br>' . $record->gred_list;
-                    })
+                    ->state(fn ($record) => e($record->jawatan_gred_display))
                     ->html()
                     ->wrap()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $jawatanIds = Jawatan::query()
+                            ->where('desc_jawatan', 'like', "%{$search}%")
+                            ->pluck('id');
+                        $gredIds = Gred::query()
+                            ->where('kod_gred', 'like', "%{$search}%")
+                            ->pluck('id');
+
+                        if ($jawatanIds->isEmpty() && $gredIds->isEmpty()) {
+                            return $query->whereRaw('0 = 1');
+                        }
+
+                        return $query->where(function (Builder $q) use ($jawatanIds, $gredIds): void {
+                            foreach ($jawatanIds as $jawatanId) {
+                                $q->orWhereJsonContains('jawatan_ids', (int) $jawatanId);
+                            }
+
+                            foreach ($gredIds as $gredId) {
+                                $q->orWhereJsonContains('gred_ids', (int) $gredId);
+                            }
+                        });
+                    })
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        $direction = $direction === 'desc' ? 'desc' : 'asc';
+                        $driver = $query->getConnection()->getDriverName();
+                        $firstJawatanId = $driver === 'sqlite'
+                            ? "CAST(json_extract(waran_jawatans.jawatan_ids, '$[0]') AS INTEGER)"
+                            : "CAST(JSON_UNQUOTE(JSON_EXTRACT(waran_jawatans.jawatan_ids, '$[0]')) AS UNSIGNED)";
+                        $firstGredId = $driver === 'sqlite'
+                            ? "CAST(json_extract(waran_jawatans.gred_ids, '$[0]') AS INTEGER)"
+                            : "CAST(JSON_UNQUOTE(JSON_EXTRACT(waran_jawatans.gred_ids, '$[0]')) AS UNSIGNED)";
+
+                        return $query
+                            ->orderBy(
+                                Jawatan::query()
+                                    ->select('desc_jawatan')
+                                    ->whereRaw("jawatans.id = {$firstJawatanId}")
+                                    ->limit(1),
+                                $direction,
+                            )
+                            ->orderBy(
+                                Gred::query()
+                                    ->select('kod_gred')
+                                    ->whereRaw("greds.id = {$firstGredId}")
+                                    ->limit(1),
+                                $direction,
+                            );
+                    })
                     ->color(
-                        fn($record) =>
-                        $record->status === 'removed' ? 'gray' : 'default'
+                        fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
                     ),
 
                 TextColumn::make('ptj.nama_ptj')
                     ->searchable()
+                    ->sortable()
                     ->color(
-                        fn($record) =>
-                        $record->status === 'removed' ? 'gray' : 'default'
+                        fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
                     )
                     ->wrap(),
                 // TextColumn::make('pegawai.nama')
@@ -366,12 +648,32 @@ class WaranJawatansRelationManager extends RelationManager
                 TextColumn::make('status')
                     ->badge()
                     ->size('lg')
-                    ->formatStateUsing(fn($state) => match ($state) {
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        $direction = $direction === 'desc' ? 'desc' : 'asc';
+
+                        return $query->orderByRaw(
+                            "CASE waran_jawatans.status
+                                WHEN 'removed' THEN 'Dibuang'
+                                WHEN 'pindaan nama' THEN 'Pindaan Nama'
+                                WHEN 'batal nama' THEN 'Batal Nama'
+                                ELSE 'Aktif'
+                            END {$direction}"
+                        );
+                    })
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'removed' => 'Dibuang',
+                        'pindaan nama' => 'Pindaan Nama',
+                        'batal nama' => 'Batal Nama',
                         default => 'Aktif',
                     })
-                    ->color(fn($state) => $state === 'removed' ? 'danger' : 'success'),
-
+                    ->color(
+                        fn ($state) => match ($state) {
+                            'removed' => 'danger',
+                            'pindaan nama' => 'info',
+                            'batal nama' => 'warning',
+                            default => 'success',
+                        }
+                    ),
             ])
 
             ->filters([
@@ -391,8 +693,7 @@ class WaranJawatansRelationManager extends RelationManager
                                     $program->nama_program => $program->aktiviti
                                         ->mapWithKeys(function ($aktiviti) {
                                             return [
-                                                $aktiviti->id =>
-                                                $aktiviti->no_aktivit . ' - ' . $aktiviti->nama_aktiviti
+                                                $aktiviti->id => $aktiviti->no_aktivit.' - '.$aktiviti->nama_aktiviti,
                                             ];
                                         })
                                         ->toArray(),
@@ -401,7 +702,7 @@ class WaranJawatansRelationManager extends RelationManager
                             ->toArray();
                     })
                     ->searchable()
-                    ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                    ->visible(fn () => $this->getPageClass() !== ViewWaran::class && $this->getOwnerRecord()->jenis === 'Tolak'),
 
                 SelectFilter::make('butiran')
                     ->label('Butiran')
@@ -412,63 +713,96 @@ class WaranJawatansRelationManager extends RelationManager
                             ->toArray()
                     )
                     ->searchable()
-                    ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                    ->visible(fn () => $this->getPageClass() !== ViewWaran::class && $this->getOwnerRecord()->jenis === 'Tolak'),
 
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(2)
             ->filtersApplyAction(
-                fn(Action $action) => $action->label('Cari Jawatan')
+                fn (Action $action) => $action->label('Cari Jawatan')
             )
 
             ->headerActions([
                 CreateAction::make()
                     ->label('Tambah Jawatan')
+                    ->modalHeading('Tambah Penempatan / Jawatan')
+                    ->modalSubmitActionLabel('Tambah')
+                    ->modalCancelActionLabel('Batal')
+                    ->createAnother(false)
                     ->visible(
-                        fn() =>
-                        $this->getOwnerRecord()->jenis === 'tambah'
-                            && (
-                                auth()->user()?->isSuperadmin()
-                                || auth()->user()?->isAdmin()
-                            )
-                    ),
+                        fn () => $this->getOwnerRecord()?->jenis === 'Tambah'
+                            && (auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin())
+                    )
+                    ->after(function ($record) {
+                        Log::info('Penempatan Waran Added', [
+                            'waran_jawatan_id' => $record->id,
+                            'user_id' => auth()->id(),
+                        ]);
+                        $waranJawatan = $record;
 
-                // Action::make('active')
-                //     ->label('Aktif')
-                //     ->color(fn() => $this->viewMode === 'active' ? 'primary' : 'gray')
-                //     ->action(fn($livewire) => $livewire->viewMode = 'active')
-                //     ->button()
-                //     ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                        $noWaran = $this->getOwnerRecord()->no_waran;
 
-                // Action::make('inactive')
-                //     ->label('Dibuang')
-                //     ->color(fn() => $this->viewMode === 'inactive' ? 'danger' : 'gray')
-                //     ->action(fn($livewire) => $livewire->viewMode = 'inactive')
-                //     ->button()
-                //     ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                        $recipients = User::where('role', 3)
+                            ->where('ptj_id', $waranJawatan->ptj_id)
+                            ->get();
+
+                        Notification::make()
+                            ->title('Waran Diterima')
+                            ->body("Waran {$noWaran} telah diterima")
+                            ->success()
+                            ->actions([
+                                Action::make('view')
+                                    ->label('Lihat Waran')
+                                    ->url(
+                                        WaranResource::getUrl('edit', [
+                                            'record' => $waranJawatan->waran_id,
+                                        ])
+                                    )
+                                    ->markAsRead(),
+                            ])
+                            ->sendToDatabase($recipients);
+                    }),
 
                 Action::make('viewModeTabs')
                     ->label('')
                     ->view('filament.custom.warans.view-mode-tabs', [
-                        'viewMode' => fn($livewire) => $livewire->viewMode,
+                        'isViewPage' => $this->getPageClass() === ViewWaran::class,
                     ])
-                    ->visible(fn() => $this->getOwnerRecord()->jenis === 'tolak'),
+                    ->visible(fn () => $this->getOwnerRecord()->jenis === 'Tolak'),
 
             ])
 
-
             ->recordActions([
                 EditAction::make()
-                    ->visible(fn($record) => $record->status !== 'removed'),
+                    ->label('Kemaskini')
+                    ->modalHeading(fn (WaranJawatan $record): string => 'Kemaskini Butiran '.($record->butiran ?? ''))
+                    ->visible(fn (WaranJawatan $record): bool => $record->status !== 'removed'
+                        && ! (auth()->user()?->role == 3 && $record->is_kup)),
                 DissociateAction::make(),
-                DeleteAction::make(),
-                ForceDeleteAction::make(),
+                DeleteAction::make()
+                    ->before(function (DeleteAction $action, WaranJawatan $record): void {
+                        BlockedPegawaiDelete::haltIfAssigned($action, $record->hasAssignedPegawai());
+                    }),
+                ForceDeleteAction::make()
+                    ->before(function (ForceDeleteAction $action, WaranJawatan $record): void {
+                        BlockedPegawaiDelete::haltIfAssigned($action, $record->hasAssignedPegawai());
+                    }),
                 RestoreAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DissociateBulkAction::make(),
-                    DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->before(function (Collection $records): void {
+                            if ($records->contains(fn (WaranJawatan $record): bool => $record->hasAssignedPegawai())) {
+                                BlockedPegawaiDelete::notify();
+                            }
+                        }),
+                    ForceDeleteBulkAction::make()
+                        ->before(function (Collection $records): void {
+                            if ($records->contains(fn (WaranJawatan $record): bool => $record->hasAssignedPegawai())) {
+                                BlockedPegawaiDelete::notify();
+                            }
+                        }),
                     RestoreBulkAction::make(),
                 ]),
             ])
@@ -476,142 +810,273 @@ class WaranJawatansRelationManager extends RelationManager
                 ActionGroup::make([
 
                     ViewAction::make('view')
-                        ->color('info'),
+                        ->label('Paparan')
+                        ->color('info')
+                        ->modalHeading(function (WaranJawatan $record): string {
+                            return $record->waran?->no_waran.' - '.($record->ptj?->nama_ptj ?? 'Tiada PTJ');
+                        })
+                        ->modalCloseButton(false)
+                        ->extraModalWindowAttributes(fn (WaranJawatan $record): array => [
+                            'class' => WaranJawatanInfolist::programWindowClass($record),
+                        ])
+                        ->schema(fn (Schema $schema): Schema => WaranJawatanInfolist::configure($schema, jawatanTabFirst: true))
+                        ->extraModalFooterActions([
+
+                            EditAction::make()
+                                ->label('Kemaskini')
+                                ->modalHeading(fn (WaranJawatan $record): string => 'Kemaskini Butiran '.($record->butiran ?? ''))
+                                ->visible(fn (WaranJawatan $record): bool => $this->getOwnerRecord()->jenis === 'Tambah'
+                                    && ! (auth()->user()?->role == 3 && $record->is_kup))
+                                ->modalCancelActionLabel('Batal')
+                                ->modalSubmitAction(
+                                    fn ($action) => $action
+                                        ->label('Simpan')
+                                        ->color('primary')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Pengesahan')
+                                        ->modalDescription('Adakah anda pasti mahu simpan perubahan ini?')
+                                        ->action(fn () => $this->save()),
+                                ),
+
+                            Action::make('duplicate')
+                                ->label('Salin')
+                                ->icon('heroicon-o-document-duplicate')
+                                ->color('warning')
+                                ->visible(fn (WaranJawatan $record): bool => ! auth()->user()?->isUser()
+                                    && $this->getPageClass() !== ViewWaran::class
+                                    && $this->getOwnerRecord()->jenis === 'Tambah'
+                                    && ! $record->hasAssignedPegawai())
+                                ->requiresConfirmation()
+                                ->modalHeading('Salin Jawatan')
+                                ->modalDescription('Adakah anda pasti mahu salin rekod jawatan ini? Rekod baharu akan ditambah tanpa penyandang.')
+                                ->modalSubmitActionLabel('Ya, Salin')
+                                ->modalCancelActionLabel('Batal')
+                                ->action(function (WaranJawatan $record): void {
+                                    if ($record->hasAssignedPegawai()) {
+                                        BlockedPegawaiDelete::notify();
+
+                                        return;
+                                    }
+
+                                    $duplicate = $record->replicate([
+                                        'pegawai_id',
+                                        'waran_tolak_id',
+                                    ]);
+                                    $duplicate->save();
+
+                                    Log::info('Penempatan Waran Disalin', [
+                                        'source_waran_jawatan_id' => $record->id,
+                                        'duplicate_waran_jawatan_id' => $duplicate->id,
+                                        'user_id' => auth()->id(),
+                                    ]);
+
+                                    Notification::make()
+                                        ->title('Berjaya disalin')
+                                        ->body('Jawatan baharu telah ditambah.')
+                                        ->success()
+                                        ->send();
+                                })
+                                ->cancelParentActions(),
+
+                            Action::make('status')
+                                ->label('Buang Jawatan')
+                                ->icon('heroicon-o-trash')
+                                ->visible(fn ($record) => $this->getOwnerRecord()->jenis === 'Tolak' && $record->status !== 'removed')
+                                ->color('danger')
+                                ->action(function ($record) {
+                                    if ($record->hasAssignedPegawai()) {
+                                        BlockedPegawaiDelete::notify();
+
+                                        return;
+                                    }
+
+                                    $waran = $this->getOwnerRecord();
+
+                                    $record->update([
+                                        'waran_tolak_id' => $waran->id,
+                                        'status' => 'removed',
+                                    ]);
+
+                                    $record->delete();
+
+                                    Notification::make()
+                                        ->title('Berjaya dibuang')
+                                        ->body('Jawatan telah berjaya dibuang.')
+                                        ->success()
+                                        ->send();
+                                })
+                                ->requiresConfirmation()
+                                ->modalHeading('Buang Jawatan')
+                                ->modalDescription('Adakah anda pasti mahu membuang rekod ini?')
+                                ->modalSubmitActionLabel('Ya, Buang Jawatan')
+                                ->modalCancelActionLabel('Batal'),
+
+                            Action::make('restore')
+                                ->label('Aktifkan Jawatan')
+                                ->icon('heroicon-o-trash')
+                                ->visible(fn ($record) => $this->getPageClass() !== ViewWaran::class && $this->getOwnerRecord()->jenis === 'Tolak' && $record->status == 'removed')
+                                ->color('success')
+                                ->action(function ($record) {
+
+                                    $waran = $this->getOwnerRecord();
+
+                                    $record->update([
+                                        'waran_tolak_id' => null,
+                                        'status' => 'active',
+
+                                    ]);
+
+                                    $record->restore();
+
+                                    Notification::make()
+                                        ->title('Berjaya diaktifkan')
+                                        ->body('Jawatan telah berjaya diaktifkan semula.')
+                                        ->success()
+                                        ->send();
+                                })
+
+                                ->requiresConfirmation()
+                                ->modalHeading('Aktifkan Jawatan')
+                                ->modalDescription('Adakah anda pasti mahu aktifkan semula rekod ini?')
+                                ->modalSubmitActionLabel('Ya, Aktifkan Jawatan')
+                                ->modalCancelActionLabel('Batal')
+                                ->successRedirectUrl(null),
+                        ]),
+
                     EditAction::make()
-                        ->visible(
-                            fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tambah'
-                                && $record->status === 'active'
+                        ->label('Kemaskini')
+                        ->visible(fn (WaranJawatan $record): bool => ! (
+                            auth()->user()?->role == 3 && $record->is_kup
+                        ))
+                        ->modalHeading(fn (WaranJawatan $record): string => 'Kemaskini Butiran '.($record->butiran ?? ''))
+                        ->modalCancelActionLabel('Batal')
+                        ->modalSubmitAction(
+                            fn ($action) => $action
+                                ->label('Simpan')
+                                ->color('primary')
+                                ->requiresConfirmation()
+                                ->modalHeading('Pengesahan')
+                                ->modalDescription('Adakah anda pasti mahu simpan perubahan ini?')
+                                ->action(fn () => $this->save()),
                         ),
                     Action::make('delete')
-                        ->label('Delete')
+                        ->label('Padam')
                         ->icon('heroicon-o-trash')
                         ->color('danger')
                         ->requiresConfirmation()
+                        ->modalHeading(fn ($record) => 'Padam')
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
                         ->visible(
-                            fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tambah'
-                                && $record->status === 'active'
+                            fn (WaranJawatan $record): bool => $this->canPadamWaranJawatan($record)
                         )
-                        ->action(function ($record) {
+                        ->action(function (WaranJawatan $record): void {
+                            if (! $this->canPadamWaranJawatan($record)) {
+                                return;
+                            }
 
-                            $record->update([
-                                'status' => 'deleted',
-                            ]);
-                            $record->delete();
-                        }),
-                    Action::make('remove')
-                        ->label('Buang Jawatan')
-                        ->icon('heroicon-o-trash')
-                        ->color('danger')
-                        ->requiresConfirmation()
-                        ->visible(
-                            fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tolak'
-                                && $record->status === 'active'
-                        )
-                        ->action(function ($record) {
+                            if ($record->hasAssignedPegawai()) {
+                                BlockedPegawaiDelete::notify();
 
-                            $waran = $this->getOwnerRecord();
+                                return;
+                            }
 
-                            $record->update([
-                                'waran_tolak_id' => $waran->id,
-                                'status' => 'removed',
+                            $record->forcedelete();
+                        })
+                        ->after(function ($record) {
+                            Log::info('Penempatan deleted', [
+                                'waran_jawatan_id' => $record->id,
+                                'user_id' => auth()->id(),
                             ]);
 
-                            $record->delete();
+                            $creator = auth()->user();
+
+                            $noWaran = $this->getOwnerRecord()->no_waran;
+
+                            $recipients = User::whereIN('role', [1, 2])->get();
+
+                            Notification::make()
+                                ->title('Penempatan Deleted')
+                                ->body("Penempatan for Waran {$noWaran} deleted by {$creator->name}")
+                                ->danger()
+                                ->sendToDatabase($recipients);
+
                         }),
-                    Action::make('restore')
-                        ->label('Undo Buang')
-                        ->icon('heroicon-o-arrow-uturn-left')
+                    Action::make('status')
+                        ->label('Kemaskini Status')
+                        ->icon('heroicon-o-arrow-path-rounded-square')
                         ->color('success')
-                        ->requiresConfirmation()
                         ->visible(
-                            fn($record) =>
-                            $this->getOwnerRecord()->jenis === 'tolak'
-                                && $record->status === 'removed'
+                            fn () => $this->getPageClass() !== ViewWaran::class
+                                && $this->getOwnerRecord()->jenis === 'Tambah'
                         )
-                        ->action(function ($record) {
-
-                            $record->restore();
-
+                        ->form([
+                            Select::make('status')
+                                ->label('Status')
+                                ->required()
+                                ->searchable()
+                                ->options([
+                                    'active' => 'Aktif',
+                                    'pindaan nama' => 'Pindaan Nama',
+                                    'batal nama' => 'Batal Nama',
+                                ])
+                                ->default(fn ($record) => $record->status),
+                        ])
+                        ->action(function (array $data, $record) {
                             $record->update([
-                                'waran_tolak_id' => null,
-                                'status' => 'active',
+                                'status' => $data['status'],
                             ]);
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Kemaskini Status')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalCancelActionLabel('Batal')
+                        ->after(function ($record) {
+
+                            Log::info('Status Changed', [
+                                'penempatan_id',
+                                $record->id,
+                                'user_id' => auth()->id(),
+
+                            ]);
+
+                            $creator = auth()->user();
+
+                            $no_Waran = $this->getOwnerRecord();
+
+                            $recipients = User::whereIn('role', [1, 2])->get();
+
+                            Notification::make()
+                                ->title('Status Penempatan Telah Dikemaskini')
+                                ->body("Status penempatan di {$record->ptj?->nama_ptj} bagi waran {$no_Waran->no_waran} telah dikemaskini oleh {$creator->name}")
+                                ->success()
+                                ->actions([
+                                    Action::make('view')
+                                        ->label('Lihat Penempatan')
+                                        ->url(
+                                            WaranResource::getUrl('view', [
+                                                'record' => $no_Waran,
+                                            ])
+                                        )
+                                        ->markAsRead(),
+                                ])
+                                ->sendToDatabase($recipients);
                         }),
-                ]),
+                ])
+                    ->tooltip('Tindakan'),
 
-                // ViewAction::make('view')
-                //     ->color('info'),
-
-                // EditAction::make()
-                //     ->visible(
-                //         fn($record) =>
-                //         $this->getOwnerRecord()->jenis === 'tambah'
-                //         && $record->status === 'active'
-                //     ),
-
-                // Action::make('delete')
-                //     ->label('Delete')
-                //     ->icon('heroicon-o-trash')
-                //     ->color('danger')
-                //     ->requiresConfirmation()
-                //     ->visible(
-                //         fn($record) =>
-                //         $this->getOwnerRecord()->jenis === 'tambah'
-                //         && $record->status === 'active'
-                //     )
-                //     ->action(function ($record) {
-
-                //         $record->update([
-                //             'status' => 'deleted',
-                //         ]);
-                //         $record->delete();
-                //     }),
-
-
-                // Action::make('remove')
-                //     ->label('Buang Jawatan')
-                //     ->icon('heroicon-o-trash')
-                //     ->color('danger')
-                //     ->requiresConfirmation()
-                //     ->visible(
-                //         fn($record) =>
-                //         $this->getOwnerRecord()->jenis === 'tolak'
-                //         && $record->status === 'active'
-                //     )
-                //     ->action(function ($record) {
-
-                //         $waran = $this->getOwnerRecord();
-
-                //         $record->update([
-                //             'waran_tolak_id' => $waran->id,
-                //             'status' => 'removed',
-                //         ]);
-
-                //         $record->delete();
-                //     }),
-
-                // Action::make('restore')
-                //     ->label('Undo Buang')
-                //     ->icon('heroicon-o-arrow-uturn-left')
-                //     ->color('success')
-                //     ->requiresConfirmation()
-                //     ->visible(
-                //         fn($record) =>
-                //         $this->getOwnerRecord()->jenis === 'tolak'
-                //         && $record->status === 'removed'
-                //     )
-                //     ->action(function ($record) {
-
-                //         $record->restore();
-
-                //         $record->update([
-                //             'waran_tolak_id' => null,
-                //             'status' => 'active',
-                //         ]);
-                //     }),
             ]);
+
+    }
+
+    protected function canPadamWaranJawatan(WaranJawatan $record): bool
+    {
+        $user = auth()->user();
+
+        return $this->getPageClass() !== ViewWaran::class
+            && $this->getOwnerRecord()->jenis === 'Tambah'
+            && in_array($record->status, ['active', 'pindaan nama', 'batal nama'], true)
+            && ($user?->isSuperadmin() || $user?->isAdmin());
     }
 }

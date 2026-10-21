@@ -18,6 +18,16 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
+    'prestasi_v2' => [
+        'base_url' => env('PRESTASI_V2_BASE_URL', 'https://training.kdh.moh.gov.my/api/v1'),
+        'api_key' => env('PRESTASI_V2_API_KEY'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

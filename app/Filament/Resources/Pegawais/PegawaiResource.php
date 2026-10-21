@@ -5,70 +5,56 @@ namespace App\Filament\Resources\Pegawais;
 use App\Filament\Resources\Pegawais\Pages\CreatePegawai;
 use App\Filament\Resources\Pegawais\Pages\EditPegawai;
 use App\Filament\Resources\Pegawais\Pages\ListPegawais;
+use App\Filament\Resources\Pegawais\Pages\ViewPegawai;
 use App\Filament\Resources\Pegawais\Schemas\PegawaiForm;
+use App\Filament\Resources\Pegawais\Schemas\PegawaiInfolist;
 use App\Filament\Resources\Pegawais\Tables\PegawaisTable;
 use App\Models\Pegawai;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class PegawaiResource extends Resource
 {
     protected static ?string $model = Pegawai::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $recordTitleAttribute = 'nama';
 
     protected static ?string $modelLabel = 'Pegawai';
 
-    protected static ?string $pluralModelLabel = 'Pegawai';
+    protected static ?string $pluralModelLabel = 'Maklumat Penyandang';
 
-    protected static ?string $navigationLabel = 'Senarai Pegawai';
+    protected static ?string $navigationLabel = 'Maklumat Penyandang';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Pegawai';
 
     protected static ?int $navigationSort = 11;
+
     public static function getNavigationBadge(): ?string
     {
-        $tidakLengkap = static::getModel()
-            ::where(function ($q) {
-                $q->whereNull('ptj_id')
-                    ->orWhereNull('bahagian_id')
-                    ->orWhereNull('unit_id')
-                    ->orWhereNull('subunit_id');
-            })
-            ->orWhere(function ($q) {
-                $q->where('is_jtw', 0)
-                    ->whereDoesntHave('waranJawatan.waran');
-            })
-            ->count();
+        $tidakLengkap = static::getModel()::query()->tidakLengkap()->count();
 
         return $tidakLengkap > 0 ? (string) $tidakLengkap : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $tidakLengkap = static::getModel()
-            ::where(function ($q) {
-                $q->whereNull('ptj_id')
-                    ->orWhereNull('bahagian_id')
-                    ->orWhereNull('unit_id')
-                    ->orWhereNull('subunit_id');
-            })
-            ->orWhere(function ($q) {
-                $q->where('is_jtw', 0)
-                    ->whereDoesntHave('waranJawatan.waran');
-            })
-            ->count();
+        $tidakLengkap = static::getModel()::query()->tidakLengkap()->count();
+
         return $tidakLengkap > 0 ? 'danger' : null;
     }
 
     public static function form(Schema $schema): Schema
     {
         return PegawaiForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return PegawaiInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -88,6 +74,7 @@ class PegawaiResource extends Resource
         return [
             'index' => ListPegawais::route('/'),
             'create' => CreatePegawai::route('/create'),
+            'view' => ViewPegawai::route('/{record}'),
             'edit' => EditPegawai::route('/{record}/edit'),
         ];
     }

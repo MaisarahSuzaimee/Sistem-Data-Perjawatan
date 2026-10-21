@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OpsyenPencens\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,7 +18,8 @@ class OpsyenPencensTable
             ->columns([
                 TextColumn::make('no')
                 ->label('Bil')
-                ->rowIndex(),
+                ->rowIndex()
+                ->width(1),
                 TextColumn::make('opsyen')
                 ->label('Opsyen Pencen')
                 ->sortable()
@@ -27,9 +29,22 @@ class OpsyenPencensTable
                 //
             ])
             ->recordActions([
-                EditAction::make()
-                ->modal(),
-                DeleteAction::make()
+               ActionGroup::make([
+                    // ViewAction::make(),
+                    EditAction::make()
+                        // ->label('Kemaskini')
+                        ->modal()
+                        // ->modalHeading('Kemaskini Rekod')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalCancelActionLabel('Batal'),
+
+                    DeleteAction::make()
+                        ->label('Padam')
+                        ->modalHeading(fn($record) => "Padam {$record->opsyen}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
+                ])
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

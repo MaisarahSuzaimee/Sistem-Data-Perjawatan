@@ -5,22 +5,24 @@ namespace App\Filament\Resources\Pencens;
 use App\Filament\Resources\Pencens\Pages\CreatePencen;
 use App\Filament\Resources\Pencens\Pages\EditPencen;
 use App\Filament\Resources\Pencens\Pages\ListPencens;
+use App\Filament\Resources\Pencens\Pages\ViewPencens;
 use App\Filament\Resources\Pencens\Schemas\PencenForm;
+use App\Filament\Resources\Pencens\Schemas\PencenInfoList;
 use App\Filament\Resources\Pencens\Tables\PencensTable;
 use App\Models\Pencen;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class PencenResource extends Resource
 {
     protected static ?string $model = Pencen::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-left-on-rectangle';
 
     protected static ?string $recordTitleAttribute = 'nama';
+
     protected static ?string $modelLabel = 'Penamatan Perkhidmatan';
 
     protected static ?string $pluralModelLabel = 'Penamatan Perkhidmatan';
@@ -31,10 +33,14 @@ class PencenResource extends Resource
 
     protected static ?int $navigationSort = 13;
 
-
     public static function form(Schema $schema): Schema
     {
         return PencenForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return PencenInfoList::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -55,6 +61,7 @@ class PencenResource extends Resource
             'index' => ListPencens::route('/'),
             'create' => CreatePencen::route('/create'),
             'edit' => EditPencen::route('/{record}/edit'),
+            'view' => ViewPencens::route('/{record}'),
         ];
     }
 }

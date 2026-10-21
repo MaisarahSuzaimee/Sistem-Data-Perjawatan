@@ -1,11 +1,8 @@
 <?php
 
-<<<<<<<< HEAD:app/Filament/Resources/Kumpulans/Tables/KumpulansTable.php
-namespace App\Filament\Resources\Kumpulans\Tables;
-========
 namespace App\Filament\Resources\JenisPencens\Tables;
->>>>>>>> 938c0d655df628827656ae88289b79ef503af684:app/Filament/Resources/JenisPencens/Tables/JenisPencensTable.php
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -13,48 +10,82 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-<<<<<<<< HEAD:app/Filament/Resources/Kumpulans/Tables/KumpulansTable.php
-class KumpulansTable
-========
 class JenisPencensTable
->>>>>>>> 938c0d655df628827656ae88289b79ef503af684:app/Filament/Resources/JenisPencens/Tables/JenisPencensTable.php
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
                 TextColumn::make('no')
-                ->Label('Bil')
-                ->rowIndex(),
-<<<<<<<< HEAD:app/Filament/Resources/Kumpulans/Tables/KumpulansTable.php
-                TextColumn::make('nama_kumpulan')
-                ->label('Kumpulan')
-                ->sortable()
-                ->searchable()
-========
+                    ->label('Bil')
+                    ->rowIndex()
+                    // ->toggleable(false)
+                    // ->alignCenter()
+                    ->width(1),
+
                 TextColumn::make('jenis')
-                ->label('Jenis Pencen')
-                ->sortable()
-                ->searchable(),
+                    ->label('Jenis Penamatan Perkhidmatan')
+                    ->sortable()
+                    ->searchable()
+                    // ->icon('heroicon-o-document-text')
+                    // ->iconColor('primary')
+                    ->wrap(),
+
                 TextColumn::make('kategori')
->>>>>>>> 938c0d655df628827656ae88289b79ef503af684:app/Filament/Resources/JenisPencens/Tables/JenisPencensTable.php
+                    ->label('Kategori')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Pilihan' => 'success',
+                        'Paksa' => 'warning',
+                        default => 'gray',
+                    })
+                    // ->icon(fn(string $state): string => match ($state) {
+                    //     'Pilihan' => 'heroicon-o-check-badge',
+                    //     'Paksa' => 'heroicon-o-x-circle',
+                    //     default => 'heroicon-o-question-mark-circle',
+                    // })
+                    ->sortable()
+                    ->searchable()
+                    // ->toggleable(),
             ])
+
             ->filters([
                 //
             ])
+
             ->recordActions([
-                EditAction::make()
-                ->modal(),
-<<<<<<<< HEAD:app/Filament/Resources/Kumpulans/Tables/KumpulansTable.php
-                DeleteAction::make()
-========
-                DeleteAction::make(),
->>>>>>>> 938c0d655df628827656ae88289b79ef503af684:app/Filament/Resources/JenisPencens/Tables/JenisPencensTable.php
+                ActionGroup::make([
+                    EditAction::make()
+                        ->icon('heroicon-o-pencil-square')
+                        ->tooltip('Kemaskini')
+                        ->modal()
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalCancelActionLabel('Batal')
+                        ->color('primary'),
+
+                    DeleteAction::make()
+                        ->label('Padam')
+                        ->icon('heroicon-o-trash')
+                        ->tooltip('Padam')
+                        ->modalHeading(fn($record) => "Padam {$record->jenis}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
+                        ->color('danger'),
+                ])
+                    ->icon('heroicon-o-ellipsis-vertical')
+                    ->tooltip('Tindakan'),
             ])
+
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->icon('heroicon-o-trash'),
                 ]),
-            ]);
+            ])
+
+            ->emptyStateIcon('heroicon-o-clipboard-document-list')
+            ->emptyStateHeading('Tiada Jenis Penamatan')
+            ->emptyStateDescription('Belum ada rekod jenis penamatan perkhidmatan. Klik butang "Cipta" untuk tambah rekod baru.');
     }
 }

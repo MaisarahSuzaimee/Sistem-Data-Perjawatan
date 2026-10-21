@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Filament\Pages\Auth;
+
+use App\Filament\Pages\Auth\Concerns\VerifiesTurnstile;
+use App\Models\User;
+use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
+use DanHarrin\LivewireRateLimiting\WithRateLimiting;
+use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
+use Filament\Auth\Pages\PasswordReset\RequestPasswordReset as BaseRequestPasswordReset;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Schemas\Components\View;
+use Filament\Schemas\Schema;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Log;
+
+class RequestPasswordReset extends BaseRequestPasswordReset
+{
+    use VerifiesTurnstile;
+    use WithRateLimiting;
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextInput::make('nokp')
+                    ->label('No. Kad Pengenalan')
+                    ->required()
+                    ->maxLength(12),
+                Hidden::make('cfTurnstileResponse')
+                    ->default(null),
+                View::make('filament.components.turnstile'),
+            ]);
+    }
+
+    public function request(): void
+    {
+        try {
+            $this->rateLimit(3);
+        } catch (TooManyRequestsException $exception) {
+            Notification::make()
+                ->title('Terlalu banyak permintaan')
+                ->body("Sila tunggu {$exception->secondsUntilAvailable} saat sebelum cuba lagi.")
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        // Cloudflare Turnstile — fail-open when not configured.
+        if (config('services.turnstile.secret_key') && ! $this->verifyTurnstile()) {
+            return;
+        }
+
+        $data = $this->form->getState();
+
+        $user = User::where('nokp', $data['nokp'])->first();
+
+        if ($user) {
+            // Validate email before attempting send
+            if (blank($user->email)) {
+                Log::warning('Password reset requested for user without email', ['user_id' => $user->id, 'nokp' => $data['nokp']]);
+            } else {
+                $token = app('auth.password.broker')
+                    ->createToken($user);
+
+                $notification = app(
+                    ResetPasswordNotification::class,
+                    ['token' => $token]
+                );
+
+                $notification->url = Filament::getResetPasswordUrl(
+                    $token,
+                    $user
+                );
+
+                // Send synchronously — Filament's ResetPassword implements ShouldQueue
+                // which with QUEUE_CONNECTION=database would leave the mail stuck in
+                // `jobs` until a worker runs. `notifyNow` bypasses the queue.
+                try {
+                    $user->notifyNow($notification);
+                } catch (\Throwable $e) {
+                    Log::error('Failed to send password reset email', [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    Notification::make()
+                        ->title('Gagal menghantar emel')
+                        ->body('Emel reset tidak dapat dihantar ('.$e->getMessage().'). Sila hubungi pentadbir atau cuba lagi.')
+                        ->danger()
+                        ->send();
+
+                    $this->dispatch('cf-turnstile-reset');
+                    try {
+                        $this->js('window.dispatchEvent(new CustomEvent("cf-turnstile-reset"))');
+                    } catch (\Throwable $e2) {
+                    }
+
+                    return;
+                }
+            }
+        }
+
+        Notification::make()
+            ->title('Permintaan diterima')
+            ->body('Jika maklumat wujud, pautan reset kata laluan telah dihantar ke emel berdaftar.')
+            ->success()
+            ->send();
+
+        $this->form->fill();
+
+        // Token single-use — reset widget for next attempt without refresh
+        if (filled(config('services.turnstile.site_key'))) {
+            $this->dispatch('cf-turnstile-reset');
+            try {
+                $this->js('window.dispatchEvent(new CustomEvent("cf-turnstile-reset"))');
+            } catch (\Throwable $e) {
+            }
+        }
+    }
+
+    public function getView(): string
+    {
+        return 'filament.pages.auth.request-password-reset';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return '';
+    }
+
+    public function getSubheading(): string|Htmlable|null
+    {
+        return null;
+    }
+
+    public function hasLogo(): bool
+    {
+        return false;
+    }
+}

@@ -11,26 +11,37 @@ use App\Models\Bahagian;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class BahagianResource extends Resource
 {
     protected static ?string $model = Bahagian::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office';
 
     protected static ?string $recordTitleAttribute = 'nama_bahagian';
 
     protected static ?string $navigationLabel = 'Bahagian';
+
     protected static ?string $modelLabel = 'Bahagian';
 
     protected static ?string $pluralModelLabel = 'Bahagian';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
-        protected static ?int $navigationSort = 22;
+    protected static ?int $navigationSort = 22;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return true;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereHas('ptj', fn (Builder $q): Builder => $q->where('is_jkn', true));
+    }
 
     public static function form(Schema $schema): Schema
     {

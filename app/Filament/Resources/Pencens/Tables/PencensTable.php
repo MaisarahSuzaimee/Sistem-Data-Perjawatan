@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\Pencens\Tables;
 
+use App\Filament\Resources\Pegawais\PegawaiResource;
+use App\Filament\Resources\Pencens\PencenResource;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -18,10 +21,14 @@ class PencensTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultPaginationPageOption(5)
+            ->recordUrl(null)
+            ->emptyStateHeading('Tiada Rekod Penamatan Perkhidmatan')
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')
-                    ->rowIndex(),
+                    ->rowIndex()
+                    ->width(1),
                 TextColumn::make('nama')
                     ->label('Nama Pegawai')
                     ->sortable()
@@ -60,7 +67,7 @@ class PencensTable
                         $query->whereHas('ptj', function ($q) use ($search) {
                             $q->where('nama_ptj', 'like', "%{$search}%");
                         })
-                        ->orWhere('jenis_lantikan', 'like', "%{$search}%");
+                            ->orWhere('jenis_lantikan', 'like', "%{$search}%");
                     }),
 
                 TextColumn::make('jenisPencen.jenis')
@@ -99,9 +106,24 @@ class PencensTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                    //  ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make()
+                    ViewAction::make()
+                        ->label('Papar')
+                        ->modal()
+                        ->modalHeading(fn($record) => $record->nama)
+                        ->extraModalFooterActions([
+                            Action::make('edit')
+                                ->label('Kemaskini')
+                                ->url(fn($record) => PencenResource::getUrl('edit', [
+                                    'record' => $record,
+                                ])),
+                        ]),
+                    EditAction::make(),
+                    DeleteAction::make()
+                        ->label('Padam')
+                        ->modalHeading(fn($record) => "Padam {$record->nama}")
+                        ->modalDescription('Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Padam')
+                        ->modalCancelActionLabel('Batal')
                 ])
 
             ])

@@ -15,6 +15,7 @@ class WaranForm
         return $schema
 
             ->components([
+               
                 Section::make('Maklumat Waran')
                     ->schema([
                         TextInput::make('no_waran')
@@ -25,7 +26,8 @@ class WaranForm
                                 fn() =>
                                 ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
-                            ),
+                            )
+                            ->dehydrated(fn () => auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin()),
 
                         TextInput::make('jik')
                             ->label('Jumlah Jawatan')
@@ -35,7 +37,8 @@ class WaranForm
                                 fn() =>
                                 ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
-                            ),
+                            )
+                            ->dehydrated(fn () => auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin()),
 
                         Textarea::make('catatan')
                             ->label('Catatan')
@@ -44,21 +47,23 @@ class WaranForm
                                 fn() =>
                                 ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
-                            ),
+                            )
+                            ->dehydrated(fn () => auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin()),
                         Radio::make('jenis')
                             ->label('Jenis Waran')
                             ->options([
-                                'tambah' => 'Tambah Jawatan',
-                                'tolak' => 'Tolak Jawatan',
+                                'Tambah' => 'Tambah Jawatan',
+                                'Tolak' => 'Tolak Jawatan',
                             ])
                             ->descriptions([
-                                'tambah' => 'Menambah jawatan baru.',
-                                'tolak' => 'Mengurangkan jawatan sedia ada.'
+                                'Tambah' => 'Menambah jawatan baru.',
+                                'Tolak' => 'Mengurangkan jawatan sedia ada.'
                             ])
                             ->disabled(
                                 fn(string $operation) =>
                                 $operation === 'edit'
                             )
+                            ->dehydrated(false)
                     ])
                     ->columns(2)
                     ->columnSpanFull()

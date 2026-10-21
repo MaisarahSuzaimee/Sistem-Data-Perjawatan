@@ -12,10 +12,12 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\HtmlString;
 
 class PencenForm
@@ -28,11 +30,25 @@ class PencenForm
                 Wizard::make([
 
                     Step::make('Maklumat Pegawai')
+                        ->beforeValidation(function (string $operation, callable $get) {
+                            if ($operation === 'create' && blank($get('nama_pegawai'))) {
+                                Notification::make()
+                                    ->title('Sila isi Bahagian 1 terlebih dahulu.')
+                                    ->danger()
+                                    ->send();
+
+                                throw new Halt();
+                            }
+                        })
                         ->schema([
                             Select::make('nama_pegawai')
                                 ->visible(fn(string $operation) => $operation === 'create')
 
                                 ->label('Nama Pegawai')
+                                ->required()
+                                ->validationMessages([
+                                    'required' => 'Sila pilih Nama Pegawai terlebih dahulu .'
+                                ])
                                 ->options(
                                     Pegawai::orderBy('nama')->pluck('nama', 'id')
                                 )
@@ -150,21 +166,13 @@ class PencenForm
                             TextInput::make('nokp')
                                 ->label('No KP')
                                 ->disabled()
-                                ->dehydrated()
-                                ->extraInputAttributes([
-                                    'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',
-                                    'style' => 'color: black; -webkit-text-fill-color: black;',
-                                ]),
+                                ->dehydrated(),
 
                             TextInput::make('ptj')
                                 ->label('PTJ')
                                 ->disabled()
                                 ->dehydrated()
                                 ->columnSpanFull()
-                                ->extraInputAttributes([
-                                    'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',
-                                    'style' => 'color: black; -webkit-text-fill-color: black;',
-                                ])
                                 ->formatStateUsing(
                                     fn($get) =>
                                     Pencen::with('ptj')
@@ -180,10 +188,6 @@ class PencenForm
                                 ->disabled()
                                 ->dehydrated()
                                 // ->columnSpanFull()
-                                ->extraInputAttributes([
-                                    'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',
-                                    'style' => 'color: black; -webkit-text-fill-color: black;',
-                                ])
                                 ->formatStateUsing(
                                     fn($get) =>
                                     Pencen::with('jawatan_gred.jawatan')
@@ -195,10 +199,6 @@ class PencenForm
                                 ->label('Gred')
                                 ->disabled()
                                 ->dehydrated()
-                                ->extraInputAttributes([
-                                    'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',
-                                    'style' => 'color: black; -webkit-text-fill-color: black;',
-                                ])
                                 ->formatStateUsing(
                                     fn($get) =>
                                     Pencen::with('jawatan_gred.jawatan')
@@ -210,7 +210,7 @@ class PencenForm
                                 ->dehydrated(),
 
                         ]),
-                    Step::make('Maklumat Persaran')
+                    Step::make('Maklumat Persaraan')
 
                         ->schema([
 
@@ -237,11 +237,15 @@ class PencenForm
                             //     ]),
 
                             Select::make('jenis_pencen_id')
-                            ->label('Jenis Penamatan Perkhidmatan')
+                                ->label('Jenis Penamatan Perkhidmatan')
+                                ->required()
+                                ->validationMessages([
+                                    'required' => 'Sila pilih Jenis Penamatan Perkhidmatan.',
+                                ])
                                 ->options(
                                     JenisPencen::orderBy('jenis')->pluck('jenis', 'id')
                                 )
-                                ->searchable()
+                                // ->searchable()
                                 ->preload()
                                 ->reactive()
                                 ->columnSpanFull(),
@@ -291,12 +295,25 @@ class PencenForm
                                     );
                                 }),
 
+                            // TextInput::make('tempoh_perkhidmatan')
+                            //     ->label('Tempoh Perkhidmatan')
+                            //     ->visible(
+                            //         fn(callable $get) =>
+                            //         optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Paksa'
+                            //     ),
+
                             TextInput::make('tempoh_perkhidmatan')
                                 ->label('Tempoh Perkhidmatan')
+                                ->disabled()
+                                ->dehydrated()
                                 ->visible(
                                     fn(callable $get) =>
                                     optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Paksa'
-                                ),
+                                )
+                                ->extraInputAttributes([
+                                    'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',
+                                    'style' => 'color: black; -webkit-text-fill-color: black;',
+                                ]),
 
                             DatePicker::make('tarikh_kuatkuasa')
                                 ->label('Tarikh Kuatkuasa')
@@ -314,12 +331,8 @@ class PencenForm
 
                                     $diff = $lantikan->diff($kuatkuasa);
 
-                                    $set(
-                                        'tempoh_perkhidmatan',
-                                        $diff->y . ' tahun, ' .
-                                        $diff->m . ' bulan, ' .
-                                        $diff->d . ' hari'
-                                    );
+                                    $set('tempoh_perkhidmatan', null); // reset dulu (optional)
+                                    $set('tempoh_perkhidmatan', $diff->y . ' tahun, ' . $diff->m . ' bulan, ' . $diff->d . ' hari');
 
                                     $set(
                                         'tempoh_perkhidmatan2',
@@ -329,13 +342,14 @@ class PencenForm
                                     );
                                 }),
 
-                            TextInput::make('tempoh_perkhidmatan2')
+                            TextInput::make('tempoh_perkhidmatan')
                                 ->label('Tempoh Perkhidmatan')
                                 ->disabled()
                                 ->dehydrated()
                                 ->visible(
                                     fn(callable $get) =>
-                                    optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Pilihan'
+                                    $get('tarikh_kuatkuasa') !== null
+                                    && optional(JenisPencen::find($get('jenis_pencen_id')))->kategori === 'Pilihan'
                                 )
                                 ->extraInputAttributes([
                                     'class' => 'bg-white !bg-white text-black !text-black opacity-100 !opacity-100',
@@ -350,13 +364,15 @@ class PencenForm
                 ])
                     ->columns(2)
                     ->columnSpanFull()
+                    ->nextAction(fn($action) => $action->label('Seterusnya'))
+                    ->previousAction(fn($action) => $action->label('Kembali'))
                     ->submitAction(new HtmlString(\Illuminate\Support\Facades\Blade::render(<<<'BLADE'
                         <div class="flex gap-2 justify-end">
                             <x-filament::button
                                 type="submit"
                                 size="sm"
                             >
-                                Submit
+                                Simpan
                             </x-filament::button>
                         </div>
                     BLADE)))
