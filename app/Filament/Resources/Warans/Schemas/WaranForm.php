@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\Warans\Schemas;
 
 use Filament\Forms\Components\Radio;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -15,7 +15,7 @@ class WaranForm
         return $schema
 
             ->components([
-               
+
                 Section::make('Maklumat Waran')
                     ->schema([
                         TextInput::make('no_waran')
@@ -23,8 +23,7 @@ class WaranForm
                             ->unique(ignoreRecord: true)
                             ->reactive()
                             ->readonly(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
+                                fn () => ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
                             ),
 
@@ -33,8 +32,7 @@ class WaranForm
                             ->required()
                             ->numeric()
                             ->readonly(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
+                                fn () => ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
                             ),
 
@@ -42,8 +40,7 @@ class WaranForm
                             ->label('Catatan')
                             ->columnSpanFull()
                             ->readonly(
-                                fn() =>
-                                ! auth()->user()?->isSuperadmin()
+                                fn () => ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
                             ),
                         Radio::make('jenis')
@@ -54,15 +51,18 @@ class WaranForm
                             ])
                             ->descriptions([
                                 'Tambah' => 'Menambah jawatan baru.',
-                                'Tolak' => 'Mengurangkan jawatan sedia ada.'
+                                'Tolak' => 'Mengurangkan jawatan sedia ada.',
+                            ])
+                            ->required()
+                            ->validationMessages([
+                                'required' => 'Sila pilih jenis waran.',
                             ])
                             ->disabled(
-                                fn(string $operation) =>
-                                $operation === 'edit'
-                            )
+                                fn (string $operation) => $operation === 'edit'
+                            ),
                     ])
                     ->columns(2)
-                    ->columnSpanFull()
+                    ->columnSpanFull(),
             ]);
     }
 }
