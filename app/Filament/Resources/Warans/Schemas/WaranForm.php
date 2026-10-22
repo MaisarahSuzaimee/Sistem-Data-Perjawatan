@@ -25,7 +25,8 @@ class WaranForm
                             ->readonly(
                                 fn () => ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
-                            ),
+                            )
+                            ->dehydrated(fn () => auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin()),
 
                         TextInput::make('jik')
                             ->label('Jumlah Jawatan')
@@ -34,7 +35,8 @@ class WaranForm
                             ->readonly(
                                 fn () => ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
-                            ),
+                            )
+                            ->dehydrated(fn () => auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin()),
 
                         Textarea::make('catatan')
                             ->label('Catatan')
@@ -42,7 +44,8 @@ class WaranForm
                             ->readonly(
                                 fn () => ! auth()->user()?->isSuperadmin()
                                     && ! auth()->user()?->isAdmin()
-                            ),
+                            )
+                            ->dehydrated(fn () => auth()->user()?->isSuperadmin() || auth()->user()?->isAdmin()),
                         Radio::make('jenis')
                             ->label('Jenis Waran')
                             ->options([
