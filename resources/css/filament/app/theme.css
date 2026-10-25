@@ -433,7 +433,7 @@
     font-weight: 600 !important;
 }
 
-.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn {
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn:not(.mystaff-btn-kembali):not(.mystaff-btn-modal-cancel) {
     background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #0d9488 100%) !important;
     border-radius: 999px !important;
     font-weight: 700 !important;
@@ -441,7 +441,7 @@
     box-shadow: 0 10px 22px -6px rgba(20, 184, 166, 0.45), 0 4px 8px -4px rgba(20, 184, 166, 0.3) !important;
 }
 
-.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn:hover {
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn:not(.mystaff-btn-kembali):not(.mystaff-btn-modal-cancel):hover {
     background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
     box-shadow: 0 14px 28px -6px rgba(20, 184, 166, 0.55) !important;
     transform: translateY(-1px);
@@ -551,45 +551,99 @@
     transform: translateY(-1px);
 }
 
-/* Kembali - soft violet (secondary) - harmonious with teal Simpan, distinct but low-contrast */
+/* Kembali - white fill so it contrasts with teal Simpan */
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .mystaff-btn-kembali.fi-btn,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn.mystaff-btn-kembali,
 .mystaff-btn-kembali.fi-btn,
 .fi-btn.mystaff-btn-kembali,
-.mystaff-profile-page .fi-ac-actions > *:last-child .fi-btn,
-.fi-simple-main:has(.mystaff-profile-page) .fi-ac > *:last-child .fi-btn {
-    background: #f5f3ff !important;
-    border: 1.5px solid #c4b5fd !important;
-    color: #5b21b6 !important;
-    box-shadow: 0 2px 8px -2px rgba(139, 92, 246, 0.15) !important;
+.mystaff-profile-page .fi-form-actions .fi-ac > *:last-child .fi-btn,
+.fi-simple-main:has(.mystaff-profile-page) .fi-form-actions .fi-ac > *:last-child .fi-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #334155 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
     font-weight: 600 !important;
     border-radius: 999px !important;
     padding-top: 0.625rem !important;
     padding-bottom: 0.625rem !important;
 }
 
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .mystaff-btn-kembali.fi-btn:hover,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn.mystaff-btn-kembali:hover,
 .mystaff-btn-kembali.fi-btn:hover,
 .fi-btn.mystaff-btn-kembali:hover,
-.mystaff-profile-page .fi-ac-actions > *:last-child .fi-btn:hover,
-.fi-simple-main:has(.mystaff-profile-page) .fi-ac > *:last-child .fi-btn:hover {
-    background: #ede9fe !important;
-    border-color: #8b5cf6 !important;
-    color: #4c1d95 !important;
-    box-shadow: 0 4px 12px -2px rgba(139, 92, 246, 0.25) !important;
+.mystaff-profile-page .fi-form-actions .fi-ac > *:last-child .fi-btn:hover,
+.fi-simple-main:has(.mystaff-profile-page) .fi-form-actions .fi-ac > *:last-child .fi-btn:hover {
+    background: #f8fafc !important;
+    border-color: #94a3b8 !important;
+    color: #1e293b !important;
+    box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.12) !important;
     transform: translateY(-1px);
 }
 
 .dark .mystaff-btn-kembali.fi-btn,
-.dark .fi-btn.mystaff-btn-kembali,
-.dark .mystaff-profile-page .fi-ac-actions > *:last-child .fi-btn {
-    background: #2e1065 !important;
-    border-color: #7c3aed !important;
-    color: #ddd6fe !important;
+.dark .fi-btn.mystaff-btn-kembali {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
 }
 
 .dark .mystaff-btn-kembali.fi-btn:hover,
 .dark .fi-btn.mystaff-btn-kembali:hover {
-    background: #4c1d95 !important;
-    border-color: #8b5cf6 !important;
-    color: #ede9fe !important;
+    background: #f8fafc !important;
+    border-color: #94a3b8 !important;
+    color: #1e293b !important;
+}
+
+/* Pengesahan modal: both buttons share the same pill shape */
+.fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-modal-footer-actions .fi-btn,
+.fi-modal-footer-actions .mystaff-btn-modal-cancel.fi-btn,
+.fi-modal-footer-actions .mystaff-btn-modal-confirm.fi-btn {
+    border-radius: 999px !important;
+    min-height: 2.75rem !important;
+    min-width: 8.5rem !important;
+    padding: 0.625rem 1.5rem !important;
+    font-weight: 700 !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+    box-sizing: border-box !important;
+}
+
+/* Pengesahan modal: Cancel is white, Confirm keeps teal with white text */
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .mystaff-btn-modal-cancel.fi-btn,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn.mystaff-btn-modal-cancel,
+.fi-modal-footer-actions .mystaff-btn-modal-cancel.fi-btn,
+.fi-modal-footer-actions > *:first-child .fi-btn.mystaff-btn-modal-cancel,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-modal-footer-actions > *:first-child .fi-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #334155 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+    border-radius: 999px !important;
+    min-height: 2.75rem !important;
+    min-width: 8.5rem !important;
+    padding: 0.625rem 1.5rem !important;
+    font-weight: 700 !important;
+}
+
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .mystaff-btn-modal-cancel.fi-btn:hover,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn.mystaff-btn-modal-cancel:hover,
+.fi-modal-footer-actions .mystaff-btn-modal-cancel.fi-btn:hover,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-modal-footer-actions > *:first-child .fi-btn:hover {
+    background: #f8fafc !important;
+    border-color: #94a3b8 !important;
+    color: #1e293b !important;
+}
+
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .mystaff-btn-modal-confirm.fi-btn,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn.mystaff-btn-modal-confirm,
+.fi-modal-footer-actions .mystaff-btn-modal-confirm.fi-btn,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-modal-footer-actions > *:last-child .fi-btn,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .mystaff-btn-modal-confirm.fi-btn *,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)) .fi-btn.mystaff-btn-modal-confirm *,
+.fi-modal-footer-actions .mystaff-btn-modal-confirm.fi-btn *,
+.fi-simple-layout:not(:has(.esdap-login-wrapper)):has(.mystaff-profile-page) .fi-modal-footer-actions > *:last-child .fi-btn * {
+    color: #ffffff !important;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━ SIDEBAR ━━━━━━━━━━━━━━━━━━━━ */
