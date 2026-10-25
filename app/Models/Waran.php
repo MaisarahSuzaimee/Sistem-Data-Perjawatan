@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class Waran extends Model
 {
@@ -45,32 +46,46 @@ class Waran extends Model
             ->exists();
     }
 
-    public function getAktivitiListAttribute()
+    /**
+     * @return Collection<int, array{label: string, inactive: bool}>
+     */
+    public function aktivitiListEntries(): Collection
     {
         $user = auth()->user();
-        $query = $this->summaryJawatanQuery($user);
-
-        $items = $query->get();
+        $items = $this->summaryJawatanQuery($user)->with('aktiviti')->get();
 
         return $items
             ->groupBy(
                 fn ($wj) => $wj->aktiviti?->no_aktivit.' - '.$wj->aktiviti?->nama_aktiviti
             )
-            ->map(function ($items, $aktivitiName) {
-
+            ->map(function ($items, $aktivitiName): array {
                 $count = $items->count();
 
-                // ONLY grey if ALL are inactive
-                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
-
-                $class = $isInactive ? 'text-gray-400' : 'text-black';
-
-                return "<span class='{$class}'>"
-                    .$aktivitiName." ({$count})"
-                    .'</span>';
+                return [
+                    'label' => $aktivitiName." ({$count})",
+                    'inactive' => $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed'),
+                ];
             })
             ->filter()
-            ->join('<br>');
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function aktivitiListItems(): Collection
+    {
+        return $this->aktivitiListEntries()
+            ->map(function (array $entry): string {
+                $class = $entry['inactive'] ? 'text-gray-400' : 'text-black';
+
+                return "<span class='{$class}'>".e($entry['label']).'</span>';
+            });
+    }
+
+    public function getAktivitiListAttribute()
+    {
+        return $this->aktivitiListItems()->join('<br>');
     }
 
     public function getPenempatanListAttribute()

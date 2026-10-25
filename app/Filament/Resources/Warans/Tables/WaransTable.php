@@ -22,6 +22,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\HtmlString;
 
 class WaransTable
 {
@@ -66,28 +67,18 @@ class WaransTable
                 // Aktiviti (unique, no repeat)
                 TextColumn::make('aktiviti_list')
                     ->label('Aktiviti')
-                    // ->formatStateUsing(function ($record) {
-
-                    //     $items = $record->jenis === 'Tolak'
-                    //         ? WaranJawatan::withTrashed()
-                    //             ->where('waran_tolak_id', $record->id)
-                    //             ->with('aktiviti')
-                    //             ->get()
-                    //         : $record->waranJawatan;
-
-                    //     return $items
-                    //         ->map(
-                    //             fn($wj) =>
-                    //             $wj->aktiviti
-                    //             ? $wj->aktiviti->no_aktivit . ' - ' . $wj->aktiviti->nama_aktiviti
-                    //             : null
-                    //         )
-                    //         ->filter()
-                    //         ->unique()
-                    //         ->join('<br>');
-                    // })
+                    ->getStateUsing(fn (Waran $record): string => static::aktivitiCellHtml($record))
                     ->html()
                     ->wrap()
+                    ->action(
+                        Action::make('lihatSemuaAktiviti')
+                            ->modalHeading('Senarai Aktiviti')
+                            ->modalDescription(fn (Waran $record): string => (string) ($record->no_waran ?? ''))
+                            ->modalContent(fn (Waran $record): HtmlString => static::aktivitiModalContent($record))
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Tutup')
+                            ->disabled(fn (Waran $record): bool => $record->aktivitiListEntries()->count() <= 3)
+                    )
                     // ->sortable()
                     ->searchable(query: function ($query, $search) {
                         $query->whereHas('waranJawatan.aktiviti', function ($q) use ($search) {
@@ -338,5 +329,41 @@ class WaransTable
                 ])
                     ->tooltip('Tindakan'),
             ]);
+    }
+
+    public static function aktivitiCellHtml(Waran $record): string
+    {
+        $items = $record->aktivitiListItems();
+
+        if ($items->isEmpty()) {
+            return '-';
+        }
+
+        $visible = $items->take(3);
+        $html = $visible->implode('<br>');
+        $extra = $items->count() - $visible->count();
+
+        if ($extra > 0) {
+            $html .= '<div class="fi-program-matrix-more">'.e(__('filament-tables::table.columns.text.more_list_items', ['count' => $extra])).'</div>';
+        }
+
+        return $html;
+    }
+
+    public static function aktivitiModalContent(Waran $record): HtmlString
+    {
+        $labels = $record->aktivitiListEntries()
+            ->map(fn (array $entry): string => $entry['label'])
+            ->all();
+
+        if ($labels === []) {
+            return new HtmlString('<p class="text-sm text-gray-500">Tiada rekod.</p>');
+        }
+
+        $lis = collect($labels)
+            ->map(fn (string $label): string => '<li>'.e($label).'</li>')
+            ->implode('');
+
+        return new HtmlString('<ul class="list-disc space-y-1 pl-5 text-sm">'.$lis.'</ul>');
     }
 }
