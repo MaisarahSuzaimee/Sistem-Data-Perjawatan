@@ -11,16 +11,25 @@ jobs:
     environment: production
 
     steps:
-      - name: Test Network Connectivity
+       - name: Test Network Connectivity
         env:
           PROD_HOST: ${{ secrets.PROD_HOST }}
         run: |
-          echo "Testing connection to production server..."
+          set -euo pipefail
+
+          if [ -z "${PROD_HOST:-}" ]; then
+            echo "ERROR: PROD_HOST is empty or unavailable."
+            echo "Check Environment: production and its secrets."
+            exit 1
+          fi
+
+          echo "PROD_HOST is configured."
+
           if timeout 10 bash -c \
             'cat < /dev/null > /dev/tcp/$1/22' _ "$PROD_HOST"; then
             echo "Port 22 is reachable."
           else
-            echo "Cannot reach port 22."
+            echo "Port 22 is not reachable from GitHub Actions."
             exit 1
           fi
 
