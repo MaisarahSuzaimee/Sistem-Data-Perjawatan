@@ -1,68 +1,24 @@
 
-name: Test Production SSH
-
-on:
-  workflow_dispatch:
-
-jobs:
-  test-ssh:
-    name: Test SSH Connection
-    runs-on: self-hosted
-    environment: production
-
-    steps:
-       - name: Test Network Connectivity
-         env:
+      - name: Test Network Connectivity
+        shell: powershell
+        env:
           PROD_HOST: ${{ secrets.PROD_HOST }}
-         run: |
-          set -euo pipefail
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:PROD_HOST)) {
+              Write-Error "PROD_HOST is empty. Check the production environment secret."
+              exit 1
+          }
 
-          if [ -z "${PROD_HOST:-}" ]; then
-            echo "ERROR: PROD_HOST is empty or unavailable."
-            echo "Check Environment: production and its secrets."
-            exit 1
-          fi
+          Write-Host "Testing connection to $env:PROD_HOST on port 22..."
 
-          echo "PROD_HOST is configured."
+          $connection = Test-NetConnection `
+              -ComputerName $env:PROD_HOST `
+              -Port 22 `
+              -WarningAction SilentlyContinue
 
-          if timeout 10 bash -c \
-            'cat < /dev/null > /dev/tcp/$1/22' _ "$PROD_HOST"; then
-            echo "Port 22 is reachable."
-          else
-            echo "Port 22 is not reachable from GitHub Actions."
-            exit 1
-          fi
-
-       - name: Configure SSH Key
-         env:
-          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
-         run: |
-          set -euo pipefail
-
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-
-          printf '%s\n' "$PROD_SSH_KEY" \
-            > "$HOME/.ssh/mystaff_deploy"
-          chmod 600 "$HOME/.ssh/mystaff_deploy"
-
-          printf '%s\n' "$PROD_KNOWN_HOSTS" \
-            > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
-
-       - name: Test SSH Authentication
-         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-         run: |
-          set -euo pipefail
-
-          ssh -vv \
-            -i "$HOME/.ssh/mystaff_deploy" \
-            -o BatchMode=yes \
-            -o ConnectTimeout=10 \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            "$PROD_USER@$PROD_HOST" \
-            'echo "SSH key authentication successful"'
+          if ($connection.TcpTestSucceeded) {
+              Write-Host "Port 22 is reachable."
+          } else {
+              Write-Error "Port 22 is not reachable from this computer."
+              exit 1
+          }
