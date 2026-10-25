@@ -1,0 +1,58 @@
+
+name: Test Production SSH
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ssh:
+    name: Test SSH Connection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test Network Connectivity
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+        run: |
+          echo "Testing connection to production server..."
+          if timeout 10 bash -c \
+            'cat < /dev/null > /dev/tcp/$1/22' _ "$PROD_HOST"; then
+            echo "Port 22 is reachable."
+          else
+            echo "Cannot reach port 22."
+            exit 1
+          fi
+
+      - name: Configure SSH Key
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          printf '%s\n' "$PROD_SSH_KEY" \
+            > "$HOME/.ssh/mystaff_deploy"
+          chmod 600 "$HOME/.ssh/mystaff_deploy"
+
+          printf '%s\n' "$PROD_KNOWN_HOSTS" \
+            > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Test SSH Authentication
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+        run: |
+          set -euo pipefail
+
+          ssh -vv \
+            -i "$HOME/.ssh/mystaff_deploy" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$PROD_USER@$PROD_HOST" \
+            'echo "SSH key authentication successful"'
