@@ -23,6 +23,7 @@ class WaranJawatan extends Model
         'jawatan_ids',
         'gred_ids',
         'butiran',
+        'paparan_jawatan',
         'tarikh_kuatkuasa',
         'is_kup',
         'waran_tolak_id',
@@ -112,6 +113,12 @@ class WaranJawatan extends Model
 
     public function getJawatanGredDisplayAttribute(): string
     {
+        $paparanJawatan = trim((string) $this->paparan_jawatan);
+
+        if ($paparanJawatan !== '') {
+            return $paparanJawatan;
+        }
+
         $pegawaiJawatan = $this->pegawai?->jawatan_gred?->jawatan?->desc_jawatan;
         $pegawaiGred = $this->pegawai?->jawatan_gred?->gred?->kod_gred;
         $waranJawatanIds = $this->jawatan_ids ?? [];

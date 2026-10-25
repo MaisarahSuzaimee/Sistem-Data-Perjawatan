@@ -51,6 +51,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 
 class WaranJawatansRelationManager extends RelationManager
@@ -117,6 +118,14 @@ class WaranJawatansRelationManager extends RelationManager
                                         fn () => ! auth()->user()?->isSuperadmin()
                                             && ! auth()->user()?->isAdmin()
                                     ),
+
+                                TextInput::make('paparan_jawatan')
+                                ->label('Paparan jawatan')
+                                ->placeholder('cth: Timbalan Pengarah, Pakar Pergigian, Pegawai Pergigian, Gred UG14/Pakar UG15')
+                                ->helperText('Nama penuh jawatan mengikut waran.'),
+                                // // or with an icon-style hint:
+                                // ->hint('Mengikut waran')
+                                // ->hintIcon('heroicon-m-information-circle', tooltip: 'Sila masukkan nama jawatan penuh mengikut waran'),
 
                                 Select::make('jawatan_ids')
                                     ->label('Jawatan')
@@ -473,7 +482,7 @@ class WaranJawatansRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-
+            ->defaultPaginationPageOption(5)
             ->recordTitleAttribute('ptj')
 
             ->modifyQueryUsing(function (Builder $query) {
@@ -574,8 +583,19 @@ class WaranJawatansRelationManager extends RelationManager
                     )
                     ->wrap(),
                 TextColumn::make('jawatan_gred_display')
-                    ->label('Jawatan / Gred')
-                    ->state(fn ($record) => e($record->jawatan_gred_display))
+                    ->label('Jawatan / Gred / Pegawai')
+                    ->state(function ($record) {
+                        $jawatanGred = e($record->jawatan_gred_display);
+                        $badge = Blade::render(
+                            '<div class="mt-3"><x-filament::badge :color="$color" size="lg">{{ $label }}</x-filament::badge></div>',
+                            [
+                                'color' => $record->pegawai ? 'success' : 'danger',
+                                'label' => $record->pegawai?->nama ?? 'Tiada penyandang',
+                            ],
+                        );
+
+                        return $jawatanGred.$badge;
+                    })
                     ->html()
                     ->wrap()
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -586,11 +606,9 @@ class WaranJawatansRelationManager extends RelationManager
                             ->where('kod_gred', 'like', "%{$search}%")
                             ->pluck('id');
 
-                        if ($jawatanIds->isEmpty() && $gredIds->isEmpty()) {
-                            return $query->whereRaw('0 = 1');
-                        }
+                        return $query->where(function (Builder $q) use ($search, $jawatanIds, $gredIds): void {
+                            $q->where('paparan_jawatan', 'like', "%{$search}%");
 
-                        return $query->where(function (Builder $q) use ($jawatanIds, $gredIds): void {
                             foreach ($jawatanIds as $jawatanId) {
                                 $q->orWhereJsonContains('jawatan_ids', (int) $jawatanId);
                             }
@@ -598,6 +616,10 @@ class WaranJawatansRelationManager extends RelationManager
                             foreach ($gredIds as $gredId) {
                                 $q->orWhereJsonContains('gred_ids', (int) $gredId);
                             }
+
+                            $q->orWhereHas('pegawai', function (Builder $pegawai) use ($search): void {
+                                $pegawai->where('nama', 'like', "%{$search}%");
+                            });
                         });
                     })
                     ->sortable(query: function (Builder $query, string $direction): Builder {
