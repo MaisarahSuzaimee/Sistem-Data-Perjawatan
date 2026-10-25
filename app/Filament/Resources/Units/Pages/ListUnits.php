@@ -8,6 +8,9 @@ use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Support\Htmlable;
 use illuminate\Support\HtmlString;
+use App\Models\Ptj;
+use App\Models\Unit;
+use Filament\Actions;
 
 class ListUnits extends ListRecords
 {
@@ -17,10 +20,27 @@ class ListUnits extends ListRecords
     {
         return [
             CreateAction::make()
-                ->label('Tambah Jabatan / KK / KP'),
+                ->label('Tambah Jabatan / KK / KP')
             // // ->modal()
             // ->createAnother(false),
+            ->disabled(fn () => $this->cannotAddUnit())
+            ->tooltip(fn () => $this->cannotAddUnit()
+                ? 'PTJ anda sudah mempunyai unit. Sila kemaskini senarai sedia ada.'
+                : null),
         ];
+    }
+
+    protected function cannotAddUnit(): bool
+    {
+        $user = auth()->user();
+
+        // Admin / superadmin: disabled only when every PTJ already has units
+        if (in_array($user->role, ['admin', 'superadmin'])) {
+            return ! Ptj::whereNotIn('id', Unit::query()->select('ptj_id'))->exists();
+        }
+
+        // Normal user: disabled when their own PTJ already has units
+        return Unit::where('ptj_id', $user->ptj_id)->exists();
     }
 
     public function getBreadcrumb(): string

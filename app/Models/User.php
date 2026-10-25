@@ -78,4 +78,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
             set: fn ($value) => mb_strtoupper(trim($value), 'UTF-8'),
         );
     }
+
+        // app/Models/User.php
+    public function canAccessAllPtj(): bool
+    {
+        return in_array($this->role, ['admin', 'superadmin']);
+    }
+
 }

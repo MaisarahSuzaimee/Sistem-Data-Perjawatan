@@ -29,7 +29,11 @@ class UnitForm
                     ->schema([
                         Select::make('ptj_id')
                             ->label('PTJ')
+                            ->relationship('ptj', 'nama_ptj') // use your actual PTJ name column
                             ->required()
+                            ->default(fn () => (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()) ? null : auth()->user()->ptj_id)
+                            ->disabled(fn () => ! (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+                            ->dehydrated() // keeps the value in the saved data even when disabled
                             ->options(
                                 Ptj::query()
                                     ->orderBy('nama_ptj')
