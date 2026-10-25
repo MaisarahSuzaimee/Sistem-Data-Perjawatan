@@ -1,15 +1,57 @@
 
+name: Test Production SSH
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ssh:
+    name: Test SSH Connection
+    runs-on: [self-hosted, Windows, X64]
+    environment: production
+
+    steps:
+      # Step 1: Check that the production host secret is configured
+      - name: Validate Production Configuration
+        shell: powershell
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          $missing = @()
+
+          if ([string]::IsNullOrWhiteSpace($env:PROD_HOST)) {
+              $missing += "PROD_HOST"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:PROD_USER)) {
+              $missing += "PROD_USER"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:PROD_SSH_KEY)) {
+              $missing += "PROD_SSH_KEY"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:PROD_KNOWN_HOSTS)) {
+              $missing += "PROD_KNOWN_HOSTS"
+          }
+
+          if ($missing.Count -gt 0) {
+              Write-Error "Missing production environment secrets: $($missing -join ', ')"
+              exit 1
+          }
+
+          Write-Host "Production configuration secrets are present."
+
+      # Step 2: Check whether the work computer can reach port 22
       - name: Test Network Connectivity
         shell: powershell
         env:
           PROD_HOST: ${{ secrets.PROD_HOST }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:PROD_HOST)) {
-              Write-Error "PROD_HOST is empty. Check the production environment secret."
-              exit 1
-          }
-
-          Write-Host "Testing connection to $env:PROD_HOST on port 22..."
+          Write-Host "Testing connection to production server on port 22..."
 
           $connection = Test-NetConnection `
               -ComputerName $env:PROD_HOST `
@@ -17,8 +59,71 @@
               -WarningAction SilentlyContinue
 
           if ($connection.TcpTestSucceeded) {
-              Write-Host "Port 22 is reachable."
+              Write-Host "SUCCESS: Port 22 is reachable."
           } else {
-              Write-Error "Port 22 is not reachable from this computer."
+              Write-Error "FAILED: Port 22 is not reachable."
               exit 1
           }
+
+      # Step 3: Configure SSH key and known_hosts
+      - name: Configure SSH Key
+        shell: powershell
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          $sshDir = Join-Path $HOME ".ssh"
+
+          New-Item -ItemType Directory -Force -Path $sshDir | Out-Null
+
+          $keyPath = Join-Path $sshDir "mystaff_deploy"
+          $knownHostsPath = Join-Path $sshDir "known_hosts"
+
+          [System.IO.File]::WriteAllText(
+              $keyPath,
+              $env:PROD_SSH_KEY.Trim() + "`n",
+              [System.Text.Encoding]::ASCII
+          )
+
+          [System.IO.File]::WriteAllText(
+              $knownHostsPath,
+              $env:PROD_KNOWN_HOSTS.Trim() + "`n",
+              [System.Text.Encoding]::ASCII
+          )
+
+          Write-Host "SSH key and known_hosts files created."
+
+      # Step 4: Test SSH key authentication
+      - name: Test SSH Authentication
+        shell: powershell
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+        run: |
+          $keyPath = Join-Path $HOME ".ssh\mystaff_deploy"
+          $knownHostsPath = Join-Path $HOME ".ssh\known_hosts"
+
+          $ssh = Get-Command ssh -ErrorAction SilentlyContinue
+
+          if (-not $ssh) {
+              Write-Error "OpenSSH client not found on this computer."
+              exit 1
+          }
+
+          Write-Host "Testing SSH key authentication..."
+
+          ssh -i $keyPath `
+              -o BatchMode=yes `
+              -o IdentitiesOnly=yes `
+              -o ConnectTimeout=10 `
+              -o StrictHostKeyChecking=yes `
+              -o "UserKnownHostsFile=$knownHostsPath" `
+              "$($env:PROD_USER)@$($env:PROD_HOST)" `
+              'echo "SSH key authentication successful"'
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "SSH authentication failed."
+              exit 1
+          }
+
+          Write-Host "SUCCESS: SSH key authentication works."
