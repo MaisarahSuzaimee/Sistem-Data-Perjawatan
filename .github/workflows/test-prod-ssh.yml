@@ -8,6 +8,7 @@ jobs:
   test-ssh:
     name: Test SSH Connection
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Test Network Connectivity
