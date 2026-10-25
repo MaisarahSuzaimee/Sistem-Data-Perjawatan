@@ -15,7 +15,7 @@ class CreateUnit extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'Tambah Unit';
+        return 'Jabatan / KK / KP';
     }
 
     public function getBreadcrumb(): string
@@ -143,5 +143,16 @@ class CreateUnit extends CreateRecord
         }
 
         return static::getModel()::create($data);
+    }
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $user = auth()->user();
+
+        if (! $user->isAdmin() || $user->isSuperAdmin()) {
+            $data['ptj_id'] = $user->ptj_id;
+        }
+
+        return $data;
     }
 }

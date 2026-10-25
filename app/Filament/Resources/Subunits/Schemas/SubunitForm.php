@@ -30,34 +30,27 @@ class SubunitForm
                     ->schema([
                         Select::make('ptj_id')
                             ->label('PTJ')
-                            ->required()
-                            ->options(
-                                Ptj::query()
-                                    ->orderBy('nama_ptj')
-                                    ->pluck('nama_ptj', 'id')
-                            )
-                            ->afterStateHydrated(function ($component, $state, $record): void {
-                                $component->state(
-                                    $record?->unit?->ptj_id
-                                );
+                            ->options(function () {
+                                $user = auth()->user();
+
+                                return Ptj::query()
+                                    ->when(
+                                        ! ($user->isAdmin() || $user->isSuperAdmin()),
+                                        fn ($q) => $q->where('id', $user->ptj_id)
+                                    )
+                                    ->pluck('nama_ptj', 'id'); // your real PTJ name column
                             })
+                            ->default(fn () => (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()) ? null : auth()->user()->ptj_id)
+                            ->disabled(fn () => ! (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+                            ->dehydrated(false) // subunits table has no ptj_id column
                             ->live()
-                            ->searchable()
-                            ->preload()
-                            ->dehydrated(false)
-                            ->afterStateUpdated(function (Get $get, Set $set): void {
-                                $set('bahagian_id', null);
-                                $set('unit_id', null);
-
-                                $ptjId = $get('ptj_id');
-                                $set('programs_for_ptj', static::programsLabelForPtj(
-                                    filled($ptjId) ? (int) $ptjId : null
-                                ));
-
-                                static::clearRepeaterAktiviti($get, $set);
-                            })
-                            ->visible(fn ($record) => $record === null)
-                            ->columnSpanFull(),
+                            ->afterStateUpdated(fn (Set $set) => $set('unit_id', null))
+                            ->required()
+                            ->afterStateHydrated(function (Set $set, $record) {
+                                if ($record) {
+                                    $set('ptj_id', $record->unit?->ptj_id);
+                                }
+                            }),
 
                         // TextInput::make('programs_for_ptj')
                         //     ->label('Program')
@@ -134,6 +127,9 @@ class SubunitForm
 
                         Select::make('unit_id')
                             ->label('Unit')
+                            ->rules(fn () => (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                                ? []
+                                : [\Illuminate\Validation\Rule::exists('units', 'id')->where('ptj_id', auth()->user()->ptj_id)])
                             ->required()
                             ->options(function (Get $get): array {
                                 $ptjId = $get('ptj_id');

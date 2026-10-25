@@ -64,10 +64,14 @@ class Subunit extends Model
     {
         return 'unit';
     }
+    public function mount(): void
+    {
+        parent::mount();
 
-    // public function unit()
-    // {
-    //     return $this->belongsTo(Unit::class);
-    // }
+        $user = auth()->user();
 
+        if (! in_array($user->role, ['admin', 'superadmin'])) {
+            $this->form->fill(['ptj_id' => $user->ptj_id]);
+        }
+    }
 }

@@ -11,7 +11,7 @@ trait BelongsToPtj
         static::addGlobalScope('ptj', function (Builder $builder) {
             $user = auth()->user();
 
-            if (! $user || $user->isAdmin()) { // adjust to your role check
+            if (! $user || $user->isSuperAdmin() || $user->isAdmin()) { // adjust to your role check
                 return;
             }
 
