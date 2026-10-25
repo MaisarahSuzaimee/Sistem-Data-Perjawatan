@@ -51,6 +51,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 
 class WaranJawatansRelationManager extends RelationManager
@@ -473,7 +474,7 @@ class WaranJawatansRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-
+            ->defaultPaginationPageOption(5)
             ->recordTitleAttribute('ptj')
 
             ->modifyQueryUsing(function (Builder $query) {
@@ -574,8 +575,19 @@ class WaranJawatansRelationManager extends RelationManager
                     )
                     ->wrap(),
                 TextColumn::make('jawatan_gred_display')
-                    ->label('Jawatan / Gred')
-                    ->state(fn ($record) => e($record->jawatan_gred_display))
+                    ->label('Jawatan / Gred / Pegawai')
+                    ->state(function ($record) {
+                        $jawatanGred = e($record->jawatan_gred_display);
+                        $badge = Blade::render(
+                            '<div class="mt-3"><x-filament::badge :color="$color" size="lg">{{ $label }}</x-filament::badge></div>',
+                            [
+                                'color' => $record->pegawai ? 'success' : 'danger',
+                                'label' => $record->pegawai?->nama ?? 'Tiada penyandang',
+                            ],
+                        );
+
+                        return $jawatanGred.$badge;
+                    })
                     ->html()
                     ->wrap()
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -586,11 +598,7 @@ class WaranJawatansRelationManager extends RelationManager
                             ->where('kod_gred', 'like', "%{$search}%")
                             ->pluck('id');
 
-                        if ($jawatanIds->isEmpty() && $gredIds->isEmpty()) {
-                            return $query->whereRaw('0 = 1');
-                        }
-
-                        return $query->where(function (Builder $q) use ($jawatanIds, $gredIds): void {
+                        return $query->where(function (Builder $q) use ($jawatanIds, $gredIds, $search): void {
                             foreach ($jawatanIds as $jawatanId) {
                                 $q->orWhereJsonContains('jawatan_ids', (int) $jawatanId);
                             }
@@ -598,6 +606,10 @@ class WaranJawatansRelationManager extends RelationManager
                             foreach ($gredIds as $gredId) {
                                 $q->orWhereJsonContains('gred_ids', (int) $gredId);
                             }
+
+                            $q->orWhereHas('pegawai', function (Builder $pegawai) use ($search): void {
+                                $pegawai->where('nama', 'like', "%{$search}%");
+                            });
                         });
                     })
                     ->sortable(query: function (Builder $query, string $direction): Builder {
