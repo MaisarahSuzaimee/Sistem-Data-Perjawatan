@@ -12,9 +12,9 @@ jobs:
 
     steps:
        - name: Test Network Connectivity
-        env:
+         env:
           PROD_HOST: ${{ secrets.PROD_HOST }}
-        run: |
+         run: |
           set -euo pipefail
 
           if [ -z "${PROD_HOST:-}" ]; then
@@ -33,11 +33,11 @@ jobs:
             exit 1
           fi
 
-      - name: Configure SSH Key
-        env:
+       - name: Configure SSH Key
+         env:
           PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
           PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
-        run: |
+         run: |
           set -euo pipefail
 
           mkdir -p "$HOME/.ssh"
@@ -51,11 +51,11 @@ jobs:
             > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-      - name: Test SSH Authentication
-        env:
+       - name: Test SSH Authentication
+         env:
           PROD_HOST: ${{ secrets.PROD_HOST }}
           PROD_USER: ${{ secrets.PROD_USER }}
-        run: |
+         run: |
           set -euo pipefail
 
           ssh -vv \
