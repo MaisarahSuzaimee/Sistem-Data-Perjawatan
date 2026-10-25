@@ -119,6 +119,14 @@ class WaranJawatansRelationManager extends RelationManager
                                             && ! auth()->user()?->isAdmin()
                                     ),
 
+                                TextInput::make('paparan_jawatan')
+                                ->label('Paparan jawatan')
+                                ->placeholder('cth: Timbalan Pengarah, Pakar Pergigian, Pegawai Pergigian, Gred UG14/Pakar UG15')
+                                ->helperText('Nama penuh jawatan mengikut waran.'),
+                                // // or with an icon-style hint:
+                                // ->hint('Mengikut waran')
+                                // ->hintIcon('heroicon-m-information-circle', tooltip: 'Sila masukkan nama jawatan penuh mengikut waran'),
+
                                 Select::make('jawatan_ids')
                                     ->label('Jawatan')
                                     ->multiple()
@@ -598,7 +606,9 @@ class WaranJawatansRelationManager extends RelationManager
                             ->where('kod_gred', 'like', "%{$search}%")
                             ->pluck('id');
 
-                        return $query->where(function (Builder $q) use ($jawatanIds, $gredIds, $search): void {
+                        return $query->where(function (Builder $q) use ($search, $jawatanIds, $gredIds): void {
+                            $q->where('paparan_jawatan', 'like', "%{$search}%");
+
                             foreach ($jawatanIds as $jawatanId) {
                                 $q->orWhereJsonContains('jawatan_ids', (int) $jawatanId);
                             }
