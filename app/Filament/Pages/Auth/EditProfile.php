@@ -39,10 +39,16 @@ class EditProfile extends BaseEditProfile
             ->modalHeading('Pengesahan')
             ->modalDescription('Adakah anda pasti mahu simpan perubahan ini?')
             ->modalCancelAction(fn (Action $action): Action => $action
-                ->color('danger')
-                ->extraAttributes(['class' => 'mystaff-btn-modal-cancel']))
+                ->color('gray')
+                ->extraAttributes([
+                    'class' => 'mystaff-btn-modal-cancel',
+                    'style' => 'background:#ffffff !important;border:1.5px solid #cbd5e1 !important;color:#334155 !important;box-shadow:none !important;border-radius:999px !important;min-height:2.75rem !important;min-width:8.5rem !important;padding:0.625rem 1.5rem !important;',
+                ]))
             ->modalSubmitAction(fn (Action $action): Action => $action
-                ->extraAttributes(['class' => 'mystaff-btn-modal-confirm']))
+                ->extraAttributes([
+                    'class' => 'mystaff-btn-modal-confirm',
+                    'style' => 'color:#ffffff !important;border-radius:999px !important;min-height:2.75rem !important;min-width:8.5rem !important;padding:0.625rem 1.5rem !important;',
+                ]))
             ->action(fn () => $this->save());
     }
 
@@ -52,7 +58,10 @@ class EditProfile extends BaseEditProfile
             ->label('Kembali ke Laman Utama')
             ->url('/app')
             ->color('gray')
-            ->extraAttributes(['class' => 'mystaff-btn-kembali']);
+            ->extraAttributes([
+                'class' => 'mystaff-btn-kembali',
+                'style' => 'background:#ffffff !important;border:1.5px solid #cbd5e1 !important;color:#334155 !important;box-shadow:none !important;',
+            ]);
     }
 
     public function form(Schema $schema): Schema

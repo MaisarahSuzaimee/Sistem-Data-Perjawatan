@@ -162,9 +162,9 @@ class WaranJawatansTable
 
                         $jawatan = e($jawatanParts !== [] ? implode(' , ', $jawatanParts) : '-');
 
-                        if (filled($record->butiran)) {
-                            $jawatan .= ' ('.e($record->butiran).')';
-                        }
+                        // if (filled($record->butiran)) {
+                        //     $jawatan .= ' ('.e($record->butiran).')';
+                        // }
 
                         $penyandangIndicators = [];
 
