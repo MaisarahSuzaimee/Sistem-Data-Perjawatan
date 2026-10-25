@@ -21,7 +21,7 @@ class Api extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 32;
 
     public static function shouldRegisterNavigation(): bool
     {

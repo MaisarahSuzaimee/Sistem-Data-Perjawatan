@@ -27,7 +27,7 @@ class ApiKey extends Page implements HasForms
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kawalan';
 
-    protected static ?int $navigationSort = 21;
+    protected static ?int $navigationSort = 33;
 
     public ?array $data = [];
 
