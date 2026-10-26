@@ -21,10 +21,10 @@ jobs:
     environment: production
 
 defaults:
-      run:
-        shell: powershell -ExecutionPolicy Bypass {0}
+  run:
+    shell: powershell -ExecutionPolicy Bypass {0}
 
-      steps:
+    steps:
       - name: Validate production secrets
         shell: powershell -ExecutionPolicy Bypass {0}
         env:
