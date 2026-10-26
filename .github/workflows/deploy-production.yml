@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Validate production secrets
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass {0}
         env:
           PROD_HOST: ${{ secrets.PROD_HOST }}
           PROD_USER: ${{ secrets.PROD_USER }}
