@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DatabaseBackupDownloadController;
 use App\Http\Controllers\DataKeseluruhanExportController;
 use App\Http\Controllers\DataKontrakExportController;
 use App\Http\Controllers\FasilitiByParlimenExportController;
@@ -75,3 +76,10 @@ Route::get('export-l8', [L8ExportController::class, 'export'])
 Route::get('/export-fasiliti-by-parlimen', [FasilitiByParlimenExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.fasilitiByParlimen');
+
+Route::get(
+    '/app/database-backups/{backupHistory}/download',
+    DatabaseBackupDownloadController::class
+)
+    ->middleware('auth')
+    ->name('database-backups.download');
