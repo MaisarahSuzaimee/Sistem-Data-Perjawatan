@@ -4,6 +4,7 @@ use App\Http\Controllers\DatabaseBackupDownloadController;
 use App\Http\Controllers\DataKeseluruhanExportController;
 use App\Http\Controllers\DataKontrakExportController;
 use App\Http\Controllers\FasilitiByParlimenExportController;
+use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\JikByJawatanExportController;
 use App\Http\Controllers\L3ExportController;
 use App\Http\Controllers\L4ExportController;
@@ -73,13 +74,29 @@ Route::get('export-l8', [L8ExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.l8');
 
+// Report fasility by parlimen
 Route::get('/export-fasiliti-by-parlimen', [FasilitiByParlimenExportController::class, 'export'])
     ->middleware('auth')
     ->name('export.fasilitiByParlimen');
 
+// Route for downloading database backups
 Route::get(
     '/app/database-backups/{backupHistory}/download',
     DatabaseBackupDownloadController::class
 )
     ->middleware('auth')
     ->name('database-backups.download');
+
+
+//route for google drive connection
+Route::middleware('auth')->group(function () {
+    Route::get(
+        '/google-drive/connect',
+        [GoogleDriveController::class, 'connect']
+    )->name('google-drive.connect');
+
+    Route::get(
+        '/google-drive/callback',
+        [GoogleDriveController::class, 'callback']
+    )->name('google-drive.callback');
+});
