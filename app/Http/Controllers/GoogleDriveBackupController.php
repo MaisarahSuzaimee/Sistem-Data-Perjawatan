@@ -42,10 +42,8 @@ class GoogleDriveBackupController extends Controller
             $backup->update([
                 'google_drive_status' => 'uploaded',
                 'google_drive_file_id' => $result['id'],
-                'google_drive_web_view_link' =>
-                    $result['web_view_link'] ?? null,
-                'google_drive_uploaded_at' =>
-                    now('Asia/Kuala_Lumpur'),
+                'google_drive_web_view_link' => $result['web_view_link'] ?? null,
+                'google_drive_uploaded_at' => now('Asia/Kuala_Lumpur'),
             ]);
 
             Notification::make()
@@ -62,9 +60,7 @@ class GoogleDriveBackupController extends Controller
 
             Notification::make()
                 ->title('Google Drive upload failed')
-                ->body(
-                    'Check the application logs for details.'
-                )
+                ->body($exception->getMessage() ?: 'Check the application logs for details.')
                 ->danger()
                 ->send();
         }

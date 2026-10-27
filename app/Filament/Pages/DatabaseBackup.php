@@ -2,16 +2,16 @@
 
 namespace App\Filament\Pages;
 
-use App\Services\DatabaseBackupService;
 use App\Models\BackupHistory;
+use App\Services\DatabaseBackupService;
 use App\Services\GoogleDriveBackupService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Throwable;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class DatabaseBackup extends Page
 {
@@ -67,9 +67,9 @@ class DatabaseBackup extends Page
                         Notification::make()
                             ->title('Backup created successfully')
                             ->body(
-                                $backup['filename'] .
-                                ' (' .
-                                number_format($backup['size'] / 1024, 2) .
+                                $backup['filename'].
+                                ' ('.
+                                number_format($backup['size'] / 1024, 2).
                                 ' KB)'
                             )
                             ->success()
@@ -97,7 +97,6 @@ class DatabaseBackup extends Page
         ];
     }
 
-
     public function uploadToGoogleDrive(int $backupId): void
     {
         // Only superadmins may upload database backups.
@@ -117,7 +116,7 @@ class DatabaseBackup extends Page
 
         $disk = Storage::disk('local');
 
-        if (!$disk->exists($backup->path)) {
+        if (! $disk->exists($backup->path)) {
             Notification::make()
                 ->title('Backup file not found')
                 ->body('The local backup file does not exist.')
@@ -135,7 +134,7 @@ class DatabaseBackup extends Page
             $backup->update([
                 'google_drive_status' => 'uploaded',
                 'google_drive_file_id' => $result['id'],
-                'google_drive_web_view_link' => $result['webViewLink'] ?? null,
+                'google_drive_web_view_link' => $result['web_view_link'] ?? null,
                 'google_drive_uploaded_at' => now('Asia/Kuala_Lumpur'),
             ]);
 
@@ -144,7 +143,6 @@ class DatabaseBackup extends Page
                 ->body($backup->filename)
                 ->success()
                 ->send();
-
         } catch (Throwable $exception) {
             report($exception);
 
@@ -154,10 +152,12 @@ class DatabaseBackup extends Page
 
             Notification::make()
                 ->title('Google Drive upload failed')
-                ->body('Check the application logs for details.')
+                ->body($exception->getMessage() ?: 'Check the application logs for details.')
                 ->danger()
                 ->send();
         }
+
+        $this->dispatch('$refresh');
     }
 
     protected function getViewData(): array
@@ -178,5 +178,4 @@ class DatabaseBackup extends Page
             'totalSize' => $totalSize,
         ];
     }
-
 }

@@ -89,7 +89,6 @@ Route::get(
     ->middleware('auth')
     ->name('database-backups.download');
 
-
 // Google Drive connection routes
 Route::middleware('auth')->group(function () {
     Route::get('/google-drive/connect', [
@@ -104,6 +103,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post(
-        '/database-backups/{backup}/upload-to-drive',
-        [GoogleDriveBackupController::class, 'upload']
-    )->name('database-backups.upload-to-drive');
+    '/app/database-backups/{backup}/upload-to-drive',
+    [GoogleDriveBackupController::class, 'upload']
+)
+    ->middleware('auth')
+    ->name('database-backups.upload-to-drive');

@@ -342,41 +342,42 @@
 
                                     <td class="px-6 py-4 text-center">
                                         @if ($backup->status === 'completed')
-                                            <a href="{{ route('database-backups.download', $backup->id) }}"
-                                                class="inline-flex items-center gap-2 rounded-lg
-                                                            bg-amber-900 px-3 py-2 text-sm font-medium
-                                                            text-white transition hover:bg-amber-800
-                                                            focus:outline-none focus:ring-2
-                                                            focus:ring-amber-700 focus:ring-offset-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                                    stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
-                                                </svg>
+                                            <div class="flex flex-wrap items-center justify-center gap-2">
+                                                <a href="{{ route('database-backups.download', $backup->id) }}"
+                                                    class="inline-flex items-center gap-2 rounded-lg
+                                                                bg-amber-900 px-3 py-2 text-sm font-medium
+                                                                text-white transition hover:bg-amber-800
+                                                                focus:outline-none focus:ring-2
+                                                                focus:ring-amber-700 focus:ring-offset-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                        stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
+                                                    </svg>
 
-                                                Download
-                                            </a>
-                                            @if ($backup->google_drive_status !== 'uploaded')
-                                                <form method="POST"
-                                                    action="{{ route('database-backups.upload-to-drive', $backup) }}"
-                                                    onsubmit="return confirm('Upload {{ $backup->filename }} to Google Drive?')">
-                                                    @csrf
-
-                                                    <button type="submit"
-                                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-800">
+                                                    Download
+                                                </a>
+                                                @if ($backup->google_drive_status !== 'uploaded')
+                                                    <button type="button"
+                                                        wire:click="uploadToGoogleDrive({{ $backup->id }})"
+                                                        wire:confirm="Upload {{ $backup->filename }} to Google Drive?"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="uploadToGoogleDrive({{ $backup->id }})"
+                                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-800 disabled:cursor-wait disabled:opacity-70">
                                                         <x-filament::icon icon="heroicon-o-cloud-arrow-up"
                                                             class="h-4 w-4" />
-                                                        Upload to Drive
+                                                        <span wire:loading.remove
+                                                            wire:target="uploadToGoogleDrive({{ $backup->id }})">
+                                                            Upload to Drive
+                                                        </span>
+                                                        <span wire:loading
+                                                            wire:target="uploadToGoogleDrive({{ $backup->id }})">
+                                                            Uploading...
+                                                        </span>
                                                     </button>
-                                                </form>
-
-                                                <span wire:loading
-                                                    wire:target="uploadToGoogleDrive({{ $backup->id }})">
-                                                    Uploading...
-                                                </span>
-                                                </button>
-                                            @endif
+                                                @endif
+                                            </div>
                                         @else
                                             <span class="text-sm text-gray-400">
                                                 Unavailable

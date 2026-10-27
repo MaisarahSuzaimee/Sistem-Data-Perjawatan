@@ -9,7 +9,6 @@ use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use Throwable;
 
 class GoogleDriveBackupService
 {
@@ -20,7 +19,7 @@ class GoogleDriveBackupService
     {
         $disk = Storage::disk('local');
 
-        if (!$disk->exists($relativePath)) {
+        if (! $disk->exists($relativePath)) {
             throw new RuntimeException(
                 'The local backup file does not exist.'
             );
@@ -28,9 +27,9 @@ class GoogleDriveBackupService
 
         $absolutePath = $disk->path($relativePath);
 
-        $connection = GoogleDriveConnection::query()->find(1);
+        $connection = GoogleDriveConnection::query()->latest('id')->first();
 
-        if (!$connection) {
+        if (! $connection) {
             throw new RuntimeException(
                 'Google Drive has not been connected.'
             );
@@ -39,7 +38,7 @@ class GoogleDriveBackupService
         $token = $connection->token;
 
         if (
-            !is_array($token) ||
+            ! is_array($token) ||
             empty($token['refresh_token'])
         ) {
             throw new RuntimeException(
@@ -47,7 +46,7 @@ class GoogleDriveBackupService
             );
         }
 
-        $client = new GoogleClient();
+        $client = new GoogleClient;
 
         $client->setClientId(
             config('services.google_drive.client_id')
@@ -98,20 +97,15 @@ class GoogleDriveBackupService
 
         $drive = new Drive($client);
 
-
         $folderId = config('services.google_drive.backup_folder_id');
-
-        if (empty($folderId)) {
-            throw new RuntimeException(
-                'Google Drive backup folder ID is not configured.'
-            );
-        }
 
         $metadata = new DriveFile([
             'name' => basename($absolutePath),
-            'parents' => [$folderId],
         ]);
 
+        if (filled($folderId)) {
+            $metadata->setParents([$folderId]);
+        }
 
         $chunkSize = 1024 * 1024; // 1 MB chunks
 
@@ -125,6 +119,7 @@ class GoogleDriveBackupService
                 [
                     'uploadType' => 'resumable',
                     'fields' => 'id,name,mimeType,size,webViewLink',
+                    'supportsAllDrives' => true,
                 ]
             );
 
@@ -149,7 +144,7 @@ class GoogleDriveBackupService
 
             $result = false;
 
-            while (!$result && !feof($handle)) {
+            while (! $result && ! feof($handle)) {
                 $chunk = fread($handle, $chunkSize);
 
                 if ($chunk === false) {
@@ -165,18 +160,20 @@ class GoogleDriveBackupService
                 $result = $media->nextChunk($chunk);
             }
 
-            if (!$result || empty($result->id)) {
+            $fileId = is_object($result) ? ($result->id ?? $result->getId()) : null;
+
+            if (! $result || empty($fileId)) {
                 throw new RuntimeException(
                     'Google Drive did not confirm the backup upload.'
                 );
             }
 
             return [
-                'id' => $result->id,
-                'name' => $result->name,
-                'mime_type' => $result->mimeType,
-                'size' => $result->size,
-                'web_view_link' => $result->webViewLink,
+                'id' => $fileId,
+                'name' => $result->name ?? $result->getName(),
+                'mime_type' => $result->mimeType ?? $result->getMimeType(),
+                'size' => $result->size ?? $result->getSize(),
+                'web_view_link' => $result->webViewLink ?? $result->getWebViewLink(),
             ];
         } finally {
             if (is_resource($handle)) {
