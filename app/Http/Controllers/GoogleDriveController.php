@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GoogleDriveConnection;
+use Filament\Notifications\Notification;
 use Google\Client as GoogleClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -130,8 +131,12 @@ class GoogleDriveController extends Controller
             $connection->token = $token;
             $connection->save();
 
-            return redirect('/app/database-backup')
-                ->with('success', 'Google Drive connected successfully.');
+            Notification::make()
+    ->title('Google Drive connected successfully')
+    ->success()
+    ->send();
+
+return redirect('/app/database-backup');
         } catch (Throwable $exception) {
             report($exception);
 
