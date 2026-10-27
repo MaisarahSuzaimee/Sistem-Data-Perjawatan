@@ -97,6 +97,69 @@ class DatabaseBackup extends Page
     }
 
 
+    public function uploadToGoogleDrive(int $backupId): void
+    {
+        // Only superadmins may upload database backups.
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
+        $backup = BackupHistory::query()->findOrFail($backupId);
+
+        if ($backup->status !== 'completed') {
+            Notification::make()
+                ->title('Backup unavailable')
+                ->body('Only completed backups can be uploaded.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $disk = Storage::disk('local');
+
+        if (!$disk->exists($backup->path)) {
+            Notification::make()
+                ->title('Backup file not found')
+                ->body('The local backup file does not exist.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $result = app(GoogleDriveBackupService::class)->upload(
+                $backup->path,
+                $backup->filename,
+            );
+
+            $backup->update([
+                'google_drive_status' => 'uploaded',
+                'google_drive_file_id' => $result['id'],
+                'google_drive_web_view_link' => $result['webViewLink'] ?? null,
+                'google_drive_uploaded_at' => now('Asia/Kuala_Lumpur'),
+            ]);
+
+            Notification::make()
+                ->title('Uploaded to Google Drive')
+                ->body($backup->filename)
+                ->success()
+                ->send();
+
+        } catch (Throwable $exception) {
+            report($exception);
+
+            $backup->update([
+                'google_drive_status' => 'failed',
+            ]);
+
+            Notification::make()
+                ->title('Google Drive upload failed')
+                ->body('Check the application logs for details.')
+                ->danger()
+                ->send();
+        }
+    }
+
     protected function getViewData(): array
     {
         $backups = BackupHistory::query()
