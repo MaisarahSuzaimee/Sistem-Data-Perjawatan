@@ -20,7 +20,7 @@ class GoogleDriveBackupService
     {
         $disk = Storage::disk('local');
 
-        if (! $disk->exists($relativePath)) {
+        if (!$disk->exists($relativePath)) {
             throw new RuntimeException(
                 'The local backup file does not exist.'
             );
@@ -30,7 +30,7 @@ class GoogleDriveBackupService
 
         $connection = GoogleDriveConnection::query()->find(1);
 
-        if (! $connection) {
+        if (!$connection) {
             throw new RuntimeException(
                 'Google Drive has not been connected.'
             );
@@ -39,7 +39,7 @@ class GoogleDriveBackupService
         $token = $connection->token;
 
         if (
-            ! is_array($token) ||
+            !is_array($token) ||
             empty($token['refresh_token'])
         ) {
             throw new RuntimeException(
@@ -98,9 +98,20 @@ class GoogleDriveBackupService
 
         $drive = new Drive($client);
 
+
+        $folderId = config('services.google_drive.backup_folder_id');
+
+        if (empty($folderId)) {
+            throw new RuntimeException(
+                'Google Drive backup folder ID is not configured.'
+            );
+        }
+
         $metadata = new DriveFile([
             'name' => basename($absolutePath),
+            'parents' => [$folderId],
         ]);
+
 
         $chunkSize = 1024 * 1024; // 1 MB chunks
 
@@ -138,7 +149,7 @@ class GoogleDriveBackupService
 
             $result = false;
 
-            while (! $result && ! feof($handle)) {
+            while (!$result && !feof($handle)) {
                 $chunk = fread($handle, $chunkSize);
 
                 if ($chunk === false) {
@@ -154,7 +165,7 @@ class GoogleDriveBackupService
                 $result = $media->nextChunk($chunk);
             }
 
-            if (! $result || empty($result->id)) {
+            if (!$result || empty($result->id)) {
                 throw new RuntimeException(
                     'Google Drive did not confirm the backup upload.'
                 );

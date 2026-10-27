@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Services\DatabaseBackupService;
 use App\Models\BackupHistory;
+use App\Services\GoogleDriveBackupService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -129,7 +130,6 @@ class DatabaseBackup extends Page
         try {
             $result = app(GoogleDriveBackupService::class)->upload(
                 $backup->path,
-                $backup->filename,
             );
 
             $backup->update([
