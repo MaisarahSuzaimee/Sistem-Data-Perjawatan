@@ -87,12 +87,12 @@ class DatabaseBackup extends Page
                             ->send();
                     }
                 }),
-            Action::make('connectGoogleDrive')
-                ->label('Connect Google Drive')
-                ->icon(Heroicon::OutlinedCloud)
-                ->color('gray')
-                ->url(url('/google-drive/connect'))
-                ->openUrlInNewTab(false),
+            // Action::make('connectGoogleDrive')
+            //     ->label('Connect Google Drive')
+            //     ->icon(Heroicon::OutlinedCloud)
+            //     ->color('gray')
+            //     ->url(url('/google-drive/connect'))
+            //     ->openUrlInNewTab(false),
         ];
     }
 

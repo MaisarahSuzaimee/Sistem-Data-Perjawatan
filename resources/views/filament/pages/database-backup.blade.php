@@ -21,7 +21,12 @@
                 </span>
             </div>
         </div>
-
+        <div class="mb-4">
+            <a href="{{ route('google-drive.connect') }}"
+                class="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700">
+                Connect Google Drive
+            </a>
+        </div>
 
         {{-- Backup summary cards --}}
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -70,7 +75,7 @@
 
         </div>
 
-        
+
 
         {{-- Backup Settings --}}
         <section
@@ -303,9 +308,8 @@
                                                             text-white transition hover:bg-amber-800
                                                             focus:outline-none focus:ring-2
                                                             focus:ring-amber-700 focus:ring-offset-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                                    stroke-width="2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
                                                 </svg>
