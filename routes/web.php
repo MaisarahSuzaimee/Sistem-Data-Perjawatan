@@ -4,6 +4,7 @@ use App\Http\Controllers\DatabaseBackupDownloadController;
 use App\Http\Controllers\DataKeseluruhanExportController;
 use App\Http\Controllers\DataKontrakExportController;
 use App\Http\Controllers\FasilitiByParlimenExportController;
+use App\Http\Controllers\GoogleDriveBackupController;
 use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\JikByJawatanExportController;
 use App\Http\Controllers\L3ExportController;
