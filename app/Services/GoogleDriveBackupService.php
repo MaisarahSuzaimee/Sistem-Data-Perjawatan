@@ -1,0 +1,178 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\GoogleDriveConnection;
+use Google\Client as GoogleClient;
+use Google\Http\MediaFileUpload;
+use Google\Service\Drive;
+use Google\Service\Drive\DriveFile;
+use Illuminate\Support\Facades\Storage;
+use RuntimeException;
+use Throwable;
+
+class GoogleDriveBackupService
+{
+    /**
+     * Upload a local compressed backup to Google Drive.
+     */
+    public function upload(string $relativePath): array
+    {
+        $disk = Storage::disk('local');
+
+        if (! $disk->exists($relativePath)) {
+            throw new RuntimeException(
+                'The local backup file does not exist.'
+            );
+        }
+
+        $absolutePath = $disk->path($relativePath);
+
+        $connection = GoogleDriveConnection::query()->find(1);
+
+        if (! $connection) {
+            throw new RuntimeException(
+                'Google Drive has not been connected.'
+            );
+        }
+
+        $token = $connection->token;
+
+        if (
+            ! is_array($token) ||
+            empty($token['refresh_token'])
+        ) {
+            throw new RuntimeException(
+                'Google Drive refresh token is missing. Reconnect Google Drive.'
+            );
+        }
+
+        $client = new GoogleClient();
+
+        $client->setClientId(
+            config('services.google_drive.client_id')
+        );
+
+        $client->setClientSecret(
+            config('services.google_drive.client_secret')
+        );
+
+        $client->setRedirectUri(
+            config('services.google_drive.redirect_uri')
+        );
+
+        $client->addScope(
+            'https://www.googleapis.com/auth/drive.file'
+        );
+
+        $client->setAccessType('offline');
+        $client->setAccessToken($token);
+
+        // Refresh the access token if it has expired.
+        if ($client->isAccessTokenExpired()) {
+            $newToken = $client->fetchAccessTokenWithRefreshToken(
+                $token['refresh_token']
+            );
+
+            if (
+                isset($newToken['error']) ||
+                empty($newToken['access_token'])
+            ) {
+                throw new RuntimeException(
+                    'Could not refresh the Google Drive access token.'
+                );
+            }
+
+            // Keep the refresh token if Google does not return a new one.
+            $newToken['refresh_token'] =
+                $newToken['refresh_token']
+                ?? $token['refresh_token'];
+
+            $token = array_merge($token, $newToken);
+
+            $connection->token = $token;
+            $connection->save();
+
+            $client->setAccessToken($token);
+        }
+
+        $drive = new Drive($client);
+
+        $metadata = new DriveFile([
+            'name' => basename($absolutePath),
+        ]);
+
+        $chunkSize = 1024 * 1024; // 1 MB chunks
+
+        $client->setDefer(true);
+
+        $handle = null;
+
+        try {
+            $request = $drive->files->create(
+                $metadata,
+                [
+                    'uploadType' => 'resumable',
+                    'fields' => 'id,name,mimeType,size,webViewLink',
+                ]
+            );
+
+            $media = new MediaFileUpload(
+                $client,
+                $request,
+                'application/gzip',
+                null,
+                true,
+                $chunkSize
+            );
+
+            $media->setFileSize(filesize($absolutePath));
+
+            $handle = fopen($absolutePath, 'rb');
+
+            if ($handle === false) {
+                throw new RuntimeException(
+                    'Could not open the local backup file.'
+                );
+            }
+
+            $result = false;
+
+            while (! $result && ! feof($handle)) {
+                $chunk = fread($handle, $chunkSize);
+
+                if ($chunk === false) {
+                    throw new RuntimeException(
+                        'Could not read the backup file.'
+                    );
+                }
+
+                if ($chunk === '' && feof($handle)) {
+                    break;
+                }
+
+                $result = $media->nextChunk($chunk);
+            }
+
+            if (! $result || empty($result->id)) {
+                throw new RuntimeException(
+                    'Google Drive did not confirm the backup upload.'
+                );
+            }
+
+            return [
+                'id' => $result->id,
+                'name' => $result->name,
+                'mime_type' => $result->mimeType,
+                'size' => $result->size,
+                'web_view_link' => $result->webViewLink,
+            ];
+        } finally {
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+
+            $client->setDefer(false);
+        }
+    }
+}

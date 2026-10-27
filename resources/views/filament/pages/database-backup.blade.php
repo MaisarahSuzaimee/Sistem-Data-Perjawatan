@@ -221,6 +221,10 @@
                                     Status
                                 </th>
 
+                                <th class="px-5 py-3 text-center font-medium text-gray-600 dark:text-gray-300">
+                                    Google Drive
+                                </th>
+
                                 <th class="px-5 py-3  font-medium text-center text-gray-600 dark:text-gray-300">
                                     Actions
                                 </th>
@@ -264,6 +268,10 @@
                                     Status
                                 </th>
 
+                                <th class="px-5 py-3 text-center font-medium text-gray-600 dark:text-gray-300">
+                                    Google Drive
+                                </th>
+
                                 <th class="px-5 py-3  font-medium text-center text-gray-600 dark:text-gray-300">
                                     Actions
                                 </th>
@@ -286,6 +294,8 @@
                                         {{ number_format($backup->size_bytes / 1024, 2) }} KB
                                     </td>
 
+
+
                                     <td class="whitespace-nowrap px-5 py-4 text-center">
                                         @if ($backup->status === 'completed')
                                             <span
@@ -300,6 +310,36 @@
                                         @endif
                                     </td>
 
+                                    <td class="whitespace-nowrap px-5 py-4 text-center">
+                                        @if ($backup->google_drive_status === 'uploaded')
+                                            <div class="flex flex-col items-center gap-1">
+                                                <span
+                                                    class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                                    <x-filament::icon icon="heroicon-o-check-circle" class="h-4 w-4" />
+                                                    Uploaded
+                                                </span>
+
+                                                @if ($backup->google_drive_web_view_link)
+                                                    <a href="{{ $backup->google_drive_web_view_link }}" target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="text-xs font-medium text-primary-600 hover:underline dark:text-primary-400">
+                                                        View in Drive
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        @elseif ($backup->google_drive_status === 'failed')
+                                            <span
+                                                class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                Upload failed
+                                            </span>
+                                        @else
+                                            <span
+                                                class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                                Not uploaded
+                                            </span>
+                                        @endif
+                                    </td>
+
                                     <td class="px-6 py-4 text-center">
                                         @if ($backup->status === 'completed')
                                             <a href="{{ route('database-backups.download', $backup->id) }}"
@@ -308,14 +348,38 @@
                                                             text-white transition hover:bg-amber-800
                                                             focus:outline-none focus:ring-2
                                                             focus:ring-amber-700 focus:ring-offset-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                    stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
                                                 </svg>
 
                                                 Download
                                             </a>
+                                            @if ($backup->google_drive_status !== 'uploaded')
+                                                <button type="button"
+                                                    wire:click="uploadToGoogleDrive({{ $backup->id }})"
+                                                    wire:loading.attr="disabled"
+                                                    wire:target="uploadToGoogleDrive({{ $backup->id }})"
+                                                    class="ml-2 inline-flex items-center gap-2 rounded-lg
+                                                            bg-green-700 px-3 py-2 text-sm font-medium
+                                                            text-white transition hover:bg-green-600
+                                                            disabled:cursor-not-allowed disabled:opacity-50">
+                                                    <x-filament::icon icon="heroicon-o-cloud-arrow-up"
+                                                        class="h-4 w-4" />
+
+                                                    <span wire:loading.remove
+                                                        wire:target="uploadToGoogleDrive({{ $backup->id }})">
+                                                        Upload to Drive
+                                                    </span>
+
+                                                    <span wire:loading
+                                                        wire:target="uploadToGoogleDrive({{ $backup->id }})">
+                                                        Uploading...
+                                                    </span>
+                                                </button>
+                                            @endif
                                         @else
                                             <span class="text-sm text-gray-400">
                                                 Unavailable

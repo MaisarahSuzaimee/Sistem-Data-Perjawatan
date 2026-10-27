@@ -77,8 +77,8 @@ class GoogleDriveController extends Controller
         );
 
         if (
-            ! is_string($expectedState) ||
-            ! hash_equals(
+            !is_string($expectedState) ||
+            !hash_equals(
                 $expectedState,
                 (string) $request->query('state', '')
             )
@@ -114,7 +114,7 @@ class GoogleDriveController extends Controller
             // Google may omit a refresh token if one was previously granted.
             if (
                 empty($token['refresh_token']) &&
-                ! empty($existingToken['refresh_token'])
+                !empty($existingToken['refresh_token'])
             ) {
                 $token['refresh_token'] =
                     $existingToken['refresh_token'];
@@ -132,11 +132,11 @@ class GoogleDriveController extends Controller
             $connection->save();
 
             Notification::make()
-    ->title('Google Drive connected successfully')
-    ->success()
-    ->send();
+                ->title('Google Drive connected successfully')
+                ->success()
+                ->send();
 
-return redirect('/app/database-backup');
+            return redirect('/app/database-backup');
         } catch (Throwable $exception) {
             report($exception);
 

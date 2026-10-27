@@ -14,6 +14,10 @@ class BackupHistory extends Model
         'status',
         'created_by',
         'completed_at',
+        'google_drive_status',
+        'google_drive_file_id',
+        'google_drive_web_view_link',
+        'google_drive_uploaded_at',
     ];
 
     protected function casts(): array
@@ -21,6 +25,7 @@ class BackupHistory extends Model
         return [
             'size_bytes' => 'integer',
             'completed_at' => 'datetime',
+            'google_drive_uploaded_at' => 'datetime',
         ];
     }
 
