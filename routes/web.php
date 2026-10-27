@@ -14,6 +14,7 @@ use App\Http\Controllers\L8ExportController;
 use App\Http\Controllers\LetakJawatanExportController;
 use App\Http\Controllers\PenamatanPerkhidmatanExportController;
 use App\Http\Controllers\UserExportController;
+// use App\Http\Controllers\GoogleDriveController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/', function () {
@@ -88,15 +89,15 @@ Route::get(
     ->name('database-backups.download');
 
 
-//route for google drive connection
+// Google Drive connection routes
 Route::middleware('auth')->group(function () {
-    Route::get(
-        '/google-drive/connect',
-        [GoogleDriveController::class, 'connect']
-    )->name('google-drive.connect');
+    Route::get('/google-drive/connect', [
+        GoogleDriveController::class,
+        'connect',
+    ])->name('google-drive.connect');
 
-    Route::get(
-        '/google-drive/callback',
-        [GoogleDriveController::class, 'callback']
-    )->name('google-drive.callback');
+    Route::get('/google-drive/callback', [
+        GoogleDriveController::class,
+        'callback',
+    ])->name('google-drive.callback');
 });

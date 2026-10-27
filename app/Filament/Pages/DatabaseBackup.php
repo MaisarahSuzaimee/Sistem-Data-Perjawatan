@@ -91,7 +91,8 @@ class DatabaseBackup extends Page
                 ->label('Connect Google Drive')
                 ->icon(Heroicon::OutlinedCloud)
                 ->color('gray')
-                ->url(route('google-drive.connect')),
+                ->url(route('google-drive.connect'))
+                ->openUrlInNewTab(false),
         ];
     }
 
