@@ -358,26 +358,23 @@
                                                 Download
                                             </a>
                                             @if ($backup->google_drive_status !== 'uploaded')
-                                                <button type="button"
-                                                    wire:click="uploadToGoogleDrive({{ $backup->id }})"
-                                                    wire:loading.attr="disabled"
-                                                    wire:target="uploadToGoogleDrive({{ $backup->id }})"
-                                                    class="ml-2 inline-flex items-center gap-2 rounded-lg
-                                                            bg-green-700 px-3 py-2 text-sm font-medium
-                                                            text-white transition hover:bg-green-600
-                                                            disabled:cursor-not-allowed disabled:opacity-50">
-                                                    <x-filament::icon icon="heroicon-o-cloud-arrow-up"
-                                                        class="h-4 w-4" />
+                                                <form method="POST"
+                                                    action="{{ route('database-backups.upload-to-drive', $backup) }}"
+                                                    onsubmit="return confirm('Upload {{ $backup->filename }} to Google Drive?')">
+                                                    @csrf
 
-                                                    <span wire:loading.remove
-                                                        wire:target="uploadToGoogleDrive({{ $backup->id }})">
+                                                    <button type="submit"
+                                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-800">
+                                                        <x-filament::icon icon="heroicon-o-cloud-arrow-up"
+                                                            class="h-4 w-4" />
                                                         Upload to Drive
-                                                    </span>
+                                                    </button>
+                                                </form>
 
-                                                    <span wire:loading
-                                                        wire:target="uploadToGoogleDrive({{ $backup->id }})">
-                                                        Uploading...
-                                                    </span>
+                                                <span wire:loading
+                                                    wire:target="uploadToGoogleDrive({{ $backup->id }})">
+                                                    Uploading...
+                                                </span>
                                                 </button>
                                             @endif
                                         @else

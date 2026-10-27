@@ -101,3 +101,8 @@ Route::middleware('auth')->group(function () {
         'callback',
     ])->name('google-drive.callback');
 });
+
+Route::post(
+        '/database-backups/{backup}/upload-to-drive',
+        [GoogleDriveBackupController::class, 'upload']
+    )->name('database-backups.upload-to-drive');
