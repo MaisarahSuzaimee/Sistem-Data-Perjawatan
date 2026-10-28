@@ -20,13 +20,13 @@ class ListUnits extends ListRecords
     {
         return [
             CreateAction::make()
-                ->label('Tambah Jabatan / KK / KP')
+                ->label('Tambah Jabatan / KK / KP'),
             // // ->modal()
-            // ->createAnother(false),
-            ->disabled(fn () => $this->cannotAddUnit())
-            ->tooltip(fn () => $this->cannotAddUnit()
-                ? 'PTJ anda sudah mempunyai unit. Sila kemaskini senarai sedia ada.'
-                : null),
+            // // ->createAnother(false),
+            // ->disabled(fn () => $this->cannotAddUnit())
+            // ->tooltip(fn () => $this->cannotAddUnit()
+            //     ? 'PTJ anda sudah mempunyai unit. Sila kemaskini senarai sedia ada.'
+            //     : null),
         ];
     }
 
