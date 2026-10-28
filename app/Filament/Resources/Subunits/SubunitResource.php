@@ -23,7 +23,7 @@ class SubunitResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama_subunit';
 
-    protected static ?string $navigationLabel = 'KD / KKIA / Wad / Klinik';
+    protected static ?string $navigationLabel = 'KD / KKIA / Wad / Klinik1';
 
     protected static ?string $modelLabel = 'KD / KKIA / Wad / Klinik';
 
@@ -61,7 +61,7 @@ class SubunitResource extends Resource
 
 //     public static function getEloquentQuery(): Builder
 // {
-//     return parent::getEloquentQuery() 
+//     return parent::getEloquentQuery()
 //         ->whereIn('id', ...)
 //         ->whereHas('unit', fn ($q) => $q->where('ptj_id', 2)); // Fix here
 // }
