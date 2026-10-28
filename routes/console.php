@@ -15,6 +15,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -25,3 +26,9 @@ Schedule::call(fn () => Artisan::call('pegawai:delete-letak-jawatan'))
 
 Schedule::call(fn () => Artisan::call('pegawai:delete-tamat-perkhidmatan'))
     ->everyFiveSeconds();
+
+Schedule::command('database:backup')
+    ->dailyAt('18:00')
+    ->timezone('Asia/Kuala_Lumpur')
+    ->withoutOverlapping()
+    ->name('mystaff-daily-database-backup');

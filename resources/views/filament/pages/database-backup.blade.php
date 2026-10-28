@@ -17,7 +17,7 @@
                 <span
                     class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                     <span class="h-2 w-2 rounded-full bg-gray-400"></span>
-                    Backup service not configured
+                    Daily auto backup at 6:00 PM
                 </span>
             </div>
         </div>
@@ -92,7 +92,7 @@
                     </h3>
 
                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        Intended schedule and storage settings
+                        Automatic daily backup and Google Drive upload
                     </p>
                 </div>
             </div>
@@ -112,7 +112,7 @@
                         </p>
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Asia/Kuala_Lumpur
+                            Malaysia time (Asia/Kuala_Lumpur)
                         </p>
                     </div>
                 </div>
@@ -164,11 +164,11 @@
                         </p>
 
                         <p class="mt-1 text-sm font-medium text-gray-950 dark:text-white">
-                            Google Workspace Shared Drive
+                            Google Drive
                         </p>
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Awaiting integration
+                            Uploaded automatically after each backup
                         </p>
                     </div>
                 </div>

@@ -16,105 +16,31 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to Production
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     environment: production
 
-    defaults:
-      run:
-        shell: powershell -ExecutionPolicy Bypass {0}
-
     steps:
-      - name: Validate production secrets
+      - name: Validate deploy token
         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         run: |
-          $required = @(
-            "PROD_HOST",
-            "PROD_USER",
-            "PROD_SSH_KEY",
-            "PROD_KNOWN_HOSTS"
-          )
+          if [ -z "$DEPLOY_TOKEN" ]; then
+            echo "Missing required production secret: DEPLOY_TOKEN"
+            exit 1
+          fi
 
-          foreach ($name in $required) {
-            $value = [Environment]::GetEnvironmentVariable($name)
+          echo "Deploy token is configured."
 
-            if ([string]::IsNullOrWhiteSpace($value)) {
-              throw "Missing required production secret: $name"
-            }
-          }
-
-          Write-Host "Production secrets are configured."
-
-      - name: Configure SSH
+      - name: Trigger production deploy
         env:
-          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         run: |
-          $sshDir = Join-Path $HOME ".ssh"
-          New-Item -ItemType Directory -Force -Path $sshDir | Out-Null
+          echo "Starting MySTAFF production deployment via deploy.php..."
 
-          $keyPath = Join-Path $sshDir "mystaff_deploy"
-          $knownHostsPath = Join-Path $sshDir "known_hosts"
+          curl -fsS --max-time 360 \
+            -H "X-Deploy-Token: ${DEPLOY_TOKEN}" \
+            -H "Accept: text/plain" \
+            https://mystaff.kdh.moh.gov.my/deploy.php
 
-          [System.IO.File]::WriteAllText(
-            $keyPath,
-            $env:PROD_SSH_KEY.Trim() + "`n",
-            [System.Text.Encoding]::ASCII
-          )
-
-          [System.IO.File]::WriteAllText(
-            $knownHostsPath,
-            $env:PROD_KNOWN_HOSTS.Trim() + "`n",
-            [System.Text.Encoding]::ASCII
-          )
-
-          Write-Host "SSH files configured."
-
-      - name: Test production SSH
-        env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-        run: |
-          $keyPath = Join-Path $HOME ".ssh\mystaff_deploy"
-          $knownHostsPath = Join-Path $HOME ".ssh\known_hosts"
-
-          ssh -i $keyPath `
-            -o BatchMode=yes `
-            -o IdentitiesOnly=yes `
-            -o ConnectTimeout=15 `
-            -o StrictHostKeyChecking=yes `
-            -o "UserKnownHostsFile=$knownHostsPath" `
-            "$($env:PROD_USER)@$($env:PROD_HOST)" `
-            "echo 'Production SSH connection successful'"
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "Could not connect to production through SSH."
-          }
-
-      - name: Deploy MySTAFF
-        env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-        run: |
-          Write-Host "Starting MySTAFF production deployment..."
-
-          $keyPath = Join-Path $HOME ".ssh\mystaff_deploy"
-          $knownHostsPath = Join-Path $HOME ".ssh\known_hosts"
-
-          ssh -i $keyPath `
-            -o BatchMode=yes `
-            -o IdentitiesOnly=yes `
-            -o ConnectTimeout=15 `
-            -o StrictHostKeyChecking=yes `
-            -o "UserKnownHostsFile=$knownHostsPath" `
-            "$($env:PROD_USER)@$($env:PROD_HOST)" `
-            "cd ~/web/mystaff.kdh.moh.gov.my/public_html && bash deploy.sh"
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "MySTAFF deployment failed. Check the SSH output above."
-          }
-
-          Write-Host "MySTAFF deployment completed successfully."
+          echo
+          echo "MySTAFF deployment completed successfully."
