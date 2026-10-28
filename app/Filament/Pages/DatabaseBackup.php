@@ -3,14 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Models\BackupHistory;
-use App\Services\DatabaseBackupService;
-use App\Services\GoogleDriveBackupService;
+use App\Models\GoogleDriveConnection;
+use App\Services\DatabaseBackupManager;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class DatabaseBackup extends Page
@@ -53,27 +52,35 @@ class DatabaseBackup extends Page
                 ->modalSubmitActionLabel('Create Backup')
                 ->action(function (): void {
                     try {
-                        $backup = app(DatabaseBackupService::class)->create();
+                        $backup = app(DatabaseBackupManager::class)->createAndUpload(
+                            createdBy: auth()->id(),
+                        );
 
-                        BackupHistory::create([
-                            'filename' => $backup['filename'],
-                            'path' => $backup['path'],
-                            'size_bytes' => $backup['size'],
-                            'status' => 'completed',
-                            'created_by' => auth()->id(),
-                            'completed_at' => $backup['created_at'],
-                        ]);
+                        $driveMessage = match ($backup->google_drive_status) {
+                            'uploaded' => ' Uploaded to Google Drive.',
+                            'failed' => ' Google Drive upload failed.',
+                            default => '',
+                        };
 
-                        Notification::make()
-                            ->title('Backup created successfully')
+                        $notification = Notification::make()
+                            ->title($backup->google_drive_status === 'failed'
+                                ? 'Backup created, Drive upload failed'
+                                : 'Backup created successfully')
                             ->body(
-                                $backup['filename'].
+                                $backup->filename.
                                 ' ('.
-                                number_format($backup['size'] / 1024, 2).
-                                ' KB)'
-                            )
-                            ->success()
-                            ->send();
+                                number_format($backup->size_bytes / 1024, 2).
+                                ' KB).'.
+                                $driveMessage
+                            );
+
+                        if ($backup->google_drive_status === 'failed') {
+                            $notification->warning();
+                        } else {
+                            $notification->success();
+                        }
+
+                        $notification->send();
 
                         $this->dispatch('$refresh');
                     } catch (Throwable $exception) {
@@ -82,7 +89,7 @@ class DatabaseBackup extends Page
                         Notification::make()
                             ->title('Backup failed')
                             ->body(
-                                'The backup could not be completed. Check the application logs for details.'
+                                $exception->getMessage() ?: 'The backup could not be completed. Check the application logs for details.'
                             )
                             ->danger()
                             ->send();
@@ -95,69 +102,6 @@ class DatabaseBackup extends Page
             //     ->url(url('/google-drive/connect'))
             //     ->openUrlInNewTab(false),
         ];
-    }
-
-    public function uploadToGoogleDrive(int $backupId): void
-    {
-        // Only superadmins may upload database backups.
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
-
-        $backup = BackupHistory::query()->findOrFail($backupId);
-
-        if ($backup->status !== 'completed') {
-            Notification::make()
-                ->title('Backup unavailable')
-                ->body('Only completed backups can be uploaded.')
-                ->warning()
-                ->send();
-
-            return;
-        }
-
-        $disk = Storage::disk('local');
-
-        if (! $disk->exists($backup->path)) {
-            Notification::make()
-                ->title('Backup file not found')
-                ->body('The local backup file does not exist.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $result = app(GoogleDriveBackupService::class)->upload(
-                $backup->path,
-            );
-
-            $backup->update([
-                'google_drive_status' => 'uploaded',
-                'google_drive_file_id' => $result['id'],
-                'google_drive_web_view_link' => $result['web_view_link'] ?? null,
-                'google_drive_uploaded_at' => now('Asia/Kuala_Lumpur'),
-            ]);
-
-            Notification::make()
-                ->title('Uploaded to Google Drive')
-                ->body($backup->filename)
-                ->success()
-                ->send();
-        } catch (Throwable $exception) {
-            report($exception);
-
-            $backup->update([
-                'google_drive_status' => 'failed',
-            ]);
-
-            Notification::make()
-                ->title('Google Drive upload failed')
-                ->body($exception->getMessage() ?: 'Check the application logs for details.')
-                ->danger()
-                ->send();
-        }
-
-        $this->dispatch('$refresh');
     }
 
     protected function getViewData(): array
@@ -176,6 +120,7 @@ class DatabaseBackup extends Page
             'latestBackup' => $latestBackup,
             'backupCount' => $backups->count(),
             'totalSize' => $totalSize,
+            'googleDriveConnected' => GoogleDriveConnection::isConnected(),
         ];
     }
 }

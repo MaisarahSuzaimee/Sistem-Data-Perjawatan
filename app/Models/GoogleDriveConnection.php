@@ -16,4 +16,11 @@ class GoogleDriveConnection extends Model
             'token' => 'encrypted:array',
         ];
     }
+
+    public static function isConnected(): bool
+    {
+        $token = static::query()->latest('id')->first()?->token;
+
+        return is_array($token) && ! empty($token['refresh_token']);
+    }
 }

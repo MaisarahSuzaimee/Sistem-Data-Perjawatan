@@ -61,7 +61,7 @@ class SubunitResource extends Resource
 
 //     public static function getEloquentQuery(): Builder
 // {
-//     return parent::getEloquentQuery() 
+//     return parent::getEloquentQuery()
 //         ->whereIn('id', ...)
 //         ->whereHas('unit', fn ($q) => $q->where('ptj_id', 2)); // Fix here
 // }

@@ -17,13 +17,22 @@
                 <span
                     class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                     <span class="h-2 w-2 rounded-full bg-gray-400"></span>
-                    Backup service not configured
+                    Daily auto backup at 6:00 PM
                 </span>
             </div>
         </div>
         <div class="mb-4">
             <a href="{{ route('google-drive.connect') }}"
                 class="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700">
+                <span
+                    @class([
+                        'h-2.5 w-2.5 shrink-0 rounded-full',
+                        'bg-green-500' => $googleDriveConnected,
+                        'bg-red-500' => ! $googleDriveConnected,
+                    ])
+                    title="{{ $googleDriveConnected ? 'Google Drive connected' : 'Google Drive not connected' }}"
+                    aria-label="{{ $googleDriveConnected ? 'Google Drive connected' : 'Google Drive not connected' }}"
+                ></span>
                 Connect Google Drive
             </a>
         </div>
@@ -92,7 +101,7 @@
                     </h3>
 
                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        Intended schedule and storage settings
+                        Automatic daily backup and Google Drive upload
                     </p>
                 </div>
             </div>
@@ -112,7 +121,7 @@
                         </p>
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Asia/Kuala_Lumpur
+                            Malaysia time (Asia/Kuala_Lumpur)
                         </p>
                     </div>
                 </div>
@@ -164,11 +173,11 @@
                         </p>
 
                         <p class="mt-1 text-sm font-medium text-gray-950 dark:text-white">
-                            Google Workspace Shared Drive
+                            Google Drive
                         </p>
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Awaiting integration
+                            Uploaded automatically after each backup
                         </p>
                     </div>
                 </div>
@@ -342,42 +351,21 @@
 
                                     <td class="px-6 py-4 text-center">
                                         @if ($backup->status === 'completed')
-                                            <div class="flex flex-wrap items-center justify-center gap-2">
-                                                <a href="{{ route('database-backups.download', $backup->id) }}"
-                                                    class="inline-flex items-center gap-2 rounded-lg
-                                                                bg-amber-900 px-3 py-2 text-sm font-medium
-                                                                text-white transition hover:bg-amber-800
-                                                                focus:outline-none focus:ring-2
-                                                                focus:ring-amber-700 focus:ring-offset-2">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                                        stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
-                                                    </svg>
+                                            <a href="{{ route('database-backups.download', $backup->id) }}"
+                                                class="inline-flex items-center gap-2 rounded-lg
+                                                            bg-amber-900 px-3 py-2 text-sm font-medium
+                                                            text-white transition hover:bg-amber-800
+                                                            focus:outline-none focus:ring-2
+                                                            focus:ring-amber-700 focus:ring-offset-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                    stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
+                                                </svg>
 
-                                                    Download
-                                                </a>
-                                                @if ($backup->google_drive_status !== 'uploaded')
-                                                    <button type="button"
-                                                        wire:click="uploadToGoogleDrive({{ $backup->id }})"
-                                                        wire:confirm="Upload {{ $backup->filename }} to Google Drive?"
-                                                        wire:loading.attr="disabled"
-                                                        wire:target="uploadToGoogleDrive({{ $backup->id }})"
-                                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-800 disabled:cursor-wait disabled:opacity-70">
-                                                        <x-filament::icon icon="heroicon-o-cloud-arrow-up"
-                                                            class="h-4 w-4" />
-                                                        <span wire:loading.remove
-                                                            wire:target="uploadToGoogleDrive({{ $backup->id }})">
-                                                            Upload to Drive
-                                                        </span>
-                                                        <span wire:loading
-                                                            wire:target="uploadToGoogleDrive({{ $backup->id }})">
-                                                            Uploading...
-                                                        </span>
-                                                    </button>
-                                                @endif
-                                            </div>
+                                                Download
+                                            </a>
                                         @else
                                             <span class="text-sm text-gray-400">
                                                 Unavailable
