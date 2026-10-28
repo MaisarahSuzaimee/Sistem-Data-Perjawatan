@@ -14,6 +14,7 @@ beforeEach(function () {
     config(['app.env' => 'local']);
 
     Schema::dropIfExists('backup_histories');
+    Schema::dropIfExists('google_drive_connections');
     Schema::dropIfExists('users');
 
     Schema::create('users', function (Blueprint $table): void {
@@ -43,6 +44,12 @@ beforeEach(function () {
         $table->string('google_drive_file_id')->nullable();
         $table->text('google_drive_web_view_link')->nullable();
         $table->timestamp('google_drive_uploaded_at')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('google_drive_connections', function (Blueprint $table): void {
+        $table->id();
+        $table->longText('token');
         $table->timestamps();
     });
 });
@@ -121,7 +128,7 @@ it('keeps the local backup when google drive upload fails', function () {
     $this->mock(GoogleDriveBackupService::class, function ($mock): void {
         $mock->shouldReceive('upload')
             ->once()
-            ->andThrow(new \RuntimeException('Google Drive is not connected.'));
+            ->andThrow(new RuntimeException('Google Drive is not connected.'));
     });
 
     $this->artisan('database:backup')
@@ -150,5 +157,6 @@ it('shows the automatic google drive backup schedule on the backup page', functi
     Livewire::test(DatabaseBackup::class)
         ->assertSee('Daily auto backup at 6:00 PM')
         ->assertSee('Malaysia time (Asia/Kuala_Lumpur)')
-        ->assertSee('Uploaded automatically after each backup');
+        ->assertSee('Uploaded automatically after each backup')
+        ->assertDontSee('Upload to Drive');
 });

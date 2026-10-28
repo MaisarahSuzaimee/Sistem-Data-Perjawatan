@@ -3,13 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Models\BackupHistory;
+use App\Models\GoogleDriveConnection;
 use App\Services\DatabaseBackupManager;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class DatabaseBackup extends Page
@@ -104,56 +104,6 @@ class DatabaseBackup extends Page
         ];
     }
 
-    public function uploadToGoogleDrive(int $backupId): void
-    {
-        // Only superadmins may upload database backups.
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
-
-        $backup = BackupHistory::query()->findOrFail($backupId);
-
-        if ($backup->status !== 'completed') {
-            Notification::make()
-                ->title('Backup unavailable')
-                ->body('Only completed backups can be uploaded.')
-                ->warning()
-                ->send();
-
-            return;
-        }
-
-        $disk = Storage::disk('local');
-
-        if (! $disk->exists($backup->path)) {
-            Notification::make()
-                ->title('Backup file not found')
-                ->body('The local backup file does not exist.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $backup = app(DatabaseBackupManager::class)->uploadToDrive($backup);
-
-            Notification::make()
-                ->title('Uploaded to Google Drive')
-                ->body($backup->filename)
-                ->success()
-                ->send();
-        } catch (Throwable $exception) {
-            report($exception);
-
-            Notification::make()
-                ->title('Google Drive upload failed')
-                ->body($exception->getMessage() ?: 'Check the application logs for details.')
-                ->danger()
-                ->send();
-        }
-
-        $this->dispatch('$refresh');
-    }
-
     protected function getViewData(): array
     {
         $backups = BackupHistory::query()
@@ -170,6 +120,7 @@ class DatabaseBackup extends Page
             'latestBackup' => $latestBackup,
             'backupCount' => $backups->count(),
             'totalSize' => $totalSize,
+            'googleDriveConnected' => GoogleDriveConnection::isConnected(),
         ];
     }
 }

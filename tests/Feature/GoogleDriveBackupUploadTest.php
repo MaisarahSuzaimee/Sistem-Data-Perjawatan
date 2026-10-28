@@ -2,8 +2,8 @@
 
 use App\Filament\Pages\DatabaseBackup;
 use App\Models\BackupHistory;
+use App\Models\GoogleDriveConnection;
 use App\Models\User;
-use App\Services\GoogleDriveBackupService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +13,7 @@ beforeEach(function () {
     config(['app.env' => 'local']);
 
     Schema::dropIfExists('backup_histories');
+    Schema::dropIfExists('google_drive_connections');
     Schema::dropIfExists('users');
 
     Schema::create('users', function (Blueprint $table): void {
@@ -46,6 +47,12 @@ beforeEach(function () {
         $table->timestamps();
     });
 
+    Schema::create('google_drive_connections', function (Blueprint $table): void {
+        $table->id();
+        $table->longText('token');
+        $table->timestamps();
+    });
+
     Storage::fake('local');
 
     $this->actingAs(User::create([
@@ -58,10 +65,10 @@ beforeEach(function () {
     ]));
 });
 
-it('uploads a completed backup to google drive from the backup page', function () {
+it('does not show a manual upload to drive button', function () {
     Storage::disk('local')->put('database-backups/mystaff_test.sql.gz', 'backup-bytes');
 
-    $backup = BackupHistory::create([
+    BackupHistory::create([
         'filename' => 'mystaff_test.sql.gz',
         'path' => 'database-backups/mystaff_test.sql.gz',
         'size_bytes' => 12,
@@ -69,27 +76,29 @@ it('uploads a completed backup to google drive from the backup page', function (
         'completed_at' => now(),
     ]);
 
-    $this->mock(GoogleDriveBackupService::class, function ($mock): void {
-        $mock->shouldReceive('upload')
-            ->once()
-            ->with('database-backups/mystaff_test.sql.gz')
-            ->andReturn([
-                'id' => 'drive-file-1',
-                'name' => 'mystaff_test.sql.gz',
-                'mime_type' => 'application/gzip',
-                'size' => 12,
-                'web_view_link' => 'https://drive.google.com/file/d/drive-file-1/view',
-            ]);
-    });
+    Livewire::test(DatabaseBackup::class)
+        ->assertSee('Download')
+        ->assertSee('Not uploaded')
+        ->assertDontSee('Upload to Drive');
+});
+
+it('shows a red indicator when google drive is not connected', function () {
+    Livewire::test(DatabaseBackup::class)
+        ->assertSee('Google Drive not connected')
+        ->assertSeeHtml('bg-red-500')
+        ->assertDontSeeHtml('bg-green-500');
+});
+
+it('shows a green indicator when google drive is connected', function () {
+    GoogleDriveConnection::query()->create([
+        'token' => [
+            'access_token' => 'test-access-token',
+            'refresh_token' => 'test-refresh-token',
+        ],
+    ]);
 
     Livewire::test(DatabaseBackup::class)
-        ->call('uploadToGoogleDrive', $backup->id)
-        ->assertSee('Uploaded')
-        ->assertSee('View in Drive');
-
-    $backup->refresh();
-
-    expect($backup->google_drive_status)->toBe('uploaded')
-        ->and($backup->google_drive_file_id)->toBe('drive-file-1')
-        ->and($backup->google_drive_web_view_link)->toBe('https://drive.google.com/file/d/drive-file-1/view');
+        ->assertSee('Google Drive connected')
+        ->assertSeeHtml('bg-green-500')
+        ->assertDontSeeHtml('bg-red-500');
 });
