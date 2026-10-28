@@ -144,6 +144,66 @@ it('keeps the local backup when google drive upload fails', function () {
         ->and($history->google_drive_file_id)->toBeNull();
 });
 
+it('deletes google drive backups older than 30 days after a successful upload', function () {
+    $expired = BackupHistory::create([
+        'filename' => 'mystaff_old.sql.gz',
+        'path' => 'database-backups/mystaff_old.sql.gz',
+        'size_bytes' => 1024,
+        'status' => 'completed',
+        'completed_at' => now('Asia/Kuala_Lumpur')->subDays(31),
+        'google_drive_status' => 'uploaded',
+        'google_drive_file_id' => 'drive-old-1',
+        'google_drive_web_view_link' => 'https://drive.google.com/file/d/drive-old-1/view',
+        'google_drive_uploaded_at' => now('Asia/Kuala_Lumpur')->subDays(31),
+    ]);
+
+    $recent = BackupHistory::create([
+        'filename' => 'mystaff_recent.sql.gz',
+        'path' => 'database-backups/mystaff_recent.sql.gz',
+        'size_bytes' => 1024,
+        'status' => 'completed',
+        'completed_at' => now('Asia/Kuala_Lumpur')->subDays(10),
+        'google_drive_status' => 'uploaded',
+        'google_drive_file_id' => 'drive-recent-1',
+        'google_drive_web_view_link' => 'https://drive.google.com/file/d/drive-recent-1/view',
+        'google_drive_uploaded_at' => now('Asia/Kuala_Lumpur')->subDays(10),
+    ]);
+
+    $this->mock(DatabaseBackupService::class, function ($mock): void {
+        $mock->shouldReceive('create')
+            ->once()
+            ->andReturn([
+                'filename' => 'mystaff_auto.sql.gz',
+                'path' => 'database-backups/mystaff_auto.sql.gz',
+                'size' => 2048,
+                'created_at' => now('Asia/Kuala_Lumpur'),
+            ]);
+    });
+
+    $this->mock(GoogleDriveBackupService::class, function ($mock): void {
+        $mock->shouldReceive('upload')
+            ->once()
+            ->andReturn([
+                'id' => 'drive-auto-1',
+                'name' => 'mystaff_auto.sql.gz',
+                'mime_type' => 'application/gzip',
+                'size' => 2048,
+                'web_view_link' => 'https://drive.google.com/file/d/drive-auto-1/view',
+            ]);
+
+        $mock->shouldReceive('delete')
+            ->once()
+            ->with('drive-old-1');
+    });
+
+    $this->artisan('database:backup')->assertSuccessful();
+
+    expect($expired->refresh()->google_drive_status)->toBe('expired')
+        ->and($expired->google_drive_web_view_link)->toBeNull()
+        ->and($recent->refresh()->google_drive_status)->toBe('uploaded')
+        ->and($recent->google_drive_web_view_link)->toBe('https://drive.google.com/file/d/drive-recent-1/view');
+});
+
 it('shows the automatic google drive backup schedule on the backup page', function () {
     $this->actingAs(User::create([
         'name' => 'SUPERADMIN BACKUP SCHEDULE',
@@ -158,5 +218,6 @@ it('shows the automatic google drive backup schedule on the backup page', functi
         ->assertSee('Daily auto backup at 6:00 PM')
         ->assertSee('Malaysia time (Asia/Kuala_Lumpur)')
         ->assertSee('Uploaded automatically after each backup')
+        ->assertSee('Deleted from Google Drive after 30 days')
         ->assertDontSee('Upload to Drive');
 });

@@ -7,6 +7,8 @@ use Throwable;
 
 class DatabaseBackupManager
 {
+    public const DRIVE_RETENTION_DAYS = 30;
+
     public function __construct(
         private DatabaseBackupService $databaseBackups,
         private GoogleDriveBackupService $googleDrive,
@@ -31,10 +33,45 @@ class DatabaseBackupManager
         }
 
         try {
-            return $this->uploadToDrive($history);
+            $history = $this->uploadToDrive($history);
         } catch (Throwable) {
             return $history->refresh();
         }
+
+        $this->purgeExpiredDriveBackups($history->id);
+
+        return $history->refresh();
+    }
+
+    public function purgeExpiredDriveBackups(?int $exceptId = null): int
+    {
+        $cutoff = now('Asia/Kuala_Lumpur')->subDays(self::DRIVE_RETENTION_DAYS);
+
+        $expired = BackupHistory::query()
+            ->where('google_drive_status', 'uploaded')
+            ->whereNotNull('google_drive_file_id')
+            ->where('google_drive_uploaded_at', '<=', $cutoff)
+            ->when($exceptId, fn ($query) => $query->where('id', '!=', $exceptId))
+            ->get();
+
+        $purged = 0;
+
+        foreach ($expired as $history) {
+            try {
+                $this->googleDrive->delete((string) $history->google_drive_file_id);
+
+                $history->update([
+                    'google_drive_status' => 'expired',
+                    'google_drive_web_view_link' => null,
+                ]);
+
+                $purged++;
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
+
+        return $purged;
     }
 
     public function uploadToDrive(BackupHistory $history): BackupHistory
