@@ -32,6 +32,12 @@ class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, Wi
             'jawatan_gred.gred',
         ]);
 
+        $user = auth()->user();
+
+        if ($user && (int) $user->role === 3 && $user->ptj_id) {
+            $query->where('ptj_id', $user->ptj_id);
+        }
+
         // if ($this->year !== 'all') {
         //     $query->whereYear('tarikh_kuatkuasa', $this->year);
         // }

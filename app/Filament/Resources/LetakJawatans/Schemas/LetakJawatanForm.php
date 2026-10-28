@@ -33,9 +33,17 @@ class LetakJawatanForm
                                 ->label('Nama Pegawai')
                                 ->visible(fn (string $operation) => $operation === 'create')
                                 ->options(function (): array {
-                                    return Pegawai::query()
+                                    $query = Pegawai::query()
                                         ->whereNotIn('nokp', LetakJawatan::withoutGlobalScopes()->whereNotNull('nokp')->select('nokp'))
-                                        ->whereNotIn('nokp', Pencen::withoutGlobalScopes()->whereNotNull('nokp')->select('nokp'))
+                                        ->whereNotIn('nokp', Pencen::withoutGlobalScopes()->whereNotNull('nokp')->select('nokp'));
+
+                                    $user = auth()->user();
+
+                                    if ($user && (int) $user->role === 3 && $user->ptj_id) {
+                                        $query->where('ptj_id', $user->ptj_id);
+                                    }
+
+                                    return $query
                                         ->orderBy('nama')
                                         ->pluck('nama', 'id')
                                         ->all();

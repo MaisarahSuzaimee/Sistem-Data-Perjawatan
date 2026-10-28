@@ -19,6 +19,20 @@ class Report extends Page implements HasTable
 {
     use InteractsWithTable;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && in_array((int) $user->role, [1, 2], true);
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && in_array((int) $user->role, [1, 2], true);
+    }
+
     protected string $view = 'filament.pages.report';
 
     protected static BackedEnum|string|null $navigationIcon = Heroicon::OutlinedPresentationChartBar;

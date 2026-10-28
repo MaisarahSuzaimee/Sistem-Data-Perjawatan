@@ -33,6 +33,11 @@ class HebahanResource extends Resource
 
     protected static ?int $navigationSort = 16;
 
+    public static function canAccess(): bool
+    {
+        return static::isManagedByCurrentUser();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return HebahanForm::configure($schema);

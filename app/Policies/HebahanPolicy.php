@@ -13,7 +13,7 @@ class HebahanPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true ;
+        return $user->isSuperAdmin() || $user->isAdmin();
     }
 
     /**
@@ -21,7 +21,7 @@ class HebahanPolicy
      */
     public function view(User $user, Hebahan $hebahan): bool
     {
-         return true;
+        return $user->isSuperAdmin() || $user->isAdmin();
     }
 
     /**

@@ -27,13 +27,20 @@ class PenamatanPerkhidmatanExport implements FromCollection, WithHeadings, WithE
 
     public function collection()
     {
-        $query = Pencen::with([
-            'ptj',
-            'jawatan_gred.jawatan',
-            'jawatan_gred.gred',
-            'opsyenPencen',
-            'jenisPencen'
-        ]);
+        $query = Pencen::withoutGlobalScope('ptj_access')
+            ->with([
+                'ptj',
+                'jawatan_gred.jawatan',
+                'jawatan_gred.gred',
+                'opsyenPencen',
+                'jenisPencen'
+            ]);
+
+        $user = auth()->user();
+
+        if ($user && ! in_array((int) $user->role, [1, 2], true)) {
+            $query->where('ptj_id', $user->ptj_id);
+        }
 
         if (!empty($this->jenis_pencen_id)) {
             $query->whereIn('jenis_pencen_id', $this->jenis_pencen_id);
