@@ -7,6 +7,7 @@ use Google\Client as GoogleClient;
 use Google\Http\MediaFileUpload;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
+use Google\Service\Exception as GoogleServiceException;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -27,74 +28,7 @@ class GoogleDriveBackupService
 
         $absolutePath = $disk->path($relativePath);
 
-        $connection = GoogleDriveConnection::query()->latest('id')->first();
-
-        if (! $connection) {
-            throw new RuntimeException(
-                'Google Drive has not been connected.'
-            );
-        }
-
-        $token = $connection->token;
-
-        if (
-            ! is_array($token) ||
-            empty($token['refresh_token'])
-        ) {
-            throw new RuntimeException(
-                'Google Drive refresh token is missing. Reconnect Google Drive.'
-            );
-        }
-
-        $client = new GoogleClient;
-
-        $client->setClientId(
-            config('services.google_drive.client_id')
-        );
-
-        $client->setClientSecret(
-            config('services.google_drive.client_secret')
-        );
-
-        $client->setRedirectUri(
-            config('services.google_drive.redirect_uri')
-        );
-
-        $client->addScope(
-            'https://www.googleapis.com/auth/drive.file'
-        );
-
-        $client->setAccessType('offline');
-        $client->setAccessToken($token);
-
-        // Refresh the access token if it has expired.
-        if ($client->isAccessTokenExpired()) {
-            $newToken = $client->fetchAccessTokenWithRefreshToken(
-                $token['refresh_token']
-            );
-
-            if (
-                isset($newToken['error']) ||
-                empty($newToken['access_token'])
-            ) {
-                throw new RuntimeException(
-                    'Could not refresh the Google Drive access token.'
-                );
-            }
-
-            // Keep the refresh token if Google does not return a new one.
-            $newToken['refresh_token'] =
-                $newToken['refresh_token']
-                ?? $token['refresh_token'];
-
-            $token = array_merge($token, $newToken);
-
-            $connection->token = $token;
-            $connection->save();
-
-            $client->setAccessToken($token);
-        }
-
+        $client = $this->authenticatedClient();
         $drive = new Drive($client);
 
         $folderId = config('services.google_drive.backup_folder_id');
@@ -182,5 +116,103 @@ class GoogleDriveBackupService
 
             $client->setDefer(false);
         }
+    }
+
+    /**
+     * Permanently delete a backup file from Google Drive.
+     */
+    public function delete(string $fileId): void
+    {
+        if ($fileId === '') {
+            return;
+        }
+
+        try {
+            $this->drive()->files->delete($fileId, [
+                'supportsAllDrives' => true,
+            ]);
+        } catch (GoogleServiceException $exception) {
+            if ((int) $exception->getCode() === 404) {
+                return;
+            }
+
+            throw $exception;
+        }
+    }
+
+    private function drive(): Drive
+    {
+        return new Drive($this->authenticatedClient());
+    }
+
+    private function authenticatedClient(): GoogleClient
+    {
+        $connection = GoogleDriveConnection::query()->latest('id')->first();
+
+        if (! $connection) {
+            throw new RuntimeException(
+                'Google Drive has not been connected.'
+            );
+        }
+
+        $token = $connection->token;
+
+        if (
+            ! is_array($token) ||
+            empty($token['refresh_token'])
+        ) {
+            throw new RuntimeException(
+                'Google Drive refresh token is missing. Reconnect Google Drive.'
+            );
+        }
+
+        $client = new GoogleClient;
+
+        $client->setClientId(
+            config('services.google_drive.client_id')
+        );
+
+        $client->setClientSecret(
+            config('services.google_drive.client_secret')
+        );
+
+        $client->setRedirectUri(
+            config('services.google_drive.redirect_uri')
+        );
+
+        $client->addScope(
+            'https://www.googleapis.com/auth/drive.file'
+        );
+
+        $client->setAccessType('offline');
+        $client->setAccessToken($token);
+
+        if ($client->isAccessTokenExpired()) {
+            $newToken = $client->fetchAccessTokenWithRefreshToken(
+                $token['refresh_token']
+            );
+
+            if (
+                isset($newToken['error']) ||
+                empty($newToken['access_token'])
+            ) {
+                throw new RuntimeException(
+                    'Could not refresh the Google Drive access token.'
+                );
+            }
+
+            $newToken['refresh_token'] =
+                $newToken['refresh_token']
+                ?? $token['refresh_token'];
+
+            $token = array_merge($token, $newToken);
+
+            $connection->token = $token;
+            $connection->save();
+
+            $client->setAccessToken($token);
+        }
+
+        return $client;
     }
 }

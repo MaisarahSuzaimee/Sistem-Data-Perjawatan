@@ -139,7 +139,7 @@
                         </p>
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Automatic cleanup planned
+                            Deleted from Google Drive after 30 days
                         </p>
                     </div>
                 </div>
@@ -336,6 +336,11 @@
                                                     </a>
                                                 @endif
                                             </div>
+                                        @elseif ($backup->google_drive_status === 'expired')
+                                            <span
+                                                class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                                Removed after 30 days
+                                            </span>
                                         @elseif ($backup->google_drive_status === 'failed')
                                             <span
                                                 class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300">
@@ -386,9 +391,8 @@
                     class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
 
                 <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
-                    The planned retention policy keeps 30 days of backups. Expired files must only be deleted after
-                    the
-                    replacement backup has been verified successfully.
+                    Google Drive copies are deleted automatically after 30 days, once a newer backup has been uploaded
+                    successfully. Local backup records remain on this page.
                 </p>
             </div>
 
