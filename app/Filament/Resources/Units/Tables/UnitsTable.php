@@ -117,7 +117,7 @@ class UnitsTable
             })
             ->filters([
                 Filter::make('program_ptj')
-                    ->label('Program / PTJ')
+                    ->label('Program / PTJ1')
                     ->schema([
                         Select::make('program_id')
                             ->label('Program')
