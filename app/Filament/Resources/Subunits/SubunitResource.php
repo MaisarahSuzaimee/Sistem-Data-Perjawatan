@@ -23,7 +23,7 @@ class SubunitResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama_subunit';
 
-    protected static ?string $navigationLabel = 'KD / KKIA / Wad / Klinik1';
+    protected static ?string $navigationLabel = 'KD / KKIA / Wad / Klinik';
 
     protected static ?string $modelLabel = 'KD / KKIA / Wad / Klinik';
 
