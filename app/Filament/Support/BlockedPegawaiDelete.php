@@ -10,8 +10,8 @@ class BlockedPegawaiDelete
     public static function notify(): void
     {
         Notification::make()
-            ->title('Tidak boleh padam')
-            ->body('Tidak boleh padam kerana terdapat pegawai yang ditugaskan.')
+            ->title('Akses untuk memadam waran telah disekat')
+            ->body('Anda tidak dapat memadam waran ini kerana terdapat penyandang yang menyandang jawatan di bawah waran ini.')
             ->danger()
             ->send();
     }

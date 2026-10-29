@@ -32,6 +32,21 @@ use Illuminate\Support\HtmlString;
 
 class PegawaiForm
 {
+    public static function isWaranFieldLocked(?Pegawai $record, string $fieldName): bool
+    {
+        if (! $record || ! $record->waranJawatan()->withoutGlobalScopes()->exists()) {
+            return false;
+        }
+
+        $user = auth()->user();
+
+        if (! $user || in_array((int) $user->role, [1, 2], true)) {
+            return false;
+        }
+
+        return ! in_array($fieldName, ['unit_id', 'subunit_id', 'tarikh_sandang'], true);
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -467,7 +482,7 @@ class PegawaiForm
                                         ->searchable()
                                         ->preload()
                                         ->live()
-                                        ->disabled(fn (Get $get): bool => (bool) $get('ada_unit'))
+                                        ->disabled(fn (Get $get, ?Pegawai $record): bool => (bool) $get('ada_unit') || static::isWaranFieldLocked($record, 'unit_id'))
                                         ->dehydrated(fn (Get $get) => ! $get('ada_unit'))
                                         ->nullable()
                                         ->afterStateUpdated(function ($state, Set $set): void {
@@ -521,7 +536,7 @@ class PegawaiForm
                                         })
                                         ->searchable()
                                         ->preload()
-                                        ->disabled(fn (Get $get): bool => (bool) $get('ada_subunit'))
+                                        ->disabled(fn (Get $get, ?Pegawai $record): bool => (bool) $get('ada_subunit') || static::isWaranFieldLocked($record, 'subunit_id'))
                                         ->dehydrated(fn (Get $get) => ! $get('ada_subunit'))
                                         ->nullable()
                                         ->afterStateUpdated(function ($state, Set $set): void {

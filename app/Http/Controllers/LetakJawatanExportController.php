@@ -15,6 +15,12 @@ class LetakJawatanExportController extends Controller
     {
         $query = LetakJawatan::query();
 
+        $user = auth()->user();
+
+        if ($user && (int) $user->role === 3 && $user->ptj_id) {
+            $query->where('ptj_id', $user->ptj_id);
+        }
+
         $from = Carbon::create($request->from_year, $request->from_month, 1)->startOfDay();
         $to = Carbon::create($request->to_year, $request->to_month, 1)->endOfMonth();
 

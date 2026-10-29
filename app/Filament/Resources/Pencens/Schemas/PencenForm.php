@@ -22,6 +22,20 @@ use Illuminate\Support\HtmlString;
 
 class PencenForm
 {
+    public static function pegawaiOptionsForCurrentUser(): array
+    {
+        $user = auth()->user();
+
+        $query = Pegawai::withoutGlobalScopes()
+            ->orderBy('nama');
+
+        if ($user && ! in_array((int) $user->role, [1, 2], true)) {
+            $query->where('ptj_id', $user->ptj_id);
+        }
+
+        return $query->pluck('nama', 'id')->toArray();
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -49,9 +63,7 @@ class PencenForm
                                 ->validationMessages([
                                     'required' => 'Sila pilih Nama Pegawai terlebih dahulu .'
                                 ])
-                                ->options(
-                                    Pegawai::orderBy('nama')->pluck('nama', 'id')
-                                )
+                                ->options(fn (): array => static::pegawaiOptionsForCurrentUser())
                                 ->searchable()
                                 ->preload()
                                 ->live()

@@ -12,7 +12,13 @@ class PenamatanPerkhidmatanExportController extends Controller
 {
     public function export(Request $request)
     {
-        $query = Pencen::query();
+        $query = Pencen::withoutGlobalScope('ptj_access');
+
+        $user = auth()->user();
+
+        if ($user && ! in_array((int) $user->role, [1, 2], true)) {
+            $query->where('ptj_id', $user->ptj_id);
+        }
 
         $jenis_pencen_id = $request->jenis_pencen_id;
 
