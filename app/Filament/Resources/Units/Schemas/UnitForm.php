@@ -42,6 +42,24 @@ class UnitForm
                             ->live()
                             ->searchable()
                             ->preload()
+                            ->afterStateHydrated(function (Get $get, $livewire, $record): void {
+                                if ($record !== null) {
+                                    return;
+                                }
+
+                                $ptjId = $get('ptj_id');
+
+                                if (
+                                    filled($ptjId)
+                                    && ! Ptj::usesBahagianHierarchyFor((int) $ptjId)
+                                    && method_exists($livewire, 'redirectToEditIfParentHasUnits')
+                                ) {
+                                    $livewire->redirectToEditIfParentHasUnits(
+                                        ptjId: (int) $ptjId,
+                                        bahagianId: null,
+                                    );
+                                }
+                            })
                             ->afterStateUpdated(function (Get $get, Set $set, $livewire): void {
                                 $set('bahagian_id', null);
 

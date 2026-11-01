@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Units\Pages;
 
 use App\Filament\Resources\Units\UnitResource;
+use App\Models\Ptj;
 use App\Models\Unit;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 class CreateUnit extends CreateRecord
 {
     protected static string $resource = UnitResource::class;
+
+    protected ?string $forcedRedirectUrl = null;
 
     public function getTitle(): string
     {
@@ -41,30 +44,58 @@ class CreateUnit extends CreateRecord
             ->label('Batal');
     }
 
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->redirectUserToExistingUnits();
+    }
+
     protected function getRedirectUrl(): string
     {
-        return UnitResource::getUrl('index');
+        return $this->forcedRedirectUrl ?? UnitResource::getUrl('index');
     }
 
     public function redirectToEditIfParentHasUnits(?int $ptjId, ?int $bahagianId): void
     {
+        if (filled($this->forcedRedirectUrl)) {
+            return;
+        }
+
         $existing = $this->findExistingUnitForParent($ptjId, $bahagianId);
 
         if (! $existing) {
             return;
         }
 
+        $this->forcedRedirectUrl = UnitResource::getUrl('edit', [
+            'record' => $existing,
+        ]);
+
         Notification::make()
-            ->title(filled($bahagianId)
-                ? 'Bahagian ini sudah mempunyai unit'
-                : 'PTJ ini sudah mempunyai unit')
+            ->title('Data Telah Wujud')
             ->body('Mengalihkan ke halaman kemaskini.')
             ->info()
             ->send();
 
-        $this->redirect(UnitResource::getUrl('edit', [
-            'record' => $existing,
-        ]));
+        $this->redirect($this->forcedRedirectUrl);
+    }
+
+    protected function redirectUserToExistingUnits(): void
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || $user->isSuperAdmin() || blank($user->ptj_id)) {
+            return;
+        }
+
+        $ptjId = (int) $user->ptj_id;
+
+        if (Ptj::usesBahagianHierarchyFor($ptjId)) {
+            return;
+        }
+
+        $this->redirectToEditIfParentHasUnits($ptjId, null);
     }
 
     protected function findExistingUnitForParent(?int $ptjId, ?int $bahagianId): ?Unit
@@ -97,8 +128,7 @@ class CreateUnit extends CreateRecord
 
         if ($existing) {
             $this->redirectToEditIfParentHasUnits($ptjId, $bahagianId);
-
-            return $existing;
+            $this->halt();
         }
 
         // Bulk creation via Repeater - each unit has its own parlimen/dun
@@ -149,7 +179,7 @@ class CreateUnit extends CreateRecord
     {
         $user = auth()->user();
 
-        if (! $user->isAdmin() || $user->isSuperAdmin()) {
+        if (! $user->isAdmin() && ! $user->isSuperAdmin()) {
             $data['ptj_id'] = $user->ptj_id;
         }
 
