@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Jawatans\Tables;
 
+use App\Models\Kumpulan;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -11,7 +12,10 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class JawatansTable
 {
@@ -69,8 +73,25 @@ class JawatansTable
             ])
             ->defaultSort('updated_at', 'desc')
             ->filters([
-                //
-            ])
+                SelectFilter::make('kumpulan_id')
+                    ->label('Kumpulan')
+                    ->options(fn (): array => Kumpulan::query()
+                        ->orderBy('id')
+                        ->pluck('nama_kumpulan', 'id')
+                        ->all())
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'] ?? null,
+                            fn (Builder $query, mixed $kumpulanId): Builder => $query->whereHas(
+                                'greds',
+                                fn (Builder $greds): Builder => $greds->where('jawatan__greds.kumpulan_id', $kumpulanId)
+                            )
+                        );
+                    })
+                    ->searchable()
+                    ->preload(),
+            ], layout: FiltersLayout::Modal)
+            ->filtersApplyAction(fn (Action $action) => $action->label('Cari'))
             ->recordActions([
                 // ActionGroup::make([
                 //     ViewAction::make()
