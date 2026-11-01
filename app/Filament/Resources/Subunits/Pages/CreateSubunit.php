@@ -62,7 +62,7 @@ class CreateSubunit extends CreateRecord
         }
 
         Notification::make()
-            ->title('Unit ini sudah mempunyai KD / KKIA / Wad / Klinik')
+            ->title('Data Telah Wujud')
             ->body('Mengalihkan ke halaman kemaskini.')
             ->info()
             ->send();

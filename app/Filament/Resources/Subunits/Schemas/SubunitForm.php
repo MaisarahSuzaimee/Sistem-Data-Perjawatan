@@ -18,6 +18,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
 class SubunitForm
@@ -50,7 +51,10 @@ class SubunitForm
                                 if ($record) {
                                     $set('ptj_id', $record->unit?->ptj_id);
                                 }
-                            }),
+                            })
+                            ->visible(fn ($record) => $record === null)
+                            ->columnSpanFull()
+                            ->searchable(),
 
                         // TextInput::make('programs_for_ptj')
                         //     ->label('Program')
@@ -129,7 +133,7 @@ class SubunitForm
                             ->label('Unit')
                             ->rules(fn () => (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
                                 ? []
-                                : [\Illuminate\Validation\Rule::exists('units', 'id')->where('ptj_id', auth()->user()->ptj_id)])
+                                : [Rule::exists('units', 'id')->where('ptj_id', auth()->user()->ptj_id)])
                             ->required()
                             ->options(function (Get $get): array {
                                 $ptjId = $get('ptj_id');
