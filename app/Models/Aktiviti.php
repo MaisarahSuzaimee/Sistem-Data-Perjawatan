@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -24,6 +25,14 @@ class Aktiviti extends Model
     public function ptjs(): BelongsToMany
     {
         return $this->belongsToMany(Ptj::class, 'aktiviti_ptj')->withTimestamps();
+    }
+
+    public function scopeAssignedToPtj(Builder $query, int $ptjId): Builder
+    {
+        return $query->whereHas(
+            'ptjs',
+            fn (Builder $ptjQuery): Builder => $ptjQuery->where('ptjs.id', $ptjId),
+        );
     }
 
     /**

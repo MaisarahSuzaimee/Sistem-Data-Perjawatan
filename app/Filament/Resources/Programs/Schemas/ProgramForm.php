@@ -39,10 +39,23 @@ class ProgramForm
                     ->schema([
                         Repeater::make('aktiviti')
                             ->label('Aktiviti')
-                            ->relationship('aktiviti')
+                            ->relationship(
+                                name: 'aktiviti',
+                                modifyQueryUsing: function (Builder $query): Builder {
+                                    $user = auth()->user();
+
+                                    if ($user?->isUser() && filled($user->ptj_id)) {
+                                        $query->assignedToPtj((int) $user->ptj_id);
+                                    }
+
+                                    return $query;
+                                },
+                            )
                             ->columnSpanFull()
                             ->columns(2)
                             ->addActionLabel('Tambah Aktiviti')
+                            ->addable(fn (): bool => ! auth()->user()?->isUser())
+                            ->deletable(fn (): bool => ! auth()->user()?->isUser())
                             ->addAction(function (Action $action) {
                                 return $action
                                     ->color('info')
@@ -74,7 +87,17 @@ class ProgramForm
                                     ->relationship(
                                         name: 'ptjs',
                                         titleAttribute: 'nama_ptj',
-                                        modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('nama_ptj'),
+                                        modifyQueryUsing: function (Builder $query): Builder {
+                                            $query->orderBy('nama_ptj');
+
+                                            $user = auth()->user();
+
+                                            if ($user?->isUser() && filled($user->ptj_id)) {
+                                                $query->where('ptjs.id', $user->ptj_id);
+                                            }
+
+                                            return $query;
+                                        },
                                     )
                                     ->multiple()
                                     ->searchable()
@@ -88,7 +111,7 @@ class ProgramForm
                             )->collapsed(),
                     ])
                     ->columnSpanFull(),
-                    
+
             ]);
 
     }
