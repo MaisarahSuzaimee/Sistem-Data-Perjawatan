@@ -46,7 +46,7 @@ class AppPanelProvider extends PanelProvider
             ->brandLogo(view('filament.brand-logo'))
             ->brandLogoHeight('auto')
             ->brandName('MySTAFF')
-            ->favicon(asset('images/mystaff-logo-clean.png'))
+            ->favicon(asset('images/mystaff-logo-clean.webp'))
             ->viteTheme('resources/css/filament/app/theme.css')
             ->font('Public Sans')
             ->darkMode(true)

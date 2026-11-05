@@ -22,6 +22,7 @@ class PencensTable
     {
         return $table
             ->defaultPaginationPageOption(5)
+            ->defaultSort('updated_at', 'desc')
             ->recordUrl(null)
             ->emptyStateHeading('Tiada Rekod Penamatan Perkhidmatan')
             ->columns([

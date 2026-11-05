@@ -2019,6 +2019,24 @@ td.fi-ta-selection-cell {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Role user: Maklumat Jawatan stays locked without the gray disabled fill */
+.fi-input-wrp.fi-locked-plain.fi-disabled {
+    background-color: #fff !important;
+    opacity: 1 !important;
+}
+
+.fi-input-wrp.fi-locked-plain.fi-disabled .fi-select-input,
+.fi-input-wrp.fi-locked-plain.fi-disabled .fi-select-input.fi-disabled,
+.fi-input-wrp.fi-locked-plain .fi-disabled {
+    opacity: 1 !important;
+    color: var(--sneat-text-main) !important;
+    -webkit-text-fill-color: var(--sneat-text-main) !important;
+}
+
+.dark .fi-input-wrp.fi-locked-plain.fi-disabled {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
 .fi-input-wrp:focus-within {
     border-color: var(--sneat-primary) !important;
     box-shadow: 0 0 0 3px rgba(var(--sneat-primary-rgb), 0.18) !important;
