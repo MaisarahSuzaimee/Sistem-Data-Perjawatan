@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\DashboardStatsCache;
+use App\Services\NavigationBadgeCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -195,6 +197,14 @@ class Waran extends Model
         static::deleting(function (Waran $waran): bool {
             return ! $waran->hasAssignedPegawai();
         });
+
+        $flushCaches = function (): void {
+            NavigationBadgeCache::flush();
+            DashboardStatsCache::forget();
+        };
+
+        static::saved($flushCaches);
+        static::deleted($flushCaches);
     }
 
     // public function parent()

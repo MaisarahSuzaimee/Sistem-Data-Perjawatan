@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardStatsCache
 {
-    private const TTL_SECONDS = 60;
+    private const TTL_SECONDS = 300;
+
+    private const VERSION_KEY = 'dashboard.stats.version';
 
     /**
      * @return array{
@@ -26,10 +28,11 @@ class DashboardStatsCache
     public static function get(): array
     {
         $userId = auth()->id() ?? 0;
+        $version = (int) Cache::get(self::VERSION_KEY, 1);
 
         /** @var array{totalWaran: int, totalPengisianSemasa: int, totalKekosongan: int, waranByProgram: list<array{nama_program: string, desc_program: ?string, waran_count: int}>} $stats */
         $stats = Cache::remember(
-            "dashboard.stats.{$userId}",
+            "dashboard.stats.{$userId}.v{$version}",
             self::TTL_SECONDS,
             fn (): array => self::computeAggregates(auth()->user()),
         );
@@ -61,9 +64,8 @@ class DashboardStatsCache
 
     public static function forget(?int $userId = null): void
     {
-        $userId ??= auth()->id() ?? 0;
-
-        Cache::forget("dashboard.stats.{$userId}");
+        $version = (int) Cache::get(self::VERSION_KEY, 1);
+        Cache::forever(self::VERSION_KEY, $version + 1);
     }
 
     /**

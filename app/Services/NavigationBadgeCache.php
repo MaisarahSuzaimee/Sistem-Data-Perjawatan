@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\Cache;
 
 class NavigationBadgeCache
 {
-    private const TTL_SECONDS = 60;
+    /** Keep badges warm longer — counts change only when pegawai/waran data changes. */
+    private const TTL_SECONDS = 600;
+
+    private const VERSION_KEY = 'nav.badge.version';
 
     /** @var array<string, int> */
     private static array $memo = [];
@@ -24,7 +27,7 @@ class NavigationBadgeCache
         }
 
         return self::$memo[$memoKey] = (int) Cache::remember(
-            "nav.badge.waran.{$userId}",
+            self::cacheKey('waran', $userId),
             self::TTL_SECONDS,
             fn (): int => self::computeWaranUnbalancedCount(auth()->user()),
         );
@@ -40,19 +43,37 @@ class NavigationBadgeCache
         }
 
         return self::$memo[$memoKey] = (int) Cache::remember(
-            "nav.badge.pegawai.{$userId}",
+            self::cacheKey('pegawai', $userId),
             self::TTL_SECONDS,
             fn (): int => (int) Pegawai::query()->tidakLengkap()->count(),
         );
     }
 
+    /**
+     * Invalidate every user's badge caches. Prefer this over per-user forget —
+     * navigation badges are cheap to recompute once, and pegawai/waran writes
+     * affect many users' scoped counts.
+     */
+    public static function flush(): void
+    {
+        $version = (int) Cache::get(self::VERSION_KEY, 1);
+        Cache::forever(self::VERSION_KEY, $version + 1);
+        self::$memo = [];
+    }
+
+    /**
+     * @deprecated Use flush() — kept for existing call sites.
+     */
     public static function forget(?int $userId = null): void
     {
-        $userId ??= auth()->id() ?? 0;
+        self::flush();
+    }
 
-        Cache::forget("nav.badge.waran.{$userId}");
-        Cache::forget("nav.badge.pegawai.{$userId}");
-        unset(self::$memo["waran.{$userId}"], self::$memo["pegawai.{$userId}"]);
+    protected static function cacheKey(string $type, int $userId): string
+    {
+        $version = (int) Cache::get(self::VERSION_KEY, 1);
+
+        return "nav.badge.{$type}.{$userId}.v{$version}";
     }
 
     protected static function computeWaranUnbalancedCount(?User $user): int
