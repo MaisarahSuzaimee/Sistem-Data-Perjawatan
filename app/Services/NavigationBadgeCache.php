@@ -94,10 +94,7 @@ class NavigationBadgeCache
             return "(SELECT COUNT(*) FROM waran_jawatans wj
                 WHERE wj.deleted_at IS NULL
                   AND wj.ptj_id = {$ptjId}
-                  AND (
-                    (warans.jenis = 'Tolak' AND wj.waran_tolak_id = warans.id)
-                    OR (COALESCE(warans.jenis, '') != 'Tolak' AND wj.waran_id = warans.id)
-                  ))";
+                  AND wj.waran_id = warans.id)";
         }
 
         return 'COALESCE(warans.jik, 0)';
@@ -111,19 +108,10 @@ class NavigationBadgeCache
             $ptjFilter = ' AND wj.ptj_id = '.(int) $user->ptj_id;
         }
 
-        return "CASE
-            WHEN warans.jenis = 'Tolak' THEN (
-                SELECT COUNT(*) FROM waran_jawatans wj
-                WHERE wj.waran_tolak_id = warans.id
-                  AND wj.status = 'removed'{$ptjFilter}
-            )
-            ELSE (
-                SELECT COUNT(*) FROM waran_jawatans wj
-                WHERE wj.waran_id = warans.id
-                  AND wj.pegawai_id IS NOT NULL
-                  AND wj.status = 'active'
-                  AND wj.deleted_at IS NULL{$ptjFilter}
-            )
-        END";
+        return "(SELECT COUNT(*) FROM waran_jawatans wj
+            WHERE wj.waran_id = warans.id
+              AND wj.pegawai_id IS NOT NULL
+              AND wj.status = 'active'
+              AND wj.deleted_at IS NULL{$ptjFilter})";
     }
 }

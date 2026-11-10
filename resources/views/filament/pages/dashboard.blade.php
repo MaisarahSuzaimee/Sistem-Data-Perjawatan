@@ -142,11 +142,7 @@
                                     </a>
                                 </td>
                                 <td style="padding:10px 12px; border:1px solid #e5e7eb;">
-                                    @if ($waran->jenis === 'Tambah')
-                                        <x-filament::badge color="success" icon="heroicon-o-plus">Tambah</x-filament::badge>
-                                    @else
-                                        <x-filament::badge color="warning" icon="heroicon-o-minus">Tolak</x-filament::badge>
-                                    @endif
+                                    <x-filament::badge color="gray">Waran</x-filament::badge>
                                 </td>
                                 <td style="padding:10px 12px; text-align:center; border:1px solid #e5e7eb;">
                                     <span style="display:inline-flex; min-width:24px; justify-content:center; padding:2px 8px; border-radius:999px; font-weight:600; font-size:12px; background:#f3f4f6; color:#374151;">{{ $waran->jik }}</span>

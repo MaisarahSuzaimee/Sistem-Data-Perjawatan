@@ -29,6 +29,7 @@ class WaranJawatan extends Model
         'tarikh_kuatkuasa',
         'is_kup',
         'waran_tolak_id',
+        'menggantikan_waran_id',
         'catatan_jawatan',
         'status',
     ];
@@ -36,6 +37,16 @@ class WaranJawatan extends Model
     public function waran()
     {
         return $this->belongsTo(Waran::class, 'waran_id');
+    }
+
+    public function waranTolak()
+    {
+        return $this->belongsTo(Waran::class, 'waran_tolak_id');
+    }
+
+    public function menggantikanWaran()
+    {
+        return $this->belongsTo(Waran::class, 'menggantikan_waran_id');
     }
 
     public function ptj()

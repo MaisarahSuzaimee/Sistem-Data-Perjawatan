@@ -14,6 +14,7 @@ class Waran extends Model
         'no_waran',
         'jenis',
         'jik',
+        'jik_tolak',
         'catatan',
         'parent_id',
     ];
@@ -37,6 +38,11 @@ class Waran extends Model
     public function waranTolakJawatan()
     {
         return $this->hasMany(WaranJawatan::class, 'waran_tolak_id');
+    }
+
+    public function digantiOlehJawatan()
+    {
+        return $this->hasMany(WaranJawatan::class, 'menggantikan_waran_id');
     }
 
     public function hasAssignedPegawai(): bool
@@ -65,7 +71,7 @@ class Waran extends Model
 
                 return [
                     'label' => $aktivitiName." ({$count})",
-                    'inactive' => $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed'),
+                    'inactive' => $items->every(fn ($item) => $item->status === 'removed'),
                 ];
             })
             ->filter()
@@ -90,31 +96,44 @@ class Waran extends Model
         return $this->aktivitiListItems()->join('<br>');
     }
 
-    public function getPenempatanListAttribute()
+    /**
+     * @return Collection<int, array{label: string, inactive: bool}>
+     */
+    public function penempatanListEntries(): Collection
     {
         $user = auth()->user();
-
-        $query = $this->summaryJawatanQuery($user);
-
-        $items = $query->get();
+        $items = $this->summaryJawatanQuery($user)->with('ptj')->get();
 
         return $items
             ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj)
-            ->map(function ($items, $ptjName) {
-
+            ->map(function ($items, $ptjName): array {
                 $count = $items->count();
 
-                // ONLY grey if ALL are inactive
-                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
-
-                $class = $isInactive ? 'text-gray-400' : 'text-black';
-
-                return "<span class='{$class}'>"
-                    .$ptjName." ({$count})"
-                    .'</span>';
+                return [
+                    'label' => $ptjName." ({$count})",
+                    'inactive' => $items->every(fn ($item) => $item->status === 'removed'),
+                ];
             })
             ->filter()
-            ->join('<br>');
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function penempatanListItems(): Collection
+    {
+        return $this->penempatanListEntries()
+            ->map(function (array $entry): string {
+                $class = $entry['inactive'] ? 'text-gray-400' : 'text-black';
+
+                return "<span class='{$class}'>".e($entry['label']).'</span>';
+            });
+    }
+
+    public function getPenempatanListAttribute()
+    {
+        return $this->penempatanListItems()->join('<br>');
     }
 
     // public function getButiranListAttribute()
@@ -147,7 +166,7 @@ class Waran extends Model
                 $count = $items->count();
 
                 // ONLY grey if ALL are inactive
-                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
+                $isInactive = $items->every(fn ($item) => $item->status === 'removed');
 
                 $class = $isInactive ? 'text-gray-400' : 'text-black';
 
@@ -219,13 +238,7 @@ class Waran extends Model
 
     private function summaryJawatanQuery(?User $user = null)
     {
-        $query = WaranJawatan::query();
-
-        if ($this->jenis === 'Tolak') {
-            $query->withTrashed()->where('waran_tolak_id', $this->id);
-        } else {
-            $query->where('waran_id', $this->id);
-        }
+        $query = WaranJawatan::query()->where('waran_id', $this->id);
 
         if ($user && ! $user->isSuperadmin() && ! $user->isAdmin()) {
             $query->where('ptj_id', $user->ptj_id);
@@ -269,18 +282,9 @@ class Waran extends Model
     {
         $user = auth()->user();
         $query = $this->waranJawatanQuery();
-        $query2 = $this->waranJawatanQuery()->withTrashed();
 
-        if ($user->isUser()) {
+        if ($user?->isUser()) {
             $query->where('ptj_id', $user->ptj_id);
-        }
-
-        if ($this->jenis === 'Tolak') {
-            return $query2
-                ->where('waran_tolak_id', $this->id)
-                // ->whereNotNull('pegawai_id')
-                ->where('status', 'removed')
-                ->count();
         }
 
         return $query
@@ -298,14 +302,6 @@ class Waran extends Model
     public function getStatusJikAttribute()
     {
         $k = (int) $this->kosong_count;
-
-        if ($this->jenis === 'Tolak') {
-            return match (true) {
-                $k > 0 => 'Kurang',
-                $k < 0 => 'Lebih',
-                default => 'Seimbang',
-            };
-        }
 
         return match (true) {
             $k > 0 => 'Kurang',
