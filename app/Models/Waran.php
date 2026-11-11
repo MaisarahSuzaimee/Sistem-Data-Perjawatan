@@ -54,7 +54,11 @@ class Waran extends Model
     public function aktivitiListEntries(): Collection
     {
         $user = auth()->user();
-        $items = $this->summaryJawatanQuery($user)->with('aktiviti')->get();
+        $items = $this->summaryJawatanQuery($user)->with('aktiviti')->get()
+            ->sortBy(
+                fn ($wj): string => ($wj->aktiviti?->no_aktivit ?? '').' '.($wj->aktiviti?->nama_aktiviti ?? ''),
+                SORT_NATURAL,
+            );
 
         return $items
             ->groupBy(
@@ -90,31 +94,48 @@ class Waran extends Model
         return $this->aktivitiListItems()->join('<br>');
     }
 
-    public function getPenempatanListAttribute()
+    /**
+     * @return Collection<int, array{label: string, inactive: bool}>
+     */
+    public function penempatanListEntries(): Collection
     {
         $user = auth()->user();
-
-        $query = $this->summaryJawatanQuery($user);
-
-        $items = $query->get();
+        $items = $this->summaryJawatanQuery($user)->with('ptj')->get();
 
         return $items
             ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj)
-            ->map(function ($items, $ptjName) {
-
+            ->sortBy(
+                fn ($group, $ptjName): string => (string) $ptjName,
+                SORT_NATURAL | SORT_FLAG_CASE,
+            )
+            ->map(function ($items, $ptjName): array {
                 $count = $items->count();
 
-                // ONLY grey if ALL are inactive
-                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
-
-                $class = $isInactive ? 'text-gray-400' : 'text-black';
-
-                return "<span class='{$class}'>"
-                    .$ptjName." ({$count})"
-                    .'</span>';
+                return [
+                    'label' => $ptjName." ({$count})",
+                    'inactive' => $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed'),
+                ];
             })
             ->filter()
-            ->join('<br>');
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function penempatanListItems(): Collection
+    {
+        return $this->penempatanListEntries()
+            ->map(function (array $entry): string {
+                $class = $entry['inactive'] ? 'text-gray-400' : 'text-black';
+
+                return "<span class='{$class}'>".e($entry['label']).'</span>';
+            });
+    }
+
+    public function getPenempatanListAttribute()
+    {
+        return $this->penempatanListItems()->join('<br>');
     }
 
     // public function getButiranListAttribute()
