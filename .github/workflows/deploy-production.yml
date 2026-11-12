@@ -37,10 +37,30 @@ jobs:
         run: |
           echo "Starting MySTAFF production deployment via deploy.php..."
 
-          curl -fsS --max-time 360 \
+          set +e
+          response="$(curl -sS --max-time 360 \
             -H "X-Deploy-Token: ${DEPLOY_TOKEN}" \
             -H "Accept: text/plain" \
-            https://mystaff.kdh.moh.gov.my/deploy.php
+            -w "\n__HTTP_STATUS__:%{http_code}" \
+            https://mystaff.kdh.moh.gov.my/deploy.php)"
+          curl_exit=$?
+          set -e
 
+          status="$(printf '%s\n' "$response" | sed -n 's/^__HTTP_STATUS__://p' | tail -n 1)"
+          body="$(printf '%s\n' "$response" | sed '/^__HTTP_STATUS__:/d')"
+
+          echo "$body"
           echo
+          echo "HTTP status: ${status:-unknown}"
+
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "curl failed with exit code ${curl_exit}"
+            exit "$curl_exit"
+          fi
+
+          if [ "$status" != "200" ]; then
+            echo "Production deploy.php returned HTTP ${status}"
+            exit 1
+          fi
+
           echo "MySTAFF deployment completed successfully."
