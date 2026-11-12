@@ -78,8 +78,8 @@ class ApiKey extends Page implements HasForms
                     ])
                     ->columns(1),
 
-                Section::make('EPPSM — API Key')
-                    ->description('Kunci untuk integrasi dengan API EPPSM (training.kdh.moh.gov.my). Digunakan oleh halaman API untuk carian No. KP.')
+                Section::make('Prestasi V2 — API Key')
+                    ->description('Kunci untuk integrasi dengan API Prestasi V2 (training.kdh.moh.gov.my). Digunakan oleh halaman API untuk carian No. KP.')
                     ->icon(Heroicon::OutlinedCodeBracket)
                     ->schema([
                         TextInput::make('prestasi_v2_api_key')
@@ -93,8 +93,8 @@ class ApiKey extends Page implements HasForms
 
                         TextInput::make('prestasi_v2_base_url')
                             ->label('Base URL')
-                            ->placeholder('https://eppsm.kdh.moh.gov.my/api/v1')
-                            ->helperText('URL asas API EPPSM')
+                            ->placeholder('https://training.kdh.moh.gov.my/api/v1')
+                            ->helperText('URL asas API Prestasi V2')
                             ->url()
                             ->maxLength(500)
                             ->columnSpanFull(),

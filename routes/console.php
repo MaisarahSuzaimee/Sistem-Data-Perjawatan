@@ -22,10 +22,10 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::call(fn () => Artisan::call('pegawai:delete-letak-jawatan'))
-    ->daily();
+    ->everyFiveSeconds();
 
 Schedule::call(fn () => Artisan::call('pegawai:delete-tamat-perkhidmatan'))
-    ->daily();
+    ->everyFiveSeconds();
 
 Schedule::command('database:backup')
     ->dailyAt('18:00')

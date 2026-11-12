@@ -30,7 +30,7 @@ class ListPencens extends ListRecords
                 ->modalCancelActionLabel('Batal')
                 ->form([
                     Select::make('jenis_pencen_id')
-                        ->label('Jenis Penamatan Perkhidmatan')
+                        ->label('Jenis Penamapatan Perkhidmatan')
                         // ->relationship('jenisPencen', 'jenis')
                         ->multiple()
                         ->options(\App\Models\JenisPencen::pluck('jenis', 'id'))

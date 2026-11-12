@@ -17,7 +17,6 @@
         "vite": "^8.0.0"
     },
     "dependencies": {
-        "chart.js": "^4.6.1",
         "flowbite": "^4.0.1",
         "simple-datatables": "^10.2.0"
     }

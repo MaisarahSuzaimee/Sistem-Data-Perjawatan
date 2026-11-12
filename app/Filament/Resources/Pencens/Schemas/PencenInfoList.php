@@ -30,7 +30,7 @@ class PencenInfoList
                                 TextEntry::make('jawatan_gred.gred.kod_gred')
                                     ->label('Gred'),
                             ]),
-                        Tab::make('Maklumat Persaraan')
+                        Tab::make('Maklumat Persaran')
                             ->schema([
                                 TextEntry::make('tarikh_lantikan')
                                     ->label('Tarikh Lantikan')

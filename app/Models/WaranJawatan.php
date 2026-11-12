@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Services\DashboardStatsCache;
-use App\Services\NavigationBadgeCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -205,16 +203,6 @@ class WaranJawatan extends Model
         static::forceDeleting(function (WaranJawatan $waranJawatan): bool {
             return ! $waranJawatan->hasAssignedPegawai();
         });
-
-        $flushCaches = function (): void {
-            NavigationBadgeCache::flush();
-            DashboardStatsCache::forget();
-        };
-
-        static::saved($flushCaches);
-        static::deleted($flushCaches);
-        static::restored($flushCaches);
-        static::forceDeleted($flushCaches);
     }
 
     public function tbk()

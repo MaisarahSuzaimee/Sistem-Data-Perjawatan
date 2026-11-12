@@ -30,7 +30,7 @@ class LetakJawatanForm
                         ->schema([
                             Select::make('pegawai_id')
                                 ->required()
-                                ->label(new HtmlString(view('filament.forms.nama-pegawai-label')->render()))
+                                ->label('Nama Pegawai')
                                 ->visible(fn (string $operation) => $operation === 'create')
                                 ->options(function (): array {
                                     $query = Pegawai::query()
@@ -45,12 +45,7 @@ class LetakJawatanForm
 
                                     return $query
                                         ->orderBy('nama')
-                                        ->get(['id', 'nama', 'nokp'])
-                                        ->mapWithKeys(fn (Pegawai $pegawai): array => [
-                                            $pegawai->id => filled($pegawai->nokp)
-                                                ? "{$pegawai->nama} ({$pegawai->nokp})"
-                                                : $pegawai->nama,
-                                        ])
+                                        ->pluck('nama', 'id')
                                         ->all();
                                 })
                                 ->searchable()

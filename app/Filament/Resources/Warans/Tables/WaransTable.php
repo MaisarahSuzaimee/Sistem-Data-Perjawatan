@@ -120,18 +120,8 @@ class WaransTable
 
                 TextColumn::make('penempatan_list')
                     ->label('Penempatan')
-                    ->getStateUsing(fn (Waran $record): string => static::penempatanCellHtml($record))
                     ->html()
                     ->wrap()
-                    ->action(
-                        Action::make('lihatSemuaPenempatan')
-                            ->modalHeading('Senarai Penempatan')
-                            ->modalDescription(fn (Waran $record): string => (string) ($record->no_waran ?? ''))
-                            ->modalContent(fn (Waran $record): HtmlString => static::penempatanModalContent($record))
-                            ->modalSubmitAction(false)
-                            ->modalCancelActionLabel('Tutup')
-                            ->disabled(fn (Waran $record): bool => $record->penempatanListEntries()->count() <= 3)
-                    )
                     ->searchable(query: function ($query, $search) {
                         $query->whereHas('waranJawatan.ptj', function ($q) use ($search) {
                             $q->where('nama_ptj', 'like', "%{$search}%");
@@ -364,42 +354,6 @@ class WaransTable
     public static function aktivitiModalContent(Waran $record): HtmlString
     {
         $labels = $record->aktivitiListEntries()
-            ->map(fn (array $entry): string => $entry['label'])
-            ->all();
-
-        if ($labels === []) {
-            return new HtmlString('<p class="text-sm text-gray-500">Tiada rekod.</p>');
-        }
-
-        $lis = collect($labels)
-            ->map(fn (string $label): string => '<li>'.e($label).'</li>')
-            ->implode('');
-
-        return new HtmlString('<ul class="list-disc space-y-1 pl-5 text-sm">'.$lis.'</ul>');
-    }
-
-    public static function penempatanCellHtml(Waran $record): string
-    {
-        $items = $record->penempatanListItems();
-
-        if ($items->isEmpty()) {
-            return '-';
-        }
-
-        $visible = $items->take(3);
-        $html = $visible->implode('<br>');
-        $extra = $items->count() - $visible->count();
-
-        if ($extra > 0) {
-            $html .= '<div class="fi-program-matrix-more">'.e(__('filament-tables::table.columns.text.more_list_items', ['count' => $extra])).'</div>';
-        }
-
-        return $html;
-    }
-
-    public static function penempatanModalContent(Waran $record): HtmlString
-    {
-        $labels = $record->penempatanListEntries()
             ->map(fn (array $entry): string => $entry['label'])
             ->all();
 

@@ -3,7 +3,7 @@
         <div class="esdap-login-card">
             <div class="esdap-login-left">
                 <div class="esdap-login-header">
-                    <img src="{{ asset('images/mystaff-logo-clean.webp') }}" alt="MySTAFF" class="esdap-logo-mark" />
+                    <img src="{{ asset('images/mystaff-logo-clean.png') }}" alt="MySTAFF" class="esdap-logo-mark" />
                     <span>MySTAFF</span>
                 </div>
 
@@ -25,7 +25,7 @@
                 <div class="esdap-right-glow esdap-right-glow-2"></div>
                 <div class="esdap-right-content">
                     <div class="esdap-right-logo-ring">
-                        <img src="{{ asset('images/mystaff-logo-clean.webp') }}" alt="MySTAFF" class="esdap-right-logo" />
+                        <img src="{{ asset('images/mystaff-logo-clean.png') }}" alt="MySTAFF" class="esdap-right-logo" />
                     </div>
                     <p class="esdap-right-tagline">Kedah Healthcare Staffing Data System</p>
                 </div>

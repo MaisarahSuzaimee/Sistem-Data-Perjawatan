@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Services\NavigationBadgeCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -60,11 +59,6 @@ class Pegawai extends Model
                     });
             });
         });
-
-        static::saved(fn () => NavigationBadgeCache::flush());
-        static::deleted(fn () => NavigationBadgeCache::flush());
-        static::restored(fn () => NavigationBadgeCache::flush());
-        static::forceDeleted(fn () => NavigationBadgeCache::flush());
     }
 
     public function ptj()
@@ -259,17 +253,9 @@ class Pegawai extends Model
                     $q->whereNull('subunit_id')->where('ada_subunit', 0);
                 })
                 ->orWhere(function (Builder $q): void {
-                    // Single NOT EXISTS against the indexed pegawai_id column
-                    // instead of nested whereDoesntHave('waranJawatan.waran').
                     $q->where('is_kontrak', 0)
                         ->where('is_jtw', 0)
-                        ->whereNotExists(function ($sub): void {
-                            $sub->selectRaw('1')
-                                ->from('waran_jawatans')
-                                ->join('warans', 'warans.id', '=', 'waran_jawatans.waran_id')
-                                ->whereColumn('waran_jawatans.pegawai_id', 'pegawais.id')
-                                ->whereNull('waran_jawatans.deleted_at');
-                        });
+                        ->whereDoesntHave('waranJawatan.waran');
                 });
         });
     }

@@ -81,6 +81,14 @@ class ListPegawais extends ListRecords
                     fn (Builder $query) => $query->where('is_tetap', 1)
                 ),
 
+            'kontrak' => Tab::make('Kontrak')
+                ->icon('heroicon-m-briefcase')
+                ->badge(fn () => number_format(Pegawai::where('is_kontrak', 1)->count()))
+                ->extraAttributes(['class' => 'fi-tabs-item-kontrak'])
+                ->modifyQueryUsing(
+                    fn (Builder $query) => $query->where('is_kontrak', 1)
+                ),
+
             'kontrak_interim' => Tab::make('Kontrak Interim')
                 ->icon('heroicon-m-clock')
                 ->badge(fn () => number_format(Pegawai::where('is_kontrak_interim', 1)->count()))
@@ -95,14 +103,6 @@ class ListPegawais extends ListRecords
                 ->extraAttributes(['class' => 'fi-tabs-item-kontrak-isi-tetap'])
                 ->modifyQueryUsing(
                     fn (Builder $query) => $query->where('is_kontrak_isi_tetap', 1)
-                ),
-
-            'kontrak' => Tab::make('Kontrak')
-                ->icon('heroicon-m-briefcase')
-                ->badge(fn () => number_format(Pegawai::where('is_kontrak', 1)->count()))
-                ->extraAttributes(['class' => 'fi-tabs-item-kontrak'])
-                ->modifyQueryUsing(
-                    fn (Builder $query) => $query->where('is_kontrak', 1)
                 ),
 
         ];

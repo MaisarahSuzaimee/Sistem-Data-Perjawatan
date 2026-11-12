@@ -6,17 +6,13 @@ use App\Models\Pencen;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
-use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 // use PhpOffice\PhpSpreadsheet\Style\Border;
 // use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
-class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromCollection, WithCustomValueBinder, WithHeadings, WithEvents, WithCustomStartCell
+class PenamatanPerkhidmatanExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell
 {
     /**
      * @return \Illuminate\Support\Collection
@@ -55,7 +51,7 @@ class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromColl
                 $index + 1,
                 $item->ptj?->nama_ptj,
                 $item->nama,
-                filled($item->nokp) ? (string) $item->nokp : '',
+                $item->nokp,
                 $item->jawatan_gred?->jawatan?->desc_jawatan,
                 $item->jawatan_gred?->gred?->kod_gred,
                 $item->tarikh_lantikan
@@ -71,17 +67,6 @@ class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromColl
 
             ];
         });
-    }
-
-    public function bindValue(Cell $cell, $value)
-    {
-        if (is_string($value) && preg_match('/^\d{9,}$/', trim($value)) === 1) {
-            $cell->setValueExplicit(trim($value), DataType::TYPE_STRING);
-
-            return true;
-        }
-
-        return parent::bindValue($cell, $value);
     }
 
     public function startCell(): string
@@ -216,12 +201,6 @@ class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromColl
                 $sheet->getColumnDimension('B')->setWidth(40);
                 $sheet->getColumnDimension('C')->setWidth(40);
                 $sheet->getColumnDimension('D')->setWidth(40);
-
-                if ($lastRow >= 6) {
-                    $sheet->getStyle('D6:D'.$lastRow)
-                        ->getNumberFormat()
-                        ->setFormatCode('@');
-                }
                 $sheet->getColumnDimension('E')->setWidth(40);
                 $sheet->getColumnDimension('F')->setWidth(40);
                 $sheet->getColumnDimension('G')->setWidth(40);
