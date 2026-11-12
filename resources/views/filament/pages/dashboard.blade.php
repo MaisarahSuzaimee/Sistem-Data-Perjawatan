@@ -33,7 +33,7 @@
         <div class="sneat-stat-card sneat-stat-card--blue">
             <div class="sneat-stat-inner">
                 <div>
-                    <p class="sneat-stat-label">Jumlah Perjawatan Mengikut Waran</p>
+                    <p class="sneat-stat-label">Jumlah Waran</p>
                     <p class="sneat-stat-value">{{ $totalWaran }}</p>
                 </div>
                 <div class="sneat-stat-icon sneat-stat-icon--blue">
