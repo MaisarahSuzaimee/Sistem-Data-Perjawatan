@@ -5,7 +5,7 @@
         <div class="sneat-stat-card">
             <div class="sneat-stat-inner">
                 <div>
-                    <p class="sneat-stat-label">Jumlah Penempatan</p>
+                    <p class="sneat-stat-label">Jawatan</p>
                     <h3 class="sneat-stat-value">{{ $currentTotal }}</h3>
                     {{-- <p class="sneat-stat-desc">
                         @if($yoyChangePct === null)
@@ -27,7 +27,7 @@
         <div class="sneat-stat-card">
             <div class="sneat-stat-inner">
                 <div>
-                    <p class="sneat-stat-label">Pengisian</p>
+                    <p class="sneat-stat-label">Isi</p>
                     <h3 class="sneat-stat-value">{{ $pengisian }}</h3>
                     {{-- <p class="sneat-stat-desc sneat-stat-desc--success">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -48,7 +48,7 @@
         <div class="sneat-stat-card">
             <div class="sneat-stat-inner">
                 <div>
-                    <p class="sneat-stat-label">Kekosongan</p>
+                    <p class="sneat-stat-label">Kosong</p>
                     <h3 class="sneat-stat-value">{{ $kekosongan }}</h3>
                     {{-- <p class="sneat-stat-desc sneat-stat-desc--danger">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
