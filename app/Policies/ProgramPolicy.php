@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Program;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ProgramPolicy
 {
@@ -21,7 +20,18 @@ class ProgramPolicy
      */
     public function view(User $user, Program $program): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        if ($user->isSuperAdmin() || $user->isAdmin()) {
+            return true;
+        }
+
+        if (! $user->isUser() || blank($user->ptj_id)) {
+            return false;
+        }
+
+        return Program::query()
+            ->whereKey($program->id)
+            ->assignedToPtj((int) $user->ptj_id)
+            ->exists();
     }
 
     /**
@@ -29,7 +39,7 @@ class ProgramPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        return $user->isSuperAdmin() || $user->isAdmin();
     }
 
     /**
@@ -37,7 +47,7 @@ class ProgramPolicy
      */
     public function update(User $user, Program $program): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        return $user->isSuperAdmin() || $user->isAdmin();
     }
 
     /**

@@ -39,6 +39,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
@@ -65,6 +66,26 @@ class WaranJawatansRelationManager extends RelationManager
     public ?string $butiranFilter = null;
 
     public string $viewMode = 'active';
+
+    protected static function maklumatWaranLocked(): bool
+    {
+        return (bool) auth()->user()?->isUser();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function lockedFieldAttributes(): array
+    {
+        if (! static::maklumatWaranLocked()) {
+            return [];
+        }
+
+        return [
+            'class' => 'fi-locked-plain',
+            'style' => 'background-color:#fff;opacity:1;',
+        ];
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -106,23 +127,19 @@ class WaranJawatansRelationManager extends RelationManager
                                         $set('subunit_id', null);
                                     })
                                     ->columns(1)
-                                    ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                            && ! auth()->user()?->isAdmin()
-                                    ),
+                                    ->disabled(fn (): bool => static::maklumatWaranLocked())
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true),
 
                                 TextInput::make('butiran')
                                     ->required()
                                     ->maxLength(255)
-                                    ->readonly(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                            && ! auth()->user()?->isAdmin()
-                                    ),
+                                    ->readonly(fn (): bool => static::maklumatWaranLocked()),
 
                                 TextInput::make('paparan_jawatan')
-                                ->label('Paparan jawatan')
-                                ->placeholder('cth: Timbalan Pengarah, Pakar Pergigian, Pegawai Pergigian, Gred UG14/Pakar UG15')
-                                ->helperText('Nama penuh jawatan mengikut waran.'),
+                                    ->label('Paparan jawatan')
+                                    ->placeholder('cth: Timbalan Pengarah, Pakar Pergigian, Pegawai Pergigian, Gred UG14/Pakar UG15')
+                                    ->helperText('Nama penuh jawatan mengikut waran.')
+                                    ->readonly(fn (): bool => static::maklumatWaranLocked()),
                                 // // or with an icon-style hint:
                                 // ->hint('Mengikut waran')
                                 // ->hintIcon('heroicon-m-information-circle', tooltip: 'Sila masukkan nama jawatan penuh mengikut waran'),
@@ -138,10 +155,8 @@ class WaranJawatansRelationManager extends RelationManager
                                     ->searchable()
                                     ->preload()
                                     ->live()
-                                    ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                            && ! auth()->user()?->isAdmin()
-                                    ),
+                                    ->disabled(fn (): bool => static::maklumatWaranLocked())
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true),
                                 Select::make('gred_ids')
                                     ->label('Gred')
                                     ->multiple()
@@ -160,7 +175,8 @@ class WaranJawatansRelationManager extends RelationManager
                                             ->pluck('greds.kod_gred', 'greds.id')
                                             ->toArray();
                                     })
-                                    ->disabled(fn (Get $get) => blank($get('jawatan_ids')))
+                                    ->disabled(fn (Get $get): bool => blank($get('jawatan_ids')) || static::maklumatWaranLocked())
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
                                     ->searchable()
                                     ->preload()
                                     ->multiple()
@@ -182,11 +198,9 @@ class WaranJawatansRelationManager extends RelationManager
                                         : null)
                                     ->disabled(
                                         fn (Get $get): bool => blank($get('aktiviti_id'))
-                                            || (
-                                                ! auth()->user()?->isSuperadmin()
-                                                && ! auth()->user()?->isAdmin()
-                                            )
+                                            || static::maklumatWaranLocked()
                                     )
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
                                     ->afterStateUpdated(function (Set $set): void {
                                         $set('bahagian_id', null);
                                         $set('unit_id', null);
@@ -224,10 +238,8 @@ class WaranJawatansRelationManager extends RelationManager
                                         ) ? $state : null;
                                     })
                                     ->columnSpanFull()
-                                    ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                            && ! auth()->user()?->isAdmin()
-                                    )
+                                    ->disabled(fn (): bool => static::maklumatWaranLocked())
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
                                     ->afterStateUpdated(function (Set $set): void {
                                         $set('unit_id', null);
                                         $set('subunit_id', null);
@@ -265,10 +277,8 @@ class WaranJawatansRelationManager extends RelationManager
                                     ->live()
                                     ->nullable()
                                     ->columnSpanFull()
-                                    ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                            && ! auth()->user()?->isAdmin()
-                                    )
+                                    ->disabled(fn (): bool => static::maklumatWaranLocked())
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
                                     ->afterStateUpdated(fn (Set $set) => $set('subunit_id', null)),
 
                                 Select::make('subunit_id')
@@ -295,18 +305,16 @@ class WaranJawatansRelationManager extends RelationManager
                                             return true;
                                         }
 
-                                        return ! auth()->user()?->isSuperadmin()
-                                            && ! auth()->user()?->isAdmin();
-                                    }),
+                                        return static::maklumatWaranLocked();
+                                    })
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true),
 
                                 Select::make('status')
                                     ->required()
                                     ->label('Status')
                                     ->default('active')
-                                    // ->disabled(
-                                    //     fn () => ! auth()->user()?->isSuperadmin()
-                                    //     && ! auth()->user()?->isAdmin()
-                                    // )
+                                    ->disabled(fn (): bool => static::maklumatWaranLocked())
+                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
                                     ->options([
                                         'active' => 'Aktif',
                                         'pindaan nama' => 'Pindaan Nama',
@@ -320,15 +328,19 @@ class WaranJawatansRelationManager extends RelationManager
                                     ->label('Tarikh Kuatkuasa Waran')
                                     ->native(false)
                                     ->displayFormat('d F Y')
-                                    ->disabled(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                            && ! auth()->user()?->isAdmin()
-                                    ),
+                                    ->readonly(fn (): bool => static::maklumatWaranLocked()),
 
                             ]),
 
                         Tab::make('Nama Penyandang')
+                            ->badge(fn (Get $get): ?string => blank($get('pegawai_id')) ? 'Tiada' : null)
+                            ->badgeColor('warning')
                             ->schema([
+                                Callout::make('Tiada nama penyandang')
+                                    ->description('Sila pilih pegawai untuk jawatan ini.')
+                                    ->warning()
+                                    ->columnSpanFull()
+                                    ->visible(fn (Get $get): bool => blank($get('pegawai_id'))),
                                 // Select::make('pegawai_id')
                                 //     ->label('Pegawai')
                                 //     ->required(fn(Get $get) => $get('is_kup'))

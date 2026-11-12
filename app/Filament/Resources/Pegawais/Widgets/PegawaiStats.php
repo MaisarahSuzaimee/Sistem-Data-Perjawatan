@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Pegawais\Widgets;
 
 use App\Models\Pegawai;
+use App\Services\NavigationBadgeCache;
 use Filament\Widgets\StatsOverviewWidget;
 
 class PegawaiStats extends StatsOverviewWidget
@@ -18,9 +19,7 @@ class PegawaiStats extends StatsOverviewWidget
     public function mount(): void
     {
         $this->totalPegawai = Pegawai::count();
-
-        $this->tidakLengkap = Pegawai::query()->tidakLengkap()->count();
-
-        $this->lengkap = $this->totalPegawai - $this->tidakLengkap;
+        $this->tidakLengkap = NavigationBadgeCache::pegawaiTidakLengkapCount();
+        $this->lengkap = max(0, $this->totalPegawai - $this->tidakLengkap);
     }
 }

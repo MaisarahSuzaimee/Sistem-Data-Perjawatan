@@ -6,6 +6,7 @@ use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Pages\Auth\RequestPasswordReset;
 use App\Filament\Resources\WaranJawatans\Widgets\NamaPenyandang;
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
@@ -46,7 +47,7 @@ class AppPanelProvider extends PanelProvider
             ->brandLogo(view('filament.brand-logo'))
             ->brandLogoHeight('auto')
             ->brandName('MySTAFF')
-            ->favicon(asset('images/mystaff-logo-clean.png'))
+            ->favicon(asset('images/mystaff-logo-clean.webp'))
             ->viteTheme('resources/css/filament/app/theme.css')
             ->font('Public Sans')
             ->darkMode(true)
@@ -106,6 +107,7 @@ class AppPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsurePasswordIsChanged::class,
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s');

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Programs;
 use App\Filament\Resources\Programs\Pages\CreateProgram;
 use App\Filament\Resources\Programs\Pages\EditProgram;
 use App\Filament\Resources\Programs\Pages\ListPrograms;
+use App\Filament\Resources\Programs\Pages\ViewProgram;
 use App\Filament\Resources\Programs\Schemas\ProgramForm;
 use App\Filament\Resources\Programs\Tables\ProgramsTable;
 use App\Models\Program;
@@ -13,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class ProgramResource extends Resource
 {
@@ -49,18 +51,64 @@ class ProgramResource extends Resource
         ];
     }
 
+    public static function canCreate(): bool
+    {
+        return static::canManage();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::canManage();
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => ListPrograms::route('/'),
             'create' => CreateProgram::route('/create'),
+            'view' => ViewProgram::route('/{record}'),
             'edit' => EditProgram::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->with(['aktiviti.ptjs', 'aktiviti.butiran', 'ptjs.aktivitis']);
+        $user = auth()->user();
+        $ptjId = $user?->isUser() && filled($user->ptj_id)
+            ? (int) $user->ptj_id
+            : null;
+
+        $query = parent::getEloquentQuery()
+            ->with([
+                'aktiviti' => function ($query) use ($ptjId): void {
+                    if ($ptjId !== null) {
+                        $query->assignedToPtj($ptjId);
+                    }
+                },
+                'aktiviti.ptjs' => function ($query) use ($ptjId): void {
+                    if ($ptjId !== null) {
+                        $query->where('ptjs.id', $ptjId);
+                    }
+                },
+                'aktiviti.butiran',
+                'ptjs.aktivitis',
+            ]);
+
+        if ($user?->isUser()) {
+            if ($ptjId === null) {
+                return $query->whereRaw('0 = 1');
+            }
+
+            $query->assignedToPtj($ptjId);
+        }
+
+        return $query;
+    }
+
+    protected static function canManage(): bool
+    {
+        $user = auth()->user();
+
+        return $user?->isSuperAdmin() || $user?->isAdmin();
     }
 }

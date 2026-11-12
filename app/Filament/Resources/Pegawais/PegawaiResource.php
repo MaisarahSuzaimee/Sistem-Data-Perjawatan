@@ -10,6 +10,7 @@ use App\Filament\Resources\Pegawais\Schemas\PegawaiForm;
 use App\Filament\Resources\Pegawais\Schemas\PegawaiInfolist;
 use App\Filament\Resources\Pegawais\Tables\PegawaisTable;
 use App\Models\Pegawai;
+use App\Services\NavigationBadgeCache;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -35,16 +36,14 @@ class PegawaiResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $tidakLengkap = static::getModel()::query()->tidakLengkap()->count();
+        $tidakLengkap = NavigationBadgeCache::pegawaiTidakLengkapCount();
 
         return $tidakLengkap > 0 ? (string) $tidakLengkap : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $tidakLengkap = static::getModel()::query()->tidakLengkap()->count();
-
-        return $tidakLengkap > 0 ? 'danger' : null;
+        return NavigationBadgeCache::pegawaiTidakLengkapCount() > 0 ? 'danger' : null;
     }
 
     public static function form(Schema $schema): Schema

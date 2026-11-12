@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Pencens\Schemas;
 
 use App\Models\JenisPencen;
+use App\Models\LetakJawatan;
 use App\Models\Pegawai;
 use App\Models\Pencen;
 use Blade;
@@ -26,14 +27,48 @@ class PencenForm
     {
         $user = auth()->user();
 
-        $query = Pegawai::withoutGlobalScopes()
+        $query = Pegawai::withoutGlobalScope('ptj_access')
+            ->where(function ($query): void {
+                $query->whereNull('nokp')
+                    ->orWhereNotIn(
+                        'nokp',
+                        LetakJawatan::withoutGlobalScopes()
+                            ->whereNotNull('nokp')
+                            ->select('nokp'),
+                    );
+            })
+            ->where(function ($query): void {
+                $query->whereNull('nama')
+                    ->orWhereNotIn(
+                        'nama',
+                        Pencen::withoutGlobalScopes()
+                            ->whereNotNull('nama')
+                            ->select('nama'),
+                    );
+            })
+            ->where(function ($query): void {
+                $query->whereNull('nokp')
+                    ->orWhereNotIn(
+                        'nokp',
+                        Pencen::withoutGlobalScopes()
+                            ->whereNotNull('nokp')
+                            ->select('nokp'),
+                    );
+            })
             ->orderBy('nama');
 
         if ($user && ! in_array((int) $user->role, [1, 2], true)) {
             $query->where('ptj_id', $user->ptj_id);
         }
 
-        return $query->pluck('nama', 'id')->toArray();
+        return $query
+            ->get(['id', 'nama', 'nokp'])
+            ->mapWithKeys(fn (Pegawai $pegawai): array => [
+                $pegawai->id => filled($pegawai->nokp)
+                    ? "{$pegawai->nama} ({$pegawai->nokp})"
+                    : $pegawai->nama,
+            ])
+            ->all();
     }
 
     public static function configure(Schema $schema): Schema
@@ -58,7 +93,7 @@ class PencenForm
                             Select::make('nama_pegawai')
                                 ->visible(fn(string $operation) => $operation === 'create')
 
-                                ->label('Nama Pegawai')
+                                ->label(new HtmlString(view('filament.forms.nama-pegawai-label')->render()))
                                 ->required()
                                 ->validationMessages([
                                     'required' => 'Sila pilih Nama Pegawai terlebih dahulu .'
@@ -177,12 +212,12 @@ class PencenForm
 
                             TextInput::make('nokp')
                                 ->label('No KP')
-                                ->disabled()
+                                ->readonly()
                                 ->dehydrated(),
 
                             TextInput::make('ptj')
                                 ->label('PTJ')
-                                ->disabled()
+                                ->readonly()
                                 ->dehydrated()
                                 ->columnSpanFull()
                                 ->formatStateUsing(
@@ -197,7 +232,7 @@ class PencenForm
 
                             TextInput::make('jawatan')
                                 ->label('Jawatan')
-                                ->disabled()
+                                ->readonly()
                                 ->dehydrated()
                                 // ->columnSpanFull()
                                 ->formatStateUsing(
@@ -209,7 +244,7 @@ class PencenForm
 
                             TextInput::make('gred')
                                 ->label('Gred')
-                                ->disabled()
+                                ->readonly()
                                 ->dehydrated()
                                 ->formatStateUsing(
                                     fn($get) =>

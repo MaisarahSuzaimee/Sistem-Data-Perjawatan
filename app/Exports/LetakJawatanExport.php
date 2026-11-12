@@ -3,12 +3,16 @@ namespace App\Exports;
 
 use App\Models\LetakJawatan;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 
-class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell
+class LetakJawatanExport extends DefaultValueBinder implements FromCollection, WithCustomValueBinder, WithHeadings, WithEvents, WithCustomStartCell
 {
 
     protected $fromMonth;
@@ -80,6 +84,17 @@ class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, Wi
             ];
         });
     }
+    public function bindValue(Cell $cell, $value)
+    {
+        if (is_string($value) && preg_match('/^\d{9,}$/', trim($value)) === 1) {
+            $cell->setValueExplicit(trim($value), DataType::TYPE_STRING);
+
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
+    }
+
     public function startCell(): string
     {
         return 'A5';

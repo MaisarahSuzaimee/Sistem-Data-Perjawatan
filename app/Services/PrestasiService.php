@@ -65,68 +65,26 @@ class PrestasiService
 
         if (! blank($apiKey)) {
             try {
-                $totalPages = null;
+                // One filtered request only. Never page the Prestasi register —
+                // if no_kp is ignored the API may report hundreds of pages, and
+                // walking them would pull the whole registry for one NOKP.
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer '.$apiKey,
+                    'X-API-Key' => $apiKey,
+                    'Accept' => 'application/json',
+                ])->timeout(15)->get($baseUrl.'/pegawai', [
+                    'no_kp' => $nokp,
+                    'per_page' => 100,
+                    'page' => 1,
+                ]);
 
-                for ($page = 1; $page <= ($totalPages ?? 195); $page++) {
-                    $response = Http::withHeaders([
-                        'Authorization' => 'Bearer '.$apiKey,
-                        'X-API-Key' => $apiKey,
-                        'Accept' => 'application/json',
-                    ])->timeout(15)->get($baseUrl.'/pegawai', [
-                        'no_kp' => $nokp,
-                        'per_page' => 100,
-                        'page' => $page,
-                    ]);
+                if (! $response->successful()) {
+                    $apiError = self::mapApiError($response->status());
+                } else {
+                    $match = self::findItemByNokp($response->json(), $nokp);
 
-                    if (! $response->successful()) {
-                        $apiError = self::mapApiError($response->status());
-
-                        break;
-                    }
-
-                    $json = $response->json();
-
-                    if ($totalPages === null && isset($json['meta']['last_page'])) {
-                        $totalPages = (int) $json['meta']['last_page'];
-                    }
-
-                    $items = $json['data'] ?? $json;
-
-                    if (isset($items['data']) && is_array($items['data'])) {
-                        $items = $items['data'];
-                    }
-
-                    if (! is_array($items) || empty($items)) {
-                        break;
-                    }
-
-                    // Single object case
-                    if (isset($items['nama_pegawai']) || isset($items['nama'])) {
-                        $kp = $items['no_kp'] ?? $items['kp_pegawai'] ?? $items['nokp'] ?? null;
-
-                        if ($kp !== null && trim((string) $kp) === $nokp) {
-                            return ['found' => true, 'data' => self::mapApiItem($items), 'error' => null, 'source' => 'api'];
-                        }
-                    }
-
-                    foreach ($items as $item) {
-                        if (! is_array($item)) {
-                            continue;
-                        }
-
-                        $kp = $item['no_kp'] ?? $item['kp_pegawai'] ?? $item['nokp'] ?? $item['ic'] ?? null;
-
-                        if ($kp !== null && trim((string) $kp) === $nokp) {
-                            return ['found' => true, 'data' => self::mapApiItem($item), 'error' => null, 'source' => 'api'];
-                        }
-                    }
-
-                    if ($totalPages !== null && $page >= $totalPages) {
-                        break;
-                    }
-
-                    if ($totalPages === null && count($items) < 100) {
-                        break;
+                    if ($match !== null) {
+                        return ['found' => true, 'data' => self::mapApiItem($match), 'error' => null, 'source' => 'api'];
                     }
                 }
             } catch (\Throwable $e) {
@@ -148,6 +106,50 @@ class PrestasiService
         }
 
         return ['found' => false, 'data' => self::emptyData(), 'error' => 'Tiada rekod pegawai dijumpai untuk No. KP tersebut.', 'source' => null];
+    }
+
+    /**
+     * Extract the matching pegawai row from a Prestasi API payload.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function findItemByNokp(mixed $json, string $nokp): ?array
+    {
+        if (! is_array($json)) {
+            return null;
+        }
+
+        $items = $json['data'] ?? $json;
+
+        if (isset($items['data']) && is_array($items['data'])) {
+            $items = $items['data'];
+        }
+
+        if (! is_array($items) || $items === []) {
+            return null;
+        }
+
+        if (isset($items['nama_pegawai']) || isset($items['nama'])) {
+            return self::nokpMatches($items, $nokp) ? $items : null;
+        }
+
+        foreach ($items as $item) {
+            if (is_array($item) && self::nokpMatches($item, $nokp)) {
+                return $item;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    protected static function nokpMatches(array $item, string $nokp): bool
+    {
+        $kp = $item['no_kp'] ?? $item['kp_pegawai'] ?? $item['nokp'] ?? $item['ic'] ?? null;
+
+        return $kp !== null && trim((string) $kp) === $nokp;
     }
 
     /**

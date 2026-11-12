@@ -86,7 +86,8 @@ class LetakJawatansTable
                     ->label('PTJ')
                     ->relationship('ptj', 'nama_ptj')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->visible(fn (): bool => ! auth()->user()?->isUser()),
 
             ], layout: FiltersLayout::Modal)
             ->filtersApplyAction(fn (Action $action) => $action->label('Cari'))
