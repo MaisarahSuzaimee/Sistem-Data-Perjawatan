@@ -66,6 +66,80 @@ class WaranJawatansRelationManager extends RelationManager
 
     public string $viewMode = 'active';
 
+    public function getTabs(): array
+    {
+        $tabs = [
+            'all' => Tab::make('All'),
+        ];
+
+        foreach (Program::query()->orderBy('nama_program')->get() as $program) {
+            $tabs[(string) $program->id] = Tab::make($program->nama_program)
+                ->modifyQueryUsing(
+                    fn (Builder $query): Builder => $query->whereHas(
+                        'aktiviti',
+                        fn (Builder $aktiviti): Builder => $aktiviti->where('program_id', $program->id)
+                    )
+                );
+        }
+
+        return $tabs;
+    }
+
+    protected function applyActiveProgramTab(Builder $query): Builder
+    {
+        // modifyQueryUsing replaces the relationship query, so re-apply the
+        // active program tab filter onto the rebuilt WaranJawatan query.
+        if (blank($this->activeTab) || $this->activeTab === 'all' || ! is_numeric($this->activeTab)) {
+            return $query;
+        }
+
+        $programId = (int) $this->activeTab;
+
+        return $query->whereHas(
+            'aktiviti',
+            fn (Builder $aktiviti): Builder => $aktiviti->where('program_id', $programId)
+        );
+    }
+
+    protected static function orderPenempatanByProgram(Builder $query): Builder
+    {
+        return $query
+            ->orderBy(
+                Program::query()
+                    ->select('nama_program')
+                    ->join('aktivitis', 'aktivitis.program_id', '=', 'programs.id')
+                    ->whereColumn('aktivitis.id', 'waran_jawatans.aktiviti_id')
+                    ->limit(1)
+            )
+            ->orderBy(
+                Aktiviti::query()
+                    ->select('no_aktivit')
+                    ->whereColumn('aktivitis.id', 'waran_jawatans.aktiviti_id')
+                    ->limit(1)
+            )
+            ->orderBy('waran_jawatans.id');
+    }
+
+    protected static function maklumatWaranLocked(): bool
+    {
+        return (bool) auth()->user()?->isUser();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function lockedFieldAttributes(): array
+    {
+        if (! static::maklumatWaranLocked()) {
+            return [];
+        }
+
+        return [
+            'class' => 'fi-locked-plain',
+            'style' => 'background-color:#fff;opacity:1;',
+        ];
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -508,39 +582,46 @@ class WaranJawatansRelationManager extends RelationManager
                     $query->where('ptj_id', $user->ptj_id);
                 }
 
+                $sortColumn = $this->getTableSortColumn();
+
                 if ($waran->jenis !== 'Tolak') {
-
-                    $sortColumn = $this->getTableSortColumn();
-
                     $query = $query
                         ->where('waran_id', $waran->id)
                         ->listed()
                         ->where('status', '!=', 'deleted');
+
+                    $query = $this->applyActiveProgramTab($query);
 
                     if ($sortColumn !== 'status') {
                         $query->orderByRaw("status = 'removed' ASC");
                     }
 
                     if (blank($sortColumn)) {
-                        $query->orderBy('id', 'asc');
+                        static::orderPenempatanByProgram($query);
                     }
 
                     return $query;
                 }
 
                 if ($this->viewMode === 'inactive') {
-                    return $query->whereNull('deleted_at')
+                    $query->whereNull('deleted_at')
                         ->where('status', '!=', 'deleted');
-                }
-
-                if ($this->viewMode === 'active') {
-                    return $query
+                } elseif ($this->viewMode === 'active') {
+                    $query
                         ->where('waran_tolak_id', $waran->id)
                         ->whereNotNull('deleted_at')
                         ->where('status', 'removed');
+                } else {
+                    $query->whereNull('deleted_at');
                 }
 
-                return $query->whereNull('deleted_at');
+                $query = $this->applyActiveProgramTab($query);
+
+                if (blank($sortColumn)) {
+                    static::orderPenempatanByProgram($query);
+                }
+
+                return $query;
             })
 
             ->columns([

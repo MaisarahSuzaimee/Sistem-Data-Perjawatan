@@ -243,7 +243,8 @@ class WaransTable
                                 return $query->pluck('nama_ptj', 'id')->toArray();
                             })
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->visible(fn (): bool => ! auth()->user()?->isUser()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
