@@ -14,6 +14,7 @@ use App\Filament\Resources\Warans\Schemas\WaranInfolist;
 use App\Filament\Resources\Warans\Tables\WaransTable;
 use App\Filament\Resources\Warans\Widgets\WaranStats;
 use App\Models\Waran;
+use App\Services\NavigationBadgeCache;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,28 +42,14 @@ class WaranResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getModel()
-            ::all()
-            ->filter(
-                fn($record) =>
-                in_array($record->status_jik, ['Kurang', 'Lebih'])
-            )
-            ->count();
+        $count = NavigationBadgeCache::waranUnbalancedCount();
 
         return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $count = static::getModel()
-            ::all()
-            ->filter(
-                fn($record) =>
-                in_array($record->status_jik, ['Kurang', 'Lebih'])
-            )
-            ->count();
-
-        return $count > 0 ? 'danger' : null;
+        return NavigationBadgeCache::waranUnbalancedCount() > 0 ? 'danger' : null;
     }
 
     public static function form(Schema $schema): Schema

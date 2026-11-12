@@ -7,7 +7,6 @@ use App\Models\User;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Number;
 use Illuminate\Validation\Rule;
 
@@ -18,60 +17,59 @@ class UserImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make("name")
+            ImportColumn::make('name')
                 ->requiredMapping()
-                ->rules(["required", "max:255"]),
+                ->rules(['required', 'max:255']),
 
-            ImportColumn::make("nokp")
+            ImportColumn::make('nokp')
                 ->requiredMapping()
                 ->rules([
-                    "required",
-                    "max:255",
+                    'required',
+                    'max:255',
                     Rule::unique('users', 'nokp'),
                 ]),
 
-            ImportColumn::make("email")
+            ImportColumn::make('email')
                 ->requiredMapping()
                 ->rules([
-                    "required",
-                    "email",
-                    "max:255",
-                    "ends_with:@moh.gov.my",
+                    'required',
+                    'email',
+                    'max:255',
+                    'ends_with:@moh.gov.my',
                     Rule::unique('users', 'email'),
-                ])
-            ,
+                ]),
 
-            ImportColumn::make("ptj_id")
+            ImportColumn::make('ptj_id')
                 ->requiredMapping()
-                ->rules(["required"]),
+                ->rules(['required']),
 
             ImportColumn::make('password')
                 ->requiredMapping()
                 ->rules(['required', 'max:255']),
 
-            ImportColumn::make("phone_number")
+            ImportColumn::make('phone_number')
                 ->requiredMapping()
-                ->rules(["required", "max:255"]),
+                ->rules(['required', 'max:255']),
 
-            ImportColumn::make("status")
+            ImportColumn::make('status')
                 ->requiredMapping()
-                ->rules(["required"]),
+                ->rules(['required']),
 
-            ImportColumn::make("role")
+            ImportColumn::make('role')
                 ->requiredMapping()
-                ->rules(["required"]),
+                ->rules(['required']),
         ];
     }
 
     public function fillRecord(): void
     {
         $this->data['name'] = strtoupper(trim($this->data['name']));
-        
+
         $ptj = Ptj::whereRaw('LOWER(nama_ptj) = ?', [
-            strtolower(trim($this->data['ptj_id']))
+            strtolower(trim($this->data['ptj_id'])),
         ])->first();
 
-        if (!$ptj) {
+        if (! $ptj) {
             throw new \Exception("PTJ tidak dijumpai: {$this->data['ptj_id']}");
         }
 
@@ -93,7 +91,12 @@ class UserImporter extends Importer
         unset($this->data['ptj']);
 
         parent::fillRecord();
+
+        if (! $this->record->exists) {
+            $this->record->must_change_password = true;
+        }
     }
+
     public function resolveRecord(): User
     {
         return User::firstOrNew([
@@ -103,10 +106,10 @@ class UserImporter extends Importer
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'Your user import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+        $body = 'Your user import has completed and '.Number::format($import->successful_rows).' '.str('row')->plural($import->successful_rows).' imported.';
 
         if ($failedRowsCount = $import->getFailedRowsCount()) {
-            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+            $body .= ' '.Number::format($failedRowsCount).' '.str('row')->plural($failedRowsCount).' failed to import.';
         }
 
         return $body;

@@ -1,6 +1,6 @@
 <div class="sneat-brand-inner">
     <img
-        src="{{ asset('images/mx-logo.png') }}"
+        src="{{ asset('images/mx-logo.webp') }}"
         class="sneat-brand-img"
         alt="MySTAFF"
     />

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +22,21 @@ class Program extends Model
     public function ptjs(): BelongsToMany
     {
         return $this->belongsToMany(Ptj::class, 'program_ptj')->withTimestamps();
+    }
+
+    public function scopeAssignedToPtj(Builder $query, int $ptjId): Builder
+    {
+        return $query->where(function (Builder $query) use ($ptjId): void {
+            $query
+                ->whereHas(
+                    'aktiviti.ptjs',
+                    fn (Builder $ptjQuery): Builder => $ptjQuery->where('ptjs.id', $ptjId),
+                )
+                ->orWhereHas(
+                    'ptjs',
+                    fn (Builder $ptjQuery): Builder => $ptjQuery->where('ptjs.id', $ptjId),
+                );
+        });
     }
 
     public function getDisplayNameAttribute(): string
