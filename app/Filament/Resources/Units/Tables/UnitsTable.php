@@ -101,8 +101,8 @@ class UnitsTable
                             ->disabled(fn ($record): bool => count(static::unitsForGroup($record)) <= 3)
                     ),
             ])
-            ->paginationPageOptions([5])
-            ->defaultPaginationPageOption(5)
+            ->paginationPageOptions([5, 10, 25, 50])
+            ->defaultPaginationPageOption(10)
             ->defaultSort('updated_at', 'desc')
             ->modifyQueryUsing(function (Builder $query): Builder {
                 // One row per PTJ (Hierarchy 2) or Bahagian (Hierarchy 1 / JKN)

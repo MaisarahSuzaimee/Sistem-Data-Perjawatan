@@ -135,7 +135,16 @@ class WaransTable
                     ->searchable(query: function ($query, $search) {
                         $query->whereHas('waranJawatan.ptj', function ($q) use ($search) {
                             $q->where('nama_ptj', 'like', "%{$search}%");
-                        });
+                        })
+                            ->orWhereHas('waranJawatan.bahagian', function ($q) use ($search) {
+                                $q->where('nama_bahagian', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('waranJawatan.unit', function ($q) use ($search) {
+                                $q->where('nama_unit', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('waranJawatan.subunit', function ($q) use ($search) {
+                                $q->where('nama_subunit', 'like', "%{$search}%");
+                            });
                     }),
 
                 TextColumn::make('jik_count')

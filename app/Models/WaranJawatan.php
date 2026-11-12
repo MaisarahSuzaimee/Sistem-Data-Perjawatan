@@ -113,6 +113,26 @@ class WaranJawatan extends Model
             ->implode(', ');
     }
 
+    public function getPenempatanLabelAttribute(): string
+    {
+        return implode(' / ', $this->penempatanSegments());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function penempatanSegments(): array
+    {
+        return collect([
+            $this->ptj?->nama_ptj,
+            $this->bahagian?->nama_bahagian,
+            $this->unit?->nama_unit,
+            $this->subunit?->nama_subunit,
+        ])->filter(fn ($segment): bool => filled($segment))
+            ->values()
+            ->all();
+    }
+
     public function getJawatanGredDisplayAttribute(): string
     {
         $paparanJawatan = trim((string) $this->paparan_jawatan);

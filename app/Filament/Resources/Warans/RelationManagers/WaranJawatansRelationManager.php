@@ -45,6 +45,8 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Facades\FilamentColor;
+use Filament\Support\View\Components\BadgeComponent;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
@@ -665,11 +667,49 @@ class WaranJawatansRelationManager extends RelationManager
                     ),
 
                 TextColumn::make('ptj.nama_ptj')
-                    ->searchable()
+                    ->label('PTJ')
+                    ->state(function (WaranJawatan $record): string {
+                        $segments = $record->penempatanSegments();
+
+                        if ($segments === []) {
+                            return '-';
+                        }
+
+                        $isRemoved = $record->status === 'removed';
+
+                        $colors = [
+                            1 => 'orange',
+                            2 => 'purple',
+                            3 => 'danger',
+                        ];
+
+                        $lines = collect($segments)
+                            ->map(function (string $segment, int $index) use ($colors, $isRemoved): string {
+                                if ($index === 0) {
+                                    return '<div style="'.($isRemoved ? 'color: #9ca3af;' : '').'">'.e($segment).'</div>';
+                                }
+
+                                $colorClasses = FilamentColor::getComponentClasses(
+                                    BadgeComponent::class,
+                                    $isRemoved ? 'gray' : ($colors[$index] ?? 'gray'),
+                                );
+
+                                return '<span class="'.implode(' ', ['fi-badge', 'fi-wrapped', ...$colorClasses]).'" style="max-width: 100%; text-align: left;">'.e($segment).'</span>';
+                            })
+                            ->implode('');
+
+                        return '<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem;">'.$lines.'</div>';
+                    })
+                    ->html()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where(function (Builder $q) use ($search): void {
+                            $q->whereHas('ptj', fn (Builder $ptj): Builder => $ptj->where('nama_ptj', 'like', "%{$search}%"))
+                                ->orWhereHas('bahagian', fn (Builder $bahagian): Builder => $bahagian->where('nama_bahagian', 'like', "%{$search}%"))
+                                ->orWhereHas('unit', fn (Builder $unit): Builder => $unit->where('nama_unit', 'like', "%{$search}%"))
+                                ->orWhereHas('subunit', fn (Builder $subunit): Builder => $subunit->where('nama_subunit', 'like', "%{$search}%"));
+                        });
+                    })
                     ->sortable()
-                    ->color(
-                        fn ($record) => $record->status === 'removed' ? 'gray' : 'default'
-                    )
                     ->wrap(),
                 // TextColumn::make('pegawai.nama')
                 //     ->label('Nama Penyandang')

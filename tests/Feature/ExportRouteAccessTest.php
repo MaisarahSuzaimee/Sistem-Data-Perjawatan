@@ -72,8 +72,13 @@ it('allows admin and superadmin past the export role gate', function () use ($ex
         foreach ($exportRoutes as $routeName) {
             $status = $this->get(route($routeName))->getStatusCode();
 
-            expect($status)->not->toBe(403)
-                ->and($status)->not->toBe(302);
+            expect($status)->not->toBe(403);
+
+            // L6 now requires a jawatan + gred combination and redirects back
+            // with validation errors when they are missing, so a 302 is expected.
+            if ($routeName !== 'export.l6') {
+                expect($status)->not->toBe(302);
+            }
         }
     }
 });

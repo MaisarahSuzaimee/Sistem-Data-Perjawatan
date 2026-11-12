@@ -103,7 +103,7 @@ class Waran extends Model
         $items = $this->summaryJawatanQuery($user)->with('ptj')->get();
 
         return $items
-            ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj)
+            ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj ?? '-')
             ->sortBy(
                 fn ($group, $ptjName): string => (string) $ptjName,
                 SORT_NATURAL | SORT_FLAG_CASE,
