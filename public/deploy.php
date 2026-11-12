@@ -244,18 +244,6 @@ $remoteSha = trim($remoteSha);
 if ($localSha === $remoteSha) {
     logLine("Up to date on {$branch} at " . substr($localSha, 0, 12));
 
-    // npm install can dirty package-lock.json on the server. Clear that so the
-    // next real deploy is not blocked by "local changes would be overwritten".
-    [$dirtyCode, $dirtyOut] = runGit($executor, $repoDir, 'status --porcelain');
-    if ($dirtyCode === 0 && trim($dirtyOut) !== '') {
-        [$resetCode, $resetOut] = runGit($executor, $repoDir, 'reset --hard HEAD');
-        if ($resetCode !== 0) {
-            logLine('ERROR: could not clear local changes while up to date: ' . $resetOut);
-            respond(500, "Could not clear local changes:\n" . $resetOut);
-        }
-        logLine('Cleared local changes while up to date on ' . substr($localSha, 0, 12));
-    }
-
     // Recovery path: a previous deploy may have pulled successfully but failed
     // during npm build, leaving no Vite manifest. Rebuild so retries are not
     // stuck forever on "Already up to date".
@@ -291,14 +279,12 @@ if ($localSha === $remoteSha) {
     respond(200, "Already up to date on {$branch}.\nCommit: {$localSha}");
 }
 
-// ---- New commit found: hard-reset to origin ---------------------------------
-// Use reset --hard instead of pull so leftover local edits from npm/composer
-// (commonly package-lock.json) cannot block the deploy.
+// ---- New commit found: pull -------------------------------------------------
 
-[$code, $resetOut] = runGit($executor, $repoDir, 'reset --hard ' . escapeshellarg('origin/' . $branch));
+[$code, $pullOut] = runGit($executor, $repoDir, 'pull origin ' . escapeshellarg($branch));
 if ($code !== 0) {
-    logLine("ERROR: reset failed on {$branch} ({$localSha} -> {$remoteSha}): " . $resetOut);
-    respond(500, "git reset --hard origin/{$branch} failed:\n" . $resetOut);
+    logLine("ERROR: pull failed on {$branch} ({$localSha} -> {$remoteSha}): " . $pullOut);
+    respond(500, "git pull failed:\n" . $pullOut);
 }
 
 logLine("Updated {$branch}: " . substr($localSha, 0, 12) . ' -> ' . substr($remoteSha, 0, 12));
@@ -308,8 +294,8 @@ $responseLines = [
     "Old commit: {$localSha}",
     "New commit: {$remoteSha}",
     '',
-    'git reset --hard output:',
-    $resetOut,
+    'git pull output:',
+    $pullOut,
 ];
 
 // From here on, code on disk is already updated even if a step below
