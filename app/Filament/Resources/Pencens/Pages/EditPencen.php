@@ -44,11 +44,6 @@ class EditPencen extends EditRecord
         return 'Kemaskini Maklumat Penamatan Perkhidmatan';
     }
 
-    protected function getRedirectUrl(): string
-    {
-        return $this->getResourceUrl('index');
-    }
-
     protected function getFormActions(): array
     {
         return [

@@ -79,7 +79,9 @@ class UnitsTable
                     ->wrap()
                     ->listWithLineBreaks()
                     ->limitList(3)
-                    ->searchable(query: fn (Builder $query, string $search): Builder => static::applyUnitNameSearch($query, $search))
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('nama_unit', 'like', "%{$search}%");
+                    })
                     ->action(
                         Action::make('lihatSemuaUnit')
                             ->modalHeading('Senarai Jabatan / KK /KP')
@@ -217,36 +219,6 @@ class UnitsTable
                         }),
                 ]),
             ]);
-    }
-
-    /**
-     * Table rows are grouped (one per PTJ/Bahagian), so nama_unit search must
-     * match any unit inside the group, not only the representative MIN(id) row.
-     */
-    public static function applyUnitNameSearch(Builder $query, string $search): Builder
-    {
-        return $query->where(function (Builder $q) use ($search): void {
-            $q->whereExists(function ($sub) use ($search): void {
-                $sub->selectRaw('1')
-                    ->from('units as search_units')
-                    ->whereNull('search_units.deleted_at')
-                    ->where('search_units.nama_unit', 'like', "%{$search}%")
-                    ->where(function ($match): void {
-                        $match
-                            ->where(function ($bahagianMatch): void {
-                                $bahagianMatch
-                                    ->whereNotNull('units.bahagian_id')
-                                    ->whereColumn('search_units.bahagian_id', 'units.bahagian_id');
-                            })
-                            ->orWhere(function ($ptjMatch): void {
-                                $ptjMatch
-                                    ->whereNull('units.bahagian_id')
-                                    ->whereNull('search_units.bahagian_id')
-                                    ->whereColumn('search_units.ptj_id', 'units.ptj_id');
-                            });
-                    });
-            });
-        });
     }
 
     /**

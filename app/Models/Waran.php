@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Services\DashboardStatsCache;
-use App\Services\NavigationBadgeCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -54,11 +52,7 @@ class Waran extends Model
     public function aktivitiListEntries(): Collection
     {
         $user = auth()->user();
-        $items = $this->summaryJawatanQuery($user)->with('aktiviti')->get()
-            ->sortBy(
-                fn ($wj): string => ($wj->aktiviti?->no_aktivit ?? '').' '.($wj->aktiviti?->nama_aktiviti ?? ''),
-                SORT_NATURAL,
-            );
+        $items = $this->summaryJawatanQuery($user)->with('aktiviti')->get();
 
         return $items
             ->groupBy(
@@ -94,48 +88,31 @@ class Waran extends Model
         return $this->aktivitiListItems()->join('<br>');
     }
 
-    /**
-     * @return Collection<int, array{label: string, inactive: bool}>
-     */
-    public function penempatanListEntries(): Collection
+    public function getPenempatanListAttribute()
     {
         $user = auth()->user();
-        $items = $this->summaryJawatanQuery($user)->with('ptj')->get();
+
+        $query = $this->summaryJawatanQuery($user);
+
+        $items = $query->get();
 
         return $items
             ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj)
-            ->sortBy(
-                fn ($group, $ptjName): string => (string) $ptjName,
-                SORT_NATURAL | SORT_FLAG_CASE,
-            )
-            ->map(function ($items, $ptjName): array {
+            ->map(function ($items, $ptjName) {
+
                 $count = $items->count();
 
-                return [
-                    'label' => $ptjName." ({$count})",
-                    'inactive' => $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed'),
-                ];
+                // ONLY grey if ALL are inactive
+                $isInactive = $this->jenis === 'Tambah' && $items->every(fn ($item) => $item->status === 'removed');
+
+                $class = $isInactive ? 'text-gray-400' : 'text-black';
+
+                return "<span class='{$class}'>"
+                    .$ptjName." ({$count})"
+                    .'</span>';
             })
             ->filter()
-            ->values();
-    }
-
-    /**
-     * @return Collection<int, string>
-     */
-    public function penempatanListItems(): Collection
-    {
-        return $this->penempatanListEntries()
-            ->map(function (array $entry): string {
-                $class = $entry['inactive'] ? 'text-gray-400' : 'text-black';
-
-                return "<span class='{$class}'>".e($entry['label']).'</span>';
-            });
-    }
-
-    public function getPenempatanListAttribute()
-    {
-        return $this->penempatanListItems()->join('<br>');
+            ->join('<br>');
     }
 
     // public function getButiranListAttribute()
@@ -218,14 +195,6 @@ class Waran extends Model
         static::deleting(function (Waran $waran): bool {
             return ! $waran->hasAssignedPegawai();
         });
-
-        $flushCaches = function (): void {
-            NavigationBadgeCache::flush();
-            DashboardStatsCache::forget();
-        };
-
-        static::saved($flushCaches);
-        static::deleted($flushCaches);
     }
 
     // public function parent()

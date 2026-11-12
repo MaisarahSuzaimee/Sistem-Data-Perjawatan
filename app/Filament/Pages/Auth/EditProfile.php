@@ -6,7 +6,6 @@ use Filament\Actions\Action;
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
@@ -14,20 +13,6 @@ use Filament\Support\Enums\Width;
 
 class EditProfile extends BaseEditProfile
 {
-    public function mount(): void
-    {
-        parent::mount();
-
-        if ($this->mustChangePassword()) {
-            Notification::make()
-                ->title('Tukar kata laluan diperlukan')
-                ->body('Ini adalah log masuk pertama anda. Sila tukar kata laluan sebelum meneruskan.')
-                ->warning()
-                ->persistent()
-                ->send();
-        }
-    }
-
     public function getMaxContentWidth(): Width|string
     {
         return Width::Full;
@@ -73,30 +58,10 @@ class EditProfile extends BaseEditProfile
             ->label('Kembali ke Laman Utama')
             ->url('/app')
             ->color('gray')
-            ->hidden(fn (): bool => $this->mustChangePassword())
             ->extraAttributes([
                 'class' => 'mystaff-btn-kembali',
                 'style' => 'background:#ffffff !important;border:1.5px solid #cbd5e1 !important;color:#334155 !important;box-shadow:none !important;',
             ]);
-    }
-
-    protected function getPasswordFormComponent(): Component
-    {
-        return parent::getPasswordFormComponent()
-            ->label('Kata Laluan Baru')
-            ->required(fn (): bool => $this->mustChangePassword())
-            ->helperText(fn (): ?string => $this->mustChangePassword()
-                ? 'Wajib ditukar pada log masuk pertama.'
-                : null);
-    }
-
-    protected function getRedirectUrl(): ?string
-    {
-        if ($this->getUser()->wasChanged('must_change_password') && ! $this->getUser()->must_change_password) {
-            return '/app';
-        }
-
-        return parent::getRedirectUrl();
     }
 
     public function form(Schema $schema): Schema
@@ -163,10 +128,5 @@ class EditProfile extends BaseEditProfile
 
                     ]),
             ]);
-    }
-
-    protected function mustChangePassword(): bool
-    {
-        return (bool) $this->getUser()->must_change_password;
     }
 }

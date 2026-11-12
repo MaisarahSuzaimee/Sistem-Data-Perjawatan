@@ -4,7 +4,6 @@ use App\Filament\Resources\Warans\Pages\ListWarans;
 use App\Filament\Resources\Warans\Tables\WaransTable;
 use App\Models\Aktiviti;
 use App\Models\Program;
-use App\Models\Ptj;
 use App\Models\User;
 use App\Models\Waran;
 use App\Models\WaranJawatan;
@@ -135,13 +134,6 @@ it('shows three aktiviti and a see more action when a waran has more', function 
         ->toContain('110100 - PENGURUSAN')
         ->toContain('440400 - KEWANGAN');
 
-    expect($waran->aktivitiListEntries()->pluck('label')->all())->toBe([
-        '110100 - PENGURUSAN (1)',
-        '220200 - PEMBANGUNAN (1)',
-        '330300 - PERUBATAN (1)',
-        '440400 - KEWANGAN (1)',
-    ]);
-
     Livewire::test(ListWarans::class)
         ->assertCanSeeTableRecords([$waran])
         ->assertSee('110100 - PENGURUSAN')
@@ -151,88 +143,4 @@ it('shows three aktiviti and a see more action when a waran has more', function 
         ->assertSee(__('filament-tables::table.columns.text.more_list_items', ['count' => 1]))
         ->assertTableActionExists('lihatSemuaAktiviti')
         ->assertSeeHtml('lihatSemuaAktiviti');
-});
-
-it('sorts the aktiviti list by no_aktivit', function () {
-    $program = Program::create(['nama_program' => 'PROGRAM AKTIVITI SORT']);
-    $aktiviti = collect([
-        ['no_aktivit' => '2.30.1', 'nama_aktiviti' => 'PERUBATAN FORENSIK'],
-        ['no_aktivit' => '7.2.1.2', 'nama_aktiviti' => 'PENGURUSAN NEGERI'],
-        ['no_aktivit' => '2.8.1', 'nama_aktiviti' => 'PAEDIATRIK'],
-        ['no_aktivit' => '2.3.1', 'nama_aktiviti' => 'RAWATAN KECEMASAN'],
-    ])->map(fn (array $data): Aktiviti => Aktiviti::create([
-        'program_id' => $program->id,
-        ...$data,
-    ]));
-
-    $waran = Waran::create([
-        'no_waran' => 'WP AKTIVITI-SORT/2026',
-        'jenis' => 'Tambah',
-        'jik' => 4,
-    ]);
-
-    $aktiviti->each(fn (Aktiviti $item): WaranJawatan => WaranJawatan::create([
-        'waran_id' => $waran->id,
-        'aktiviti_id' => $item->id,
-        'status' => 'active',
-    ]));
-
-    expect($waran->aktivitiListEntries()->pluck('label')->all())->toBe([
-        '2.3.1 - RAWATAN KECEMASAN (1)',
-        '2.8.1 - PAEDIATRIK (1)',
-        '2.30.1 - PERUBATAN FORENSIK (1)',
-        '7.2.1.2 - PENGURUSAN NEGERI (1)',
-    ]);
-});
-
-it('shows three penempatan and a see more action when a waran has more', function () {
-    $program = Program::create(['nama_program' => 'PROGRAM PENEMPATAN LIST']);
-    $aktiviti = Aktiviti::create([
-        'program_id' => $program->id,
-        'no_aktivit' => '2.2.1',
-        'nama_aktiviti' => 'PENGURUSAN HOSPITAL',
-    ]);
-    $ptjs = collect(['HOSPITAL YAN', 'HOSPITAL JITRA', 'HOSPITAL PENDANG', 'HOSPITAL KULIM'])
-        ->map(fn (string $name): Ptj => Ptj::create(['nama_ptj' => $name]));
-
-    $waran = Waran::create([
-        'no_waran' => 'WP PENEMPATAN-LIST/2026',
-        'jenis' => 'Tambah',
-        'jik' => 4,
-    ]);
-
-    $ptjs->each(fn (Ptj $ptj): WaranJawatan => WaranJawatan::create([
-        'waran_id' => $waran->id,
-        'aktiviti_id' => $aktiviti->id,
-        'ptj_id' => $ptj->id,
-        'status' => 'active',
-    ]));
-
-    expect($waran->penempatanListItems())->toHaveCount(4);
-
-    $cellHtml = WaransTable::penempatanCellHtml($waran);
-    $modalHtml = WaransTable::penempatanModalContent($waran)->toHtml();
-
-    expect($cellHtml)
-        ->toContain('HOSPITAL JITRA (1)')
-        ->toContain('HOSPITAL KULIM (1)')
-        ->toContain('HOSPITAL PENDANG (1)')
-        ->not->toContain('HOSPITAL YAN (1)')
-        ->toContain(__('filament-tables::table.columns.text.more_list_items', ['count' => 1]));
-
-    expect($modalHtml)
-        ->toContain('HOSPITAL JITRA (1)')
-        ->toContain('HOSPITAL YAN (1)');
-
-    expect(strpos($modalHtml, 'HOSPITAL JITRA'))->toBeLessThan(strpos($modalHtml, 'HOSPITAL KULIM'))
-        ->and(strpos($modalHtml, 'HOSPITAL KULIM'))->toBeLessThan(strpos($modalHtml, 'HOSPITAL PENDANG'))
-        ->and(strpos($modalHtml, 'HOSPITAL PENDANG'))->toBeLessThan(strpos($modalHtml, 'HOSPITAL YAN'));
-
-    Livewire::test(ListWarans::class)
-        ->assertCanSeeTableRecords([$waran])
-        ->assertSee('HOSPITAL JITRA')
-        ->assertSee('HOSPITAL KULIM')
-        ->assertSee('HOSPITAL PENDANG')
-        ->assertSee(__('filament-tables::table.columns.text.more_list_items', ['count' => 1]))
-        ->assertTableActionExists('lihatSemuaPenempatan');
 });
