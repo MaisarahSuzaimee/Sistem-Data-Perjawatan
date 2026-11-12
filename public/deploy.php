@@ -243,39 +243,6 @@ $remoteSha = trim($remoteSha);
 
 if ($localSha === $remoteSha) {
     logLine("Up to date on {$branch} at " . substr($localSha, 0, 12));
-
-    // Recovery path: a previous deploy may have pulled successfully but failed
-    // during npm build, leaving no Vite manifest. Rebuild so retries are not
-    // stuck forever on "Already up to date".
-    if (RUN_NPM_BUILD && !is_file($repoDir . '/public/build/manifest.json')) {
-        $responseLines = [
-            "Already up to date on {$branch}.",
-            "Commit: {$localSha}",
-            '',
-            'Frontend build missing — attempting recovery build...',
-        ];
-
-        [$npmPath, $diag] = resolveBinary($executor, 'npm', NPM_BIN_CANDIDATES);
-        if ($npmPath === null) {
-            logLine("ERROR: recovery npm build skipped at {$localSha} — {$diag}");
-            $responseLines[] = "npm build SKIPPED — npm {$diag}";
-            respond(500, implode("\n", $responseLines));
-        }
-
-        [$nCode, $nOut] = runInDir($executor, $repoDir, escapeshellarg($npmPath) . ' install && ' . escapeshellarg($npmPath) . ' run build');
-        if ($nCode !== 0) {
-            logLine("ERROR: recovery npm build failed at {$localSha}: " . $nOut);
-            $responseLines[] = 'npm install / npm run build FAILED:';
-            $responseLines[] = $nOut;
-            respond(500, implode("\n", $responseLines));
-        }
-
-        logLine('recovery npm build ok at ' . substr($localSha, 0, 12));
-        $responseLines[] = 'Recovered missing frontend build:';
-        $responseLines[] = $nOut;
-        respond(200, implode("\n", $responseLines));
-    }
-
     respond(200, "Already up to date on {$branch}.\nCommit: {$localSha}");
 }
 

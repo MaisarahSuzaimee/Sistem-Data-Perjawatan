@@ -2,23 +2,9 @@ import { defineConfig, loadEnv } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 
-function resolveDevHost(appUrl) {
-    if (!appUrl || typeof appUrl !== 'string') {
-        return null;
-    }
-
-    try {
-        return new URL(appUrl).host || null;
-    } catch {
-        return null;
-    }
-}
-
-export default defineConfig(({ mode, command }) => {
+export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
-    const host = command === 'serve'
-        ? resolveDevHost(env.APP_URL) ?? 'sistem-data-perjawatan.test'
-        : undefined;
+    const host = new URL(env.APP_URL || 'https://sistem-data-perjawatan.test').host;
 
     return {
         plugins: [
@@ -34,12 +20,10 @@ export default defineConfig(({ mode, command }) => {
             tailwindcss(),
         ],
         server: {
-            ...(host
-                ? {
-                    host,
-                    hmr: { host },
-                }
-                : {}),
+            host,
+            hmr: {
+                host,
+            },
             watch: {
                 ignored: ['**/storage/framework/views/**'],
             },
