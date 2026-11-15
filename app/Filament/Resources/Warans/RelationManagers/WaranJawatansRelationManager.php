@@ -81,6 +81,60 @@ class WaranJawatansRelationManager extends RelationManager
         return $this->panelMode === 'ditolak';
     }
 
+    public function getTabs(): array
+    {
+        $tabs = [
+            'all' => Tab::make('Semua'),
+        ];
+
+        foreach (Program::query()->orderBy('nama_program')->get() as $program) {
+            $tabs[(string) $program->id] = Tab::make($program->nama_program)
+                ->modifyQueryUsing(
+                    fn (Builder $query): Builder => $query->whereHas(
+                        'aktiviti',
+                        fn (Builder $aktiviti): Builder => $aktiviti->where('program_id', $program->id)
+                    )
+                );
+        }
+
+        return $tabs;
+    }
+
+    protected function applyActiveProgramTab(Builder $query): Builder
+    {
+        // modifyQueryUsing replaces the relationship query, so re-apply the
+        // active program tab filter onto the rebuilt WaranJawatan query.
+        if (blank($this->activeTab) || $this->activeTab === 'all' || ! is_numeric($this->activeTab)) {
+            return $query;
+        }
+
+        $programId = (int) $this->activeTab;
+
+        return $query->whereHas(
+            'aktiviti',
+            fn (Builder $aktiviti): Builder => $aktiviti->where('program_id', $programId)
+        );
+    }
+
+    protected static function orderPenempatanByProgram(Builder $query): Builder
+    {
+        return $query
+            ->orderBy(
+                Program::query()
+                    ->select('nama_program')
+                    ->join('aktivitis', 'aktivitis.program_id', '=', 'programs.id')
+                    ->whereColumn('aktivitis.id', 'waran_jawatans.aktiviti_id')
+                    ->limit(1)
+            )
+            ->orderBy(
+                Aktiviti::query()
+                    ->select('no_aktivit')
+                    ->whereColumn('aktivitis.id', 'waran_jawatans.aktiviti_id')
+                    ->limit(1)
+            )
+            ->orderBy('waran_jawatans.id');
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -340,6 +394,30 @@ class WaranJawatansRelationManager extends RelationManager
                                             && ! auth()->user()?->isAdmin()
                                     ),
 
+                                Select::make('menggantikan_waran_id')
+                                    ->label('Trade Off Waran (Jika Ada)')
+                                    ->relationship(
+                                        name: 'menggantikanWaran',
+                                        titleAttribute: 'no_waran',
+                                        modifyQueryUsing: function (Builder $query): Builder {
+                                            $ownerId = $this->getOwnerRecord()?->getKey();
+
+                                            return $query
+                                                ->when(
+                                                    filled($ownerId),
+                                                    fn (Builder $q): Builder => $q->whereKeyNot($ownerId),
+                                                )
+                                                ->whereNotNull('no_waran')
+                                                ->orderBy('no_waran');
+                                        },
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable()
+                                    ->visible(fn (): bool => $this->isPenempatanPanel())
+                                    ->helperText('Pilih waran yang diganti oleh jawatan ini (jika ada).')
+                                    ->columnSpanFull(),
+
                             ]),
 
                         Tab::make('Nama Penyandang')
@@ -483,30 +561,6 @@ class WaranJawatansRelationManager extends RelationManager
                                     ->disabled(fn () => auth()->user()?->role == 3)
                                     ->dehydrated(fn () => auth()->user()?->role != 3),
 
-                                Select::make('menggantikan_waran_id')
-                                    ->label('Trade Off Waran (Jika Ada)')
-                                    ->relationship(
-                                        name: 'menggantikanWaran',
-                                        titleAttribute: 'no_waran',
-                                        modifyQueryUsing: function (Builder $query): Builder {
-                                            $ownerId = $this->getOwnerRecord()?->getKey();
-
-                                            return $query
-                                                ->when(
-                                                    filled($ownerId),
-                                                    fn (Builder $q): Builder => $q->whereKeyNot($ownerId),
-                                                )
-                                                ->whereNotNull('no_waran')
-                                                ->orderBy('no_waran');
-                                        },
-                                    )
-                                    ->searchable()
-                                    ->preload()
-                                    ->nullable()
-                                    ->visible(fn (): bool => $this->isPenempatanPanel())
-                                    ->helperText('Pilih waran yang diganti oleh jawatan ini (jika ada).')
-                                    ->columnSpanFull(),
-
                                 Textarea::make('catatan_jawatan')
                                     ->label('Catatan')
                                     ->columnSpanFull(),
@@ -550,17 +604,25 @@ class WaranJawatansRelationManager extends RelationManager
 
                 if ($this->isDitolakPanel()) {
                     if ($this->viewMode === 'dibuang') {
-                        return $query
+                        $query = $query
                             ->withTrashed()
                             ->where('waran_tolak_id', $waran->id)
                             ->whereNotNull('deleted_at')
                             ->where('status', 'removed');
+                    } else {
+                        $query = $query
+                            ->whereNull('deleted_at')
+                            ->where('status', '!=', 'deleted')
+                            ->where('status', '!=', 'removed');
                     }
 
-                    return $query
-                        ->whereNull('deleted_at')
-                        ->where('status', '!=', 'deleted')
-                        ->where('status', '!=', 'removed');
+                    $query = $this->applyActiveProgramTab($query);
+
+                    if (blank($this->getTableSortColumn())) {
+                        static::orderPenempatanByProgram($query);
+                    }
+
+                    return $query;
                 }
 
                 $sortColumn = $this->getTableSortColumn();
@@ -581,12 +643,14 @@ class WaranJawatansRelationManager extends RelationManager
                         });
                     });
 
+                $query = $this->applyActiveProgramTab($query);
+
                 if ($sortColumn !== 'status') {
                     $query->orderByRaw("status = 'removed' ASC");
                 }
 
                 if (blank($sortColumn)) {
-                    $query->orderBy('id', 'asc');
+                    static::orderPenempatanByProgram($query);
                 }
 
                 return $query;
