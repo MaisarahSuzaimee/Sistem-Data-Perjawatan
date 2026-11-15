@@ -2,18 +2,20 @@
 
 namespace App\Filament\Pages;
 
-use App\Services\DashboardStatsCache;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Panel;
+use App\Models\Hebahan;
+use App\Models\Waran;
+use App\Models\Program;
+use App\Models\WaranJawatan;
 
 class Dashboard extends Page
 {
-    protected string $view = 'filament.pages.dashboard';
-
+protected string $view = 'filament.pages.dashboard';
     protected static string|BackedEnum|null $navigationIcon = null;
-
+    // protected static ?string $navigationLabel = 'Dashboard';
     protected static ?int $navigationSort = -2;
 
     public static function getRoutePath(Panel $panel): string
@@ -36,6 +38,45 @@ class Dashboard extends Page
 
     public function getViewData(): array
     {
-        return DashboardStatsCache::get();
+        $allWarans = Waran::with(['waranJawatan'])->get();
+
+        $totalWaran           = $allWarans->count();
+        $totalPengisianSemasa = $allWarans->sum('isi_count');
+        $totalKekosongan      = $allWarans->sum('kosong_count');
+
+        $recentWarans = Waran::with(['waranJawatan'])->latest()->take(5)->get();
+
+        $waranByProgram = collect();
+        $programs = Program::with('aktiviti')->get();
+        foreach ($programs as $program) {
+            $count = WaranJawatan::whereIn('aktiviti_id', $program->aktiviti->pluck('id'))->count();
+            if ($count > 0) {
+                $waranByProgram->push((object)[
+                    'nama_program' => $program->nama_program,
+                    'desc_program' => $program->desc_program,
+                    'waran_count'  => $count,
+                ]);
+            }
+        }
+
+        $recentHebahans = Hebahan::where('status', 'published')
+            ->where(function ($q) {
+                $q->whereNull('dipaparkan_sehingga')
+                    ->orWhere('dipaparkan_sehingga', '>=', now()->toDateString());
+            })
+            ->latest('tarikh_hebahan')
+            ->take(5)
+            ->get();
+
+        return [
+            'totalWaran'           => $totalWaran,
+            'totalPengisianSemasa' => $totalPengisianSemasa,
+            'totalKekosongan'      => $totalKekosongan,
+            'recentWarans'   => $recentWarans,
+            'waranByProgram' => $waranByProgram
+                ->sortBy(fn ($item) => (int) filter_var($item->nama_program, FILTER_SANITIZE_NUMBER_INT))
+                ->values(),
+            'recentHebahans' => $recentHebahans,
+        ];
     }
 }

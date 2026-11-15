@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Program;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class ProgramPolicy
 {
@@ -24,14 +25,7 @@ class ProgramPolicy
             return true;
         }
 
-        if (! $user->isUser() || blank($user->ptj_id)) {
-            return false;
-        }
-
-        return Program::query()
-            ->whereKey($program->id)
-            ->assignedToPtj((int) $user->ptj_id)
-            ->exists();
+        return $user->isUser() && static::programBelongsToUserPtj($user, $program);
     }
 
     /**
@@ -48,6 +42,19 @@ class ProgramPolicy
     public function update(User $user, Program $program): bool
     {
         return $user->isSuperAdmin() || $user->isAdmin();
+    }
+
+    protected static function programBelongsToUserPtj(User $user, Program $program): bool
+    {
+        if (blank($user->ptj_id)) {
+            return false;
+        }
+
+        $ptjId = (int) $user->ptj_id;
+
+        return $program->aktiviti()
+            ->whereHas('ptjs', fn ($query) => $query->where('ptjs.id', $ptjId))
+            ->exists();
     }
 
     /**

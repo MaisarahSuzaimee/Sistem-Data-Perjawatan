@@ -17,7 +17,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'email', 'password', 'ptj_id', 'nokp', 'phone_number', 'status', 'role', 'avatar', 'must_change_password'])]
+#[Fillable(['name', 'email', 'password', 'ptj_id', 'nokp', 'phone_number', 'status', 'role', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
 // #[ObservedBy(UserObserver::class)]
 class User extends Authenticatable implements FilamentUser, HasAvatar
@@ -35,17 +35,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'must_change_password' => 'boolean',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::updating(function (User $user): void {
-            if ($user->isDirty('password')) {
-                $user->must_change_password = false;
-            }
-        });
     }
 
     public function ptj()
@@ -89,9 +79,10 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         );
     }
 
-    // app/Models/User.php
+        // app/Models/User.php
     public function canAccessAllPtj(): bool
     {
         return in_array($this->role, ['admin', 'superadmin']);
     }
+
 }

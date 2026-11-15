@@ -149,17 +149,25 @@ class WaranJawatanForm
                                         $set('subunit_id', null);
                                     })
                                     ->columns(1)
-                                    ->disabled(fn (): bool => static::maklumatJawatanLocked())
-                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true),
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    ),
                                 TextInput::make('butiran')
                                     ->required()
                                     ->maxLength(255)
-                                    ->readonly(fn (): bool => static::maklumatJawatanLocked()),
+                                    ->readonly(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    ),
                                 DatePicker::make('tarikh_kuatkuasa')
                                     ->label('Tarikh Kuatkuasa Waran')
                                     ->native(false)
                                     ->displayFormat('d F Y')
-                                    ->readonly(fn (): bool => static::maklumatJawatanLocked()),
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    ),
                                 Select::make('jawatan_ids')
                                     ->label('Jawatan')
                                     ->multiple()
@@ -171,8 +179,10 @@ class WaranJawatanForm
                                     ->searchable()
                                     ->preload()
                                     ->live()
-                                    ->disabled(fn (): bool => static::maklumatJawatanLocked())
-                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true),
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    ),
 
                                 Select::make('gred_ids')
                                     ->label('Gred')
@@ -192,8 +202,7 @@ class WaranJawatanForm
                                             ->pluck('greds.kod_gred', 'greds.id')
                                             ->toArray();
                                     })
-                                    ->disabled(fn (Get $get): bool => blank($get('jawatan_ids')) || static::maklumatJawatanLocked())
-                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
+                                    ->disabled(fn (Get $get) => blank($get('jawatan_ids')))
                                     ->searchable()
                                     ->preload()
                                     ->multiple()
@@ -215,9 +224,11 @@ class WaranJawatanForm
                                         : null)
                                     ->disabled(
                                         fn (Get $get): bool => blank($get('aktiviti_id'))
-                                            || static::maklumatJawatanLocked()
+                                            || (
+                                                ! auth()->user()?->isSuperadmin()
+                                                && ! auth()->user()?->isAdmin()
+                                            )
                                     )
-                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
                                     ->afterStateUpdated(function (Set $set): void {
                                         $set('bahagian_id', null);
                                         $set('unit_id', null);
@@ -255,8 +266,10 @@ class WaranJawatanForm
                                         ) ? $state : null;
                                     })
                                     ->columnSpanFull()
-                                    ->disabled(fn (): bool => static::maklumatJawatanLocked())
-                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    )
                                     ->afterStateUpdated(function (Set $set): void {
                                         $set('unit_id', null);
                                         $set('subunit_id', null);
@@ -294,8 +307,10 @@ class WaranJawatanForm
                                     ->live()
                                     ->nullable()
                                     ->columnSpanFull()
-                                    ->disabled(fn (): bool => static::maklumatJawatanLocked())
-                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true)
+                                    ->disabled(
+                                        fn () => ! auth()->user()?->isSuperadmin()
+                                        && ! auth()->user()?->isAdmin()
+                                    )
                                     ->afterStateUpdated(fn (Set $set) => $set('subunit_id', null)),
 
                                 Select::make('subunit_id')
@@ -322,36 +337,14 @@ class WaranJawatanForm
                                             return true;
                                         }
 
-                                        return static::maklumatJawatanLocked();
-                                    })
-                                    ->extraAttributes(fn (): array => static::lockedFieldAttributes(), merge: true),
+                                        return ! auth()->user()?->isSuperadmin()
+                                            && ! auth()->user()?->isAdmin();
+                                    }),
 
                             ]),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
             ]);
-    }
-
-    protected static function maklumatJawatanLocked(): bool
-    {
-        $user = auth()->user();
-
-        return (bool) ($user && ! $user->isSuperadmin() && ! $user->isAdmin());
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected static function lockedFieldAttributes(): array
-    {
-        if (! static::maklumatJawatanLocked()) {
-            return [];
-        }
-
-        return [
-            'class' => 'fi-locked-plain',
-            'style' => 'background-color:#fff;opacity:1;',
-        ];
     }
 }

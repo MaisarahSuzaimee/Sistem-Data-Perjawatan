@@ -1290,14 +1290,8 @@
     max-width: 100%;
 }
 
-.dashboard-donut-canvas {
-    position: relative;
+.dashboard-donut #statusChart {
     width: min(200px, 100%);
-    height: 200px;
-    max-width: 100%;
-}
-
-.dashboard-donut-canvas canvas {
     max-width: 100%;
 }
 
@@ -2025,7 +2019,7 @@ td.fi-ta-selection-cell {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Role user: Maklumat Jawatan stays locked without the gray disabled fill */
+/* Role user: Maklumat Waran stays locked without the gray disabled fill */
 .fi-input-wrp.fi-locked-plain.fi-disabled {
     background-color: #fff !important;
     opacity: 1 !important;

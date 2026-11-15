@@ -246,8 +246,7 @@ class WaranJawatansTable
                     ->label('PTJ')
                     ->relationship('ptj', 'nama_ptj')
                     ->searchable()
-                    ->preload()
-                    ->visible(fn (): bool => ! auth()->user()?->isUser()),
+                    ->preload(),
 
             ], layout: FiltersLayout::Modal)
             ->filtersApplyAction(fn (Action $action) => $action->label('Cari'))
@@ -285,8 +284,6 @@ class WaranJawatansTable
                             auth()->user()?->role == 3 && $record->is_kup
                         ))
                         ->requiresConfirmation()
-                        ->modalCancelActionLabel('Batal')
-                        ->modalSubmitActionLabel('Buang Pegawai')
                         ->action(function ($record) {
                             if (auth()->user()?->role == 3 && $record->is_kup) {
                                 Notification::make()
