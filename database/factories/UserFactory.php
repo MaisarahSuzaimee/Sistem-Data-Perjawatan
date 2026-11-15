@@ -29,7 +29,6 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'must_change_password' => false,
             'remember_token' => Str::random(10),
         ];
     }
@@ -41,16 +40,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
-        ]);
-    }
-
-    /**
-     * Force the user to change their password on next login.
-     */
-    public function mustChangePassword(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'must_change_password' => true,
         ]);
     }
 }

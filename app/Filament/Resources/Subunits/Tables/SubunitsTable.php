@@ -89,7 +89,9 @@ class SubunitsTable
                     ->wrap()
                     ->listWithLineBreaks()
                     ->limitList(3)
-                    ->searchable(query: fn (Builder $query, string $search): Builder => static::applySubunitNameSearch($query, $search))
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('nama_subunit', 'like', "%{$search}%");
+                    })
                     ->action(
                         Action::make('lihatSemuaSubunit')
                             ->modalHeading('Senarai KD / KKIA / Wad / Klinik')
@@ -174,19 +176,19 @@ class SubunitsTable
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
-                                $data['program_id'] ?? null,
-                                fn (Builder $q, $programId): Builder => $q->whereRelation('unit.ptj.programs', 'programs.id', $programId)
-                            )
-                            ->when(
-                                $data['ptj_id'] ?? null,
-                                fn (Builder $q, $ptjId): Builder => $q->whereIn('subunits.unit_id', function ($u) use ($ptjId) {
-                                    $u->select('id')->from('units')->where('ptj_id', $ptjId);
-                                })
-                            )
-                            ->when(
-                                $data['unit_id'] ?? null,
-                                fn (Builder $q, $unitId): Builder => $q->where('subunits.unit_id', $unitId)
-                            );
+                    $data['program_id'] ?? null,
+                    fn (Builder $q, $programId): Builder => $q->whereRelation('unit.ptj.programs', 'programs.id', $programId)
+                )
+                ->when(
+                    $data['ptj_id'] ?? null,
+                    fn (Builder $q, $ptjId): Builder => $q->whereIn('subunits.unit_id', function ($u) use ($ptjId) {
+                        $u->select('id')->from('units')->where('ptj_id', $ptjId);
+                    })
+                )
+                ->when(
+                    $data['unit_id'] ?? null,
+                    fn (Builder $q, $unitId): Builder => $q->where('subunits.unit_id', $unitId)
+                );
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
@@ -238,22 +240,6 @@ class SubunitsTable
                         }),
                 ]),
             ]);
-    }
-
-    /**
-     * Table rows are grouped (one per unit), so nama_subunit search must
-     * match any subunit inside the group, not only the representative MIN(id) row.
-     */
-    public static function applySubunitNameSearch(Builder $query, string $search): Builder
-    {
-        return $query->where(function (Builder $q) use ($search): void {
-            $q->whereExists(function ($sub) use ($search): void {
-                $sub->selectRaw('1')
-                    ->from('subunits as search_subunits')
-                    ->where('search_subunits.nama_subunit', 'like', "%{$search}%")
-                    ->whereColumn('search_subunits.unit_id', 'subunits.unit_id');
-            });
-        });
     }
 
     /**

@@ -20,10 +20,11 @@ class WaranInfolist
                         TextEntry::make('no_waran')
                             ->label('No Waran'),
                         TextEntry::make('jik')
-                            ->label('Jumlah Jawatan Ditambah'),
-                        TextEntry::make('jik_tolak')
-                            ->label('Jumlah Jawatan Ditolak')
-                            ->placeholder('0'),
+                            ->label('Bilangan Jawatan'),
+                        TextEntry::make('jenis')
+                            ->label('Jenis Waran')
+                            ->badge()
+                            ->size('lg'),
                         TextEntry::make('catatan')
                             ->columnSpanFull()
                             ->visible(fn ($record) => filled($record->catatan)),

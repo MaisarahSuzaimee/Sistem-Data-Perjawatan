@@ -31,11 +31,6 @@ class CreatePencen extends CreateRecord
             ->hidden();
     }
 
-    protected function getRedirectUrl(): string
-    {
-        return $this->getResourceUrl('index');
-    }
-
     public function getBreadcrumb() : string
     {
         return ('Tambah');

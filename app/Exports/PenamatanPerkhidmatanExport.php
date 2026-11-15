@@ -16,7 +16,7 @@ use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 // use PhpOffice\PhpSpreadsheet\Style\Border;
 // use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
-class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromCollection, WithCustomValueBinder, WithHeadings, WithEvents, WithCustomStartCell
+class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithCustomValueBinder
 {
     /**
      * @return \Illuminate\Support\Collection
@@ -75,8 +75,9 @@ class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromColl
 
     public function bindValue(Cell $cell, $value)
     {
-        if (is_string($value) && preg_match('/^\d{9,}$/', trim($value)) === 1) {
-            $cell->setValueExplicit(trim($value), DataType::TYPE_STRING);
+        // Keep No KP (column D, data rows) as text so Excel does not use scientific notation.
+        if ($cell->getColumn() === 'D' && $cell->getRow() >= 6) {
+            $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
 
             return true;
         }
@@ -216,12 +217,6 @@ class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromColl
                 $sheet->getColumnDimension('B')->setWidth(40);
                 $sheet->getColumnDimension('C')->setWidth(40);
                 $sheet->getColumnDimension('D')->setWidth(40);
-
-                if ($lastRow >= 6) {
-                    $sheet->getStyle('D6:D'.$lastRow)
-                        ->getNumberFormat()
-                        ->setFormatCode('@');
-                }
                 $sheet->getColumnDimension('E')->setWidth(40);
                 $sheet->getColumnDimension('F')->setWidth(40);
                 $sheet->getColumnDimension('G')->setWidth(40);
@@ -229,6 +224,14 @@ class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromColl
                 $sheet->getColumnDimension('I')->setWidth(40);
                 $sheet->getColumnDimension('J')->setWidth(40);
                 $sheet->getColumnDimension('K')->setWidth(40);
+
+                // Format No KP column as text
+                $highestDataRow = $sheet->getHighestRow();
+                if ($highestDataRow >= 6) {
+                    $sheet->getStyle('D6:D'.$highestDataRow)
+                        ->getNumberFormat()
+                        ->setFormatCode('@');
+                }
 
                 $highestRow = $sheet->getHighestRow();
 
