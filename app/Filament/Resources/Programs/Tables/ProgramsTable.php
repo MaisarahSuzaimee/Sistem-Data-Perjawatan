@@ -21,6 +21,32 @@ class ProgramsTable
     {
         return $table
             ->defaultSort('updated_at', 'desc')
+            ->modifyQueryUsing(function (Builder $query): Builder {
+                $user = auth()->user();
+
+                if (! $user?->isUser() || blank($user->ptj_id)) {
+                    return $query;
+                }
+
+                $ptjId = (int) $user->ptj_id;
+
+                return $query->with([
+                    'aktiviti' => fn ($q) => $q
+                        ->whereHas('ptjs', fn (Builder $ptj): Builder => $ptj->where('ptjs.id', $ptjId))
+                        ->with([
+                            'ptjs' => fn ($q) => $q->where('ptjs.id', $ptjId),
+                            'butiran',
+                        ]),
+                    'ptjs' => fn ($q) => $q
+                        ->where('ptjs.id', $ptjId)
+                        ->with([
+                            'aktivitis' => fn ($q) => $q->whereHas(
+                                'ptjs',
+                                fn (Builder $ptj): Builder => $ptj->where('ptjs.id', $ptjId),
+                            ),
+                        ]),
+                ]);
+            })
             ->columns([
                 TextColumn::make('no')
                     ->label('Bil')

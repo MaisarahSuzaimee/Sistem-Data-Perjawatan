@@ -6,13 +6,17 @@ use App\Models\Pencen;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 // use PhpOffice\PhpSpreadsheet\Style\Border;
 // use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
-class PenamatanPerkhidmatanExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell
+class PenamatanPerkhidmatanExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithCustomValueBinder
 {
     /**
      * @return \Illuminate\Support\Collection
@@ -51,7 +55,7 @@ class PenamatanPerkhidmatanExport implements FromCollection, WithHeadings, WithE
                 $index + 1,
                 $item->ptj?->nama_ptj,
                 $item->nama,
-                $item->nokp,
+                filled($item->nokp) ? (string) $item->nokp : '',
                 $item->jawatan_gred?->jawatan?->desc_jawatan,
                 $item->jawatan_gred?->gred?->kod_gred,
                 $item->tarikh_lantikan
@@ -67,6 +71,18 @@ class PenamatanPerkhidmatanExport implements FromCollection, WithHeadings, WithE
 
             ];
         });
+    }
+
+    public function bindValue(Cell $cell, $value)
+    {
+        // Keep No KP (column D, data rows) as text so Excel does not use scientific notation.
+        if ($cell->getColumn() === 'D' && $cell->getRow() >= 6) {
+            $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
+
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
     }
 
     public function startCell(): string
@@ -208,6 +224,14 @@ class PenamatanPerkhidmatanExport implements FromCollection, WithHeadings, WithE
                 $sheet->getColumnDimension('I')->setWidth(40);
                 $sheet->getColumnDimension('J')->setWidth(40);
                 $sheet->getColumnDimension('K')->setWidth(40);
+
+                // Format No KP column as text
+                $highestDataRow = $sheet->getHighestRow();
+                if ($highestDataRow >= 6) {
+                    $sheet->getStyle('D6:D'.$highestDataRow)
+                        ->getNumberFormat()
+                        ->setFormatCode('@');
+                }
 
                 $highestRow = $sheet->getHighestRow();
 

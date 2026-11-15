@@ -47,6 +47,21 @@ class PegawaiForm
         return ! in_array($fieldName, ['unit_id', 'subunit_id', 'tarikh_sandang'], true);
     }
 
+    /**
+     * Role user viewing a pegawai from another PTJ: show read-only TextEntry,
+     * not the editable PTJ/Unit/Subunit controls.
+     */
+    public static function isForeignPtjReadonly(?Pegawai $record): bool
+    {
+        $user = auth()->user();
+
+        if (! $record || ! $user?->isUser()) {
+            return false;
+        }
+
+        return (int) $user->ptj_id !== (int) $record->ptj_id;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -132,6 +147,25 @@ class PegawaiForm
                                     $result = PrestasiService::fetchByNokp($noKp);
 
                                     if ($result['found']) {
+                                        // Auto-fill jawatan, gred, ptj, unit via API
+                                        $ids = PrestasiService::resolvePegawaiFormIds($result['data']);
+
+                                        $user = auth()->user();
+
+                                        if ($user?->isUser()) {
+                                            $apiPtjId = $ids['ptj_id'] ?? null;
+
+                                            if (blank($apiPtjId) || (int) $apiPtjId !== (int) $user->ptj_id) {
+                                                Notification::make()
+                                                    ->title('API Pegawai')
+                                                    ->body('Pegawai ini bukan di bawah PTJ anda. Data tidak diisi.')
+                                                    ->warning()
+                                                    ->send();
+
+                                                return;
+                                            }
+                                        }
+
                                         if (filled($result['data']['nama'])) {
                                             $set('nama', strtoupper(ltrim((string) $result['data']['nama'], "'")));
                                         }
@@ -143,9 +177,6 @@ class PegawaiForm
                                                 $set('jantina', $jantina);
                                             }
                                         }
-
-                                        // Auto-fill jawatan, gred, ptj, unit via API
-                                        $ids = PrestasiService::resolvePegawaiFormIds($result['data']);
 
                                         if ($ids['ptj_id']) {
                                             $set('ptj_id', $ids['ptj_id']);
@@ -404,7 +435,7 @@ class PegawaiForm
                                 ->getStateUsing(function ($record) {
                                     return $record->ptj?->nama_ptj ?? '-';
                                 })
-                                ->visible(fn (Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id'))
+                                ->visible(fn (?Pegawai $record): bool => static::isForeignPtjReadonly($record))
                                 ->columnSpanFull(),
 
                             Select::make('bahagian_id')
@@ -518,7 +549,8 @@ class PegawaiForm
                                 ->getStateUsing(function ($record) {
                                     return $record->unit?->namaUnit ?? '';
                                 })
-                                ->visible(fn (Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id')),
+                                ->visible(fn (?Pegawai $record): bool => static::isForeignPtjReadonly($record))
+                                ->columnSpanFull(),
 
                             Grid::make(4)
                                 ->schema([
@@ -570,7 +602,8 @@ class PegawaiForm
                                 ->getStateUsing(function ($record) {
                                     return $record->subunit?->namaSubunit ?? '';
                                 })
-                                ->visible(fn (Get $get) => auth()->user()->role == 3 && auth()->user()->ptj_id !== $get('ptj_id')),
+                                ->visible(fn (?Pegawai $record): bool => static::isForeignPtjReadonly($record))
+                                ->columnSpanFull(),
 
                         ]),
 

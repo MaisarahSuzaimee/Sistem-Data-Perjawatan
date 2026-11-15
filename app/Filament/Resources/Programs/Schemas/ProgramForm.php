@@ -48,6 +48,8 @@ class ProgramForm
                                     ->color('info')
                                     ->icon('heroicon-m-plus');
                             })
+                            ->addable(fn (): bool => ! auth()->user()?->isUser())
+                            ->deletable(fn (): bool => ! auth()->user()?->isUser())
                             ->required()
                             ->minItems(1)
                             ->defaultItems(1)

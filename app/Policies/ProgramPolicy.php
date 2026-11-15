@@ -21,7 +21,11 @@ class ProgramPolicy
      */
     public function view(User $user, Program $program): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        if ($user->isSuperAdmin() || $user->isAdmin()) {
+            return true;
+        }
+
+        return $user->isUser() && static::programBelongsToUserPtj($user, $program);
     }
 
     /**
@@ -29,7 +33,7 @@ class ProgramPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        return $user->isSuperAdmin() || $user->isAdmin();
     }
 
     /**
@@ -37,7 +41,20 @@ class ProgramPolicy
      */
     public function update(User $user, Program $program): bool
     {
-        return $user->isSuperAdmin() || $user->isAdmin() || $user->isUser();
+        return $user->isSuperAdmin() || $user->isAdmin();
+    }
+
+    protected static function programBelongsToUserPtj(User $user, Program $program): bool
+    {
+        if (blank($user->ptj_id)) {
+            return false;
+        }
+
+        $ptjId = (int) $user->ptj_id;
+
+        return $program->aktiviti()
+            ->whereHas('ptjs', fn ($query) => $query->where('ptjs.id', $ptjId))
+            ->exists();
     }
 
     /**

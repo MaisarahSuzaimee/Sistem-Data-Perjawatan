@@ -60,7 +60,18 @@ class ProgramResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->with(['aktiviti.ptjs', 'aktiviti.butiran', 'ptjs.aktivitis']);
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user?->isUser() && filled($user->ptj_id)) {
+            $ptjId = (int) $user->ptj_id;
+
+            $query->whereHas(
+                'aktiviti.ptjs',
+                fn (Builder $ptj): Builder => $ptj->where('ptjs.id', $ptjId),
+            );
+        }
+
+        return $query->with(['aktiviti.ptjs', 'aktiviti.butiran', 'ptjs.aktivitis']);
     }
 }

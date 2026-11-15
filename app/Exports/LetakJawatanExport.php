@@ -3,12 +3,16 @@ namespace App\Exports;
 
 use App\Models\LetakJawatan;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 
-class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell
+class LetakJawatanExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithEvents, WithCustomStartCell, WithCustomValueBinder
 {
 
     protected $fromMonth;
@@ -60,7 +64,7 @@ class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, Wi
                 $item->jawatan_gred?->jawatan?->desc_jawatan, // Jawatan
                 $item->jawatan_gred?->gred?->kod_gred, // Gred
                 $item->lantikan, // Lantikan
-                (string) $item->nokp, // No KP
+                filled($item->nokp) ? (string) $item->nokp : '', // No KP
                 $item->tarikh_lantik
                 ? \Carbon\Carbon::parse($item->tarikh_lantik)->format('d.m.Y')
                 : '',
@@ -80,6 +84,18 @@ class LetakJawatanExport implements FromCollection, WithHeadings, WithEvents, Wi
             ];
         });
     }
+    public function bindValue(Cell $cell, $value)
+    {
+        // Keep No KP (column F, data rows) as text so Excel does not use scientific notation.
+        if ($cell->getColumn() === 'F' && $cell->getRow() >= 6) {
+            $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
+
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
+    }
+
     public function startCell(): string
     {
         return 'A5';

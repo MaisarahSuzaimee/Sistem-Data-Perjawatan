@@ -189,7 +189,8 @@ class PegawaisTable
                     ->label('PTJ')
                     ->relationship('ptj', 'nama_ptj')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->visible(fn (): bool => ! auth()->user()?->isUser()),
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options([
