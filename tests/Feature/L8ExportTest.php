@@ -288,7 +288,7 @@ it('exports active waran rows with counts, linked pegawai data, and grouped head
 
         expect($sheet->getCell('A1')->getValue())
             ->toBe('KEDUDUKAN PERJAWATAN DAN PENGISIAN MENGIKUT PROGRAM / AKTIVITI')
-            ->and($sheet->getCell('B3')->getValue())->toBe('baca dari')
+            ->and($sheet->getCell('B3')->getValue())->toBeNull()
             ->and($sheet->getCell('A6')->getValue())->toBe('PROGRAM 1 / 01 - PENGURUSAN HOSPITAL')
             ->and($sheet->getCell('F6')->getValue())->toBe(1)
             ->and($sheet->getCell('G6')->getValue())->toBe(1)

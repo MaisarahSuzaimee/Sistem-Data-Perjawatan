@@ -205,12 +205,10 @@ class L8Export extends DefaultValueBinder implements FromCollection, WithCustomS
                 $sheet->setCellValue('A1', 'KEDUDUKAN PERJAWATAN DAN PENGISIAN MENGIKUT PROGRAM / AKTIVITI');
                 $sheet->mergeCells('A2:Q2');
                 $sheet->setCellValue('A2', 'JABATAN KESIHATAN NEGERI KEDAH DARUL AMAN (BAHAGIAN PENGURUSAN)');
-                $sheet->setCellValue('B3', 'baca dari');
                 $sheet->getStyle('A1:Q2')->applyFromArray([
                     'font' => ['name' => 'Calibri', 'bold' => true, 'size' => 12],
                     'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
                 ]);
-                $sheet->getStyle('B3')->getFont()->setBold(true)->setItalic(true);
                 $sheet->getRowDimension(1)->setRowHeight(22);
                 $sheet->getRowDimension(2)->setRowHeight(22);
                 $sheet->getRowDimension(3)->setRowHeight(20);
