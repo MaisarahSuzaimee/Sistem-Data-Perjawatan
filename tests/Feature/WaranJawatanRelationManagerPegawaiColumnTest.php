@@ -3,10 +3,14 @@
 use App\Filament\Resources\Warans\Pages\EditWaran;
 use App\Filament\Resources\Warans\RelationManagers\WaranJawatansRelationManager;
 use App\Models\Aktiviti;
+use App\Models\Bahagian;
 use App\Models\Gred;
 use App\Models\Jawatan;
 use App\Models\Pegawai;
 use App\Models\Program;
+use App\Models\Ptj;
+use App\Models\Subunit;
+use App\Models\Unit;
 use App\Models\User;
 use App\Models\Waran;
 use App\Models\WaranJawatan;
@@ -215,6 +219,61 @@ it('shows pegawai name or tiada penyandang in the jawatan gred column', function
         ->assertSee('AHMAD BIN ALI')
         ->assertSee('Tiada penyandang')
         ->assertSeeHtml('fi-color-success')
+        ->assertSeeHtml('fi-color-danger');
+});
+
+it('shows the full penempatan hierarchy in the ptj column', function () {
+    $program = Program::create(['nama_program' => 'PROGRAM PTJ COL']);
+    $aktiviti = Aktiviti::create([
+        'program_id' => $program->id,
+        'no_aktivit' => '990100',
+        'nama_aktiviti' => 'PENEMPATAN PTJ',
+    ]);
+
+    $ptj = Ptj::create(['nama_ptj' => 'JABATAN KESIHATAN NEGERI KEDAH']);
+    $bahagian = Bahagian::create([
+        'ptj_id' => $ptj->id,
+        'nama_bahagian' => 'BAHAGIAN PENGURUSAN',
+    ]);
+    $unit = Unit::create([
+        'ptj_id' => $ptj->id,
+        'bahagian_id' => $bahagian->id,
+        'nama_unit' => 'UNIT KEWANGAN',
+    ]);
+    $subunit = Subunit::create([
+        'unit_id' => $unit->id,
+        'nama_subunit' => 'WAD KLINIK',
+    ]);
+
+    $waran = Waran::create([
+        'no_waran' => 'WP PTJ-COL/2026',
+        'jenis' => 'Tambah',
+        'jik' => 1,
+    ]);
+
+    WaranJawatan::create([
+        'waran_id' => $waran->id,
+        'aktiviti_id' => $aktiviti->id,
+        'ptj_id' => $ptj->id,
+        'bahagian_id' => $bahagian->id,
+        'unit_id' => $unit->id,
+        'subunit_id' => $subunit->id,
+        'butiran' => 'BUTIRAN-PTJ',
+        'status' => 'active',
+    ]);
+
+    Livewire::test(WaranJawatansRelationManager::class, [
+        'ownerRecord' => $waran,
+        'pageClass' => EditWaran::class,
+    ])
+        ->assertSee('PTJ')
+        ->assertSee('JABATAN KESIHATAN NEGERI KEDAH')
+        ->assertSee('BAHAGIAN PENGURUSAN')
+        ->assertSee('UNIT KEWANGAN')
+        ->assertSee('WAD KLINIK')
+        ->assertSeeHtml('<div style>JABATAN KESIHATAN NEGERI KEDAH</div>')
+        ->assertSeeHtml('fi-color-orange')
+        ->assertSeeHtml('fi-color-purple')
         ->assertSeeHtml('fi-color-danger');
 });
 

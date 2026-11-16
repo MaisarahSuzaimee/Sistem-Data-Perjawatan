@@ -97,9 +97,12 @@ class Waran extends Model
         $items = $query->get();
 
         return $items
-            ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj)
-            ->map(function ($items, $ptjName) {
-
+            ->groupBy(fn ($wj) => $wj->ptj?->nama_ptj ?? '-')
+            ->sortBy(
+                fn ($group, $ptjName): string => (string) $ptjName,
+                SORT_NATURAL | SORT_FLAG_CASE,
+            )
+            ->map(function ($items, $ptjName): string {
                 $count = $items->count();
 
                 // ONLY grey if ALL are inactive

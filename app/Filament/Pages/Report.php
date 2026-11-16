@@ -2,11 +2,17 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Aktiviti;
+use App\Models\Gred;
 use App\Models\Jawatan;
+use App\Models\Program;
+use App\Models\WaranJawatan;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -142,6 +148,41 @@ class Report extends Page implements HasTable
                                     ->required(),
                             ],
 
+                            6 => [
+                                Select::make('jawatan_id')
+                                    ->label('Pilih Jawatan')
+                                    ->options(
+                                        Jawatan::orderBy('desc_jawatan')
+                                            ->pluck('desc_jawatan', 'id')
+                                    )
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(fn (Set $set) => $set('gred_combination', null))
+                                    ->required(),
+                                // L5-style exact waran gred_ids combinations, e.g. U9/U10.
+                                Select::make('gred_combination')
+                                    ->label('Pilih Kombinasi Gred')
+                                    ->options(fn (Get $get): array => $this->gredCombinationOptionsForJawatan($get('jawatan_id')))
+                                    ->searchable()
+                                    ->required(),
+                            ],
+
+                            8 => [
+                                Select::make('program_id')
+                                    ->label('Pilih Program')
+                                    ->options(fn (): array => $this->l8ProgramOptions())
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(fn (Set $set) => $set('aktiviti_id', null))
+                                    ->required(),
+                                Select::make('aktiviti_id')
+                                    ->label('Pilih Aktiviti')
+                                    ->options(fn (Get $get): array => $this->l8ActivityOptions($get('program_id')))
+                                    ->searchable()
+                                    ->visible(fn (Get $get): bool => filled($get('program_id')))
+                                    ->required(fn (Get $get): bool => filled($get('program_id'))),
+                            ],
+
                             default => [],
                         };
 
@@ -163,17 +204,149 @@ class Report extends Page implements HasTable
                                 'jawatan_id' => $data['jawatan_id'],
                             ]),
 
-                            6 => redirect()->route('export.l6'),
+                            6 => redirect()->route('export.l6', [
+                                'jawatan_id' => $data['jawatan_id'],
+                                'gred_combination' => $data['gred_combination'],
+                            ]),
 
                             7 => redirect()->route('export.l7'),
 
-                            8 => redirect()->route('export.l8'),
+                            8 => redirect()->route('export.l8', [
+                                'program_id' => $data['program_id'],
+                                'aktiviti_id' => $data['aktiviti_id'],
+                            ]),
 
                         };
 
                     }),
 
             ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function gredCombinationOptionsForJawatan(mixed $jawatanId): array
+    {
+        if (blank($jawatanId)) {
+            return [];
+        }
+
+        $warans = WaranJawatan::query()
+            ->whereJsonContains('jawatan_ids', (int) $jawatanId)
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'))
+            ->get(['gred_ids', 'jawatan_gred_id']);
+
+        $combinations = [];
+
+        foreach ($warans as $waran) {
+            $gredIds = array_values(array_unique(array_map('intval', $waran->gred_ids ?? [])));
+            sort($gredIds);
+
+            if ($gredIds !== []) {
+                $combinations[implode(',', $gredIds)] = $gredIds;
+            }
+        }
+
+        if ($combinations === []) {
+            return [];
+        }
+
+        $greds = Gred::query()
+            ->whereIn('id', collect($combinations)->flatten()->unique()->all())
+            ->get()
+            ->keyBy('id');
+
+        $options = [];
+
+        foreach ($combinations as $key => $gredIds) {
+            $gredCodes = collect($gredIds)
+                ->map(fn (int $gredId) => $greds->get($gredId))
+                ->filter()
+                ->sortBy(fn (Gred $gred) => (int) substr($gred->kod_gred, 1))
+                ->pluck('kod_gred');
+
+            if ($gredCodes->isEmpty()) {
+                continue;
+            }
+
+            $options[$key] = $gredCodes->implode('/');
+        }
+
+        return collect($options)
+            ->sortByDesc(fn (string $label) => collect(explode('/', $label))
+                ->map(fn (string $code) => (int) substr($code, 1))
+                ->max())
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function l8ProgramOptions(): array
+    {
+        $activityIds = $this->l8ActiveActivityIds();
+
+        if ($activityIds === []) {
+            return [];
+        }
+
+        return Program::query()
+            ->whereHas('aktiviti', fn ($query) => $query->whereIn('id', $activityIds))
+            ->orderBy('nama_program')
+            ->get()
+            ->mapWithKeys(fn (Program $program): array => [
+                $program->id => $program->display_name,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function l8ActivityOptions(mixed $programId): array
+    {
+        if (blank($programId)) {
+            return [];
+        }
+
+        return Aktiviti::query()
+            ->with('program')
+            ->where('program_id', (int) $programId)
+            ->whereIn('id', $this->l8ActiveActivityIds())
+            ->get()
+            ->sortBy(
+                fn (Aktiviti $aktiviti): string => strtolower(implode(' ', [
+                    $aktiviti->program?->nama_program ?? '',
+                    $aktiviti->no_aktivit ?? '',
+                    $aktiviti->nama_aktiviti ?? '',
+                ])),
+                SORT_NATURAL | SORT_FLAG_CASE,
+            )
+            ->mapWithKeys(function (Aktiviti $aktiviti): array {
+                $label = trim(implode(' - ', array_filter([
+                    $aktiviti->no_aktivit,
+                    $aktiviti->nama_aktiviti,
+                ])));
+
+                return [$aktiviti->id => ($label ?: "Aktiviti {$aktiviti->id}")];
+            })
+            ->all();
+    }
+
+    /**
+     * @return list<int>
+     */
+    protected function l8ActiveActivityIds(): array
+    {
+        return WaranJawatan::query()
+            ->listed()
+            ->whereNotNull('aktiviti_id')
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'))
+            ->distinct()
+            ->pluck('aktiviti_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
     }
 
     public function getBreadcrumbs(): array

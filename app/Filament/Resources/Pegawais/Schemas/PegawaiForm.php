@@ -337,7 +337,7 @@ class PegawaiForm
                                 }),
 
                             Select::make('gred_id')
-                                ->label('Gred Gaji')
+                                ->label('Gred')
                                 ->required()
                                 // ->helperText('Akan diisi automatik via API: gred -> kod')
                                 ->options(function (Get $get) {
