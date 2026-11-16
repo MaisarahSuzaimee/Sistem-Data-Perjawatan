@@ -2,8 +2,10 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Aktiviti;
 use App\Models\Gred;
 use App\Models\Jawatan;
+use App\Models\Program;
 use App\Models\WaranJawatan;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -165,6 +167,22 @@ class Report extends Page implements HasTable
                                     ->required(),
                             ],
 
+                            8 => [
+                                Select::make('program_id')
+                                    ->label('Pilih Program')
+                                    ->options(fn (): array => $this->l8ProgramOptions())
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(fn (Set $set) => $set('aktiviti_id', null))
+                                    ->required(),
+                                Select::make('aktiviti_id')
+                                    ->label('Pilih Aktiviti')
+                                    ->options(fn (Get $get): array => $this->l8ActivityOptions($get('program_id')))
+                                    ->searchable()
+                                    ->visible(fn (Get $get): bool => filled($get('program_id')))
+                                    ->required(fn (Get $get): bool => filled($get('program_id'))),
+                            ],
+
                             default => [],
                         };
 
@@ -193,7 +211,10 @@ class Report extends Page implements HasTable
 
                             7 => redirect()->route('export.l7'),
 
-                            8 => redirect()->route('export.l8'),
+                            8 => redirect()->route('export.l8', [
+                                'program_id' => $data['program_id'],
+                                'aktiviti_id' => $data['aktiviti_id'],
+                            ]),
 
                         };
 
@@ -256,6 +277,75 @@ class Report extends Page implements HasTable
             ->sortByDesc(fn (string $label) => collect(explode('/', $label))
                 ->map(fn (string $code) => (int) substr($code, 1))
                 ->max())
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function l8ProgramOptions(): array
+    {
+        $activityIds = $this->l8ActiveActivityIds();
+
+        if ($activityIds === []) {
+            return [];
+        }
+
+        return Program::query()
+            ->whereHas('aktiviti', fn ($query) => $query->whereIn('id', $activityIds))
+            ->orderBy('nama_program')
+            ->get()
+            ->mapWithKeys(fn (Program $program): array => [
+                $program->id => $program->display_name,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function l8ActivityOptions(mixed $programId): array
+    {
+        if (blank($programId)) {
+            return [];
+        }
+
+        return Aktiviti::query()
+            ->with('program')
+            ->where('program_id', (int) $programId)
+            ->whereIn('id', $this->l8ActiveActivityIds())
+            ->get()
+            ->sortBy(
+                fn (Aktiviti $aktiviti): string => strtolower(implode(' ', [
+                    $aktiviti->program?->nama_program ?? '',
+                    $aktiviti->no_aktivit ?? '',
+                    $aktiviti->nama_aktiviti ?? '',
+                ])),
+                SORT_NATURAL | SORT_FLAG_CASE,
+            )
+            ->mapWithKeys(function (Aktiviti $aktiviti): array {
+                $label = trim(implode(' - ', array_filter([
+                    $aktiviti->no_aktivit,
+                    $aktiviti->nama_aktiviti,
+                ])));
+
+                return [$aktiviti->id => ($label ?: "Aktiviti {$aktiviti->id}")];
+            })
+            ->all();
+    }
+
+    /**
+     * @return list<int>
+     */
+    protected function l8ActiveActivityIds(): array
+    {
+        return WaranJawatan::query()
+            ->listed()
+            ->whereNotNull('aktiviti_id')
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'))
+            ->distinct()
+            ->pluck('aktiviti_id')
+            ->map(fn ($id): int => (int) $id)
             ->all();
     }
 

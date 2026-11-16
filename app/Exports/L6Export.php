@@ -191,21 +191,17 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
                 ];
 
                 $sheet->mergeCells('A1:B1');
+                $sheet->mergeCells('C1:E1');
                 $sheet->setCellValue('A1', 'MAKLUMAT PERJAWATAN');
-                $sheet->setCellValue('C1', ':');
-                $sheet->mergeCells('D1:E1');
-                $sheet->setCellValue('D1', $this->title);
+                $sheet->setCellValue('C1', ': '.$this->title);
                 $sheet->mergeCells('A2:B2');
+                $sheet->mergeCells('C2:E2');
                 $sheet->setCellValue('A2', 'DATA SEHINGGA');
-                $sheet->setCellValue('C2', ':');
-                $sheet->mergeCells('D2:E2');
-                $sheet->setCellValue('D2', strtoupper(Carbon::now()->translatedFormat('d F Y')));
+                $sheet->setCellValue('C2', ': '.strtoupper(Carbon::now()->translatedFormat('d F Y')));
                 $sheet->getStyle('A1:E2')->applyFromArray([
                     'font' => ['name' => 'Calibri', 'bold' => true, 'size' => 12],
                     'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
                 ]);
-                $sheet->getStyle('C1:C2')->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getRowDimension(1)->setRowHeight(28);
                 $sheet->getRowDimension(2)->setRowHeight(24);
 
@@ -220,7 +216,7 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
                 ]);
 
                 $sheet->getColumnDimension('A')->setWidth(8);
-                $sheet->getColumnDimension('B')->setWidth(48);
+                $sheet->getColumnDimension('B')->setWidth(32);
                 foreach (['C', 'D', 'E'] as $column) {
                     $sheet->getColumnDimension($column)->setWidth(14);
                 }

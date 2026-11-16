@@ -180,9 +180,12 @@ test('l6 report uses the exact waran grade combination for the selected jawatan'
         $sheet = IOFactory::load($temporaryFile)->getActiveSheet();
 
         expect($sheet->getCell('A1')->getValue())->toBe('MAKLUMAT PERJAWATAN')
-            ->and($sheet->getCell('D1')->getValue())->toBe('JURURAWAT, GRED U9/U10')
+            ->and($sheet->getCell('C1')->getValue())->toBe(': JURURAWAT, GRED U9/U10')
+            ->and($sheet->getCell('D1')->getValue())->toBeNull()
             ->and($sheet->getCell('A2')->getValue())->toBe('DATA SEHINGGA')
-            ->and($sheet->getCell('D2')->getValue())->not->toBeEmpty();
+            ->and($sheet->getCell('C2')->getValue())->toContain(': ')
+            ->and($sheet->getMergeCells())->toHaveKeys(['C1:E1', 'C2:E2'])
+            ->and($sheet->getColumnDimension('B')->getWidth())->toBe(32.0);
     } finally {
         if (is_file($temporaryFile)) {
             unlink($temporaryFile);
