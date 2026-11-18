@@ -62,14 +62,14 @@ class ApiKey extends Page implements HasForms
                     ->schema([
                         TextInput::make('turnstile_site_key')
                             ->label('Site Key')
-                            ->placeholder('0x4AAAAAAAxxxxxxxxxxxxxxxx')
+                            ->placeholder('1x00000000000000000000AA')
                             ->helperText('Dapatkan di https://dash.cloudflare.com → Turnstile → Add site')
                             ->maxLength(255)
                             ->columnSpanFull(),
 
                         TextInput::make('turnstile_secret_key')
                             ->label('Secret Key')
-                            ->placeholder('0x4AAAAAAAxxxxxxxxxxxxxxxx_secret')
+                            ->placeholder('1x0000000000000000000000000000000AA')
                             ->helperText('Kunci rahsia — disimpan secara sulit')
                             ->password()
                             ->revealable()

@@ -74,10 +74,10 @@ it('allows admin and superadmin past the export role gate', function () use ($ex
 
             expect($status)->not->toBe(403);
 
-            // L6 now requires a jawatan + gred combination and redirects back
-            // with validation errors when they are missing, so a 302 is expected.
-            if ($routeName !== 'export.l6') {
-                expect($status)->not->toBe(302);
+            // L4, L6 and L8 require report selections and redirect back with
+            // validation errors when those selections are missing.
+            if (! in_array($routeName, ['export.l4', 'export.l6', 'export.l8'], true)) {
+                expect($status)->not->toBe(302, "Unexpected validation redirect for {$routeName}");
             }
         }
     }
