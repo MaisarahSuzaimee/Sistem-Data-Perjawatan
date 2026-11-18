@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Aktiviti;
 use App\Models\Gred;
 use App\Models\Jawatan;
+use App\Models\Kumpulan;
 use App\Models\Program;
 use App\Models\WaranJawatan;
 use BackedEnum;
@@ -137,6 +138,18 @@ class Report extends Page implements HasTable
 
                         return match ($record['id']) {
 
+                            4 => [
+                                Select::make('kumpulan_id')
+                                    ->label('Pilih SKIM PERKHIDMATAN (Kumpulan)')
+                                    ->options(
+                                        Kumpulan::query()
+                                            ->orderBy('id')
+                                            ->pluck('nama_kumpulan', 'id')
+                                    )
+                                    ->searchable()
+                                    ->required(),
+                            ],
+
                             5 => [
                                 Select::make('jawatan_id')
                                     ->label('Pilih Jawatan')
@@ -198,7 +211,9 @@ class Report extends Page implements HasTable
 
                             3 => redirect()->route('export.l3'),
 
-                            4 => redirect()->route('export.l4'),
+                            4 => redirect()->route('export.l4', [
+                                'kumpulan_id' => $data['kumpulan_id'],
+                            ]),
 
                             5 => redirect()->route('export.jikByJawatan', [
                                 'jawatan_id' => $data['jawatan_id'],
