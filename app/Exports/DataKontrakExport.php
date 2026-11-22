@@ -156,6 +156,8 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
      */
     protected function loadKontrakPegawai(): Collection
     {
+        $scopedPtjId = $this->scopedPtjId();
+
         return Pegawai::query()
             ->with([
                 'ptj',
@@ -165,7 +167,22 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
                 'jawatan_gred.gred',
             ])
             ->where('is_kontrak', 1)
+            ->when(
+                $scopedPtjId !== null,
+                fn ($query) => $query->where('ptj_id', $scopedPtjId),
+            )
             ->get();
+    }
+
+    protected function scopedPtjId(): ?int
+    {
+        $user = auth()->user();
+
+        if (! $user?->isUser() || blank($user->ptj_id)) {
+            return null;
+        }
+
+        return (int) $user->ptj_id;
     }
 
     /**
@@ -222,8 +239,14 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
     protected function buildUnits()
     {
         $units = collect();
+        $scopedPtjId = $this->scopedPtjId();
 
-        $warans = WaranJawatan::with(['ptj', 'bahagian', 'aktiviti.program'])->get();
+        $warans = WaranJawatan::with(['ptj', 'bahagian', 'aktiviti.program'])
+            ->when(
+                $scopedPtjId !== null,
+                fn ($query) => $query->where('ptj_id', $scopedPtjId),
+            )
+            ->get();
         foreach ($warans as $waran) {
             $unit = $this->unitFor($waran->ptj, $waran->bahagian);
             if ($unit && ! $units->has($unit['key'])) {

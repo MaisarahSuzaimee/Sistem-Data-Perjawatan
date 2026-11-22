@@ -119,7 +119,7 @@ class Report extends Page implements HasTable
                 if (auth()->user()?->isUser()) {
                     $data = array_values(array_filter(
                         $data,
-                        fn (array $item): bool => (int) $item['id'] === 1,
+                        fn (array $item): bool => in_array((int) $item['id'], [1, 2], true),
                     ));
                 }
 
@@ -209,7 +209,7 @@ class Report extends Page implements HasTable
                     })
 
                     ->action(function ($record, array $data) {
-                        if (auth()->user()?->isUser() && (int) $record['id'] !== 1) {
+                        if (auth()->user()?->isUser() && ! in_array((int) $record['id'], [1, 2], true)) {
                             abort(403);
                         }
 
