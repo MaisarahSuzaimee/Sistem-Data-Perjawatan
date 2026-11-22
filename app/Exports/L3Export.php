@@ -67,10 +67,17 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
         $scopedPtjId = $isScoped ? (int) $user->ptj_id : null;
 
         // Active posts only: exclude soft-deleted (default) and removed placements.
+        // Role=user is limited to their own PTJ.
         $warans = WaranJawatan::with([
             'aktiviti.program',
             'pegawai.jawatan_gred',
-        ])->get()->filter(fn ($w) => ($w->status ?? 'active') !== 'removed');
+        ])
+            ->when(
+                $scopedPtjId !== null,
+                fn ($query) => $query->where('ptj_id', $scopedPtjId),
+            )
+            ->get()
+            ->filter(fn ($w) => ($w->status ?? 'active') !== 'removed');
 
         // Pre-compute per-waran single kumpulan: 1 active waran_jawatan row = 1 J.
         $computed = [];
