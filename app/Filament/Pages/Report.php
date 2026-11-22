@@ -30,14 +30,14 @@ class Report extends Page implements HasTable
     {
         $user = auth()->user();
 
-        return $user !== null && in_array((int) $user->role, [1, 2], true);
+        return $user !== null && in_array((int) $user->role, [1, 2, 3], true);
     }
 
     public static function canAccess(): bool
     {
         $user = auth()->user();
 
-        return $user !== null && in_array((int) $user->role, [1, 2], true);
+        return $user !== null && in_array((int) $user->role, [1, 2, 3], true);
     }
 
     protected string $view = 'filament.pages.report';
@@ -115,6 +115,13 @@ class Report extends Page implements HasTable
                         // 'description' => 'Senarai jawatan kosong',
                     ],
                 ];
+
+                if (auth()->user()?->isUser()) {
+                    $data = array_values(array_filter(
+                        $data,
+                        fn (array $item): bool => (int) $item['id'] === 1,
+                    ));
+                }
 
                 if (! $search) {
                     return $data;
@@ -202,6 +209,9 @@ class Report extends Page implements HasTable
                     })
 
                     ->action(function ($record, array $data) {
+                        if (auth()->user()?->isUser() && (int) $record['id'] !== 1) {
+                            abort(403);
+                        }
 
                         return match ($record['id']) {
 
