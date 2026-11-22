@@ -4,6 +4,7 @@ use App\Filament\Pages\Report;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Livewire\Livewire;
 
 beforeEach(function () {
     Schema::dropIfExists('users');
@@ -20,7 +21,7 @@ beforeEach(function () {
     });
 });
 
-it('blocks report page access for role 3 users', function () {
+it('allows report page access for role 3 users', function () {
     $user = User::create([
         'name' => 'Role 3 User',
         'email' => 'role3@test.com',
@@ -31,7 +32,8 @@ it('blocks report page access for role 3 users', function () {
 
     auth()->login($user);
 
-    expect(Report::canAccess())->toBeFalse();
+    expect(Report::canAccess())->toBeTrue()
+        ->and(Report::shouldRegisterNavigation())->toBeTrue();
 });
 
 it('allows report page access for admin role users', function () {
@@ -46,4 +48,31 @@ it('allows report page access for admin role users', function () {
     auth()->login($user);
 
     expect(Report::canAccess())->toBeTrue();
+});
+
+it('shows only L1 for role 3 users on the report page', function () {
+    config(['app.env' => 'local']);
+
+    $user = User::create([
+        'name' => 'Role 3 Viewer',
+        'email' => 'role3-viewer@test.com',
+        'password' => bcrypt('password'),
+        'role' => 3,
+        'status' => 1,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(Report::class)->assertSuccessful();
+
+    $ids = collect($component->instance()->getTableRecords())
+        ->map(fn ($record) => is_array($record) ? (int) ($record['id'] ?? 0) : (int) $record->id)
+        ->values()
+        ->all();
+
+    expect($ids)->toBe([1]);
+
+    $component
+        ->assertSee('L1: Data Keseluruhan Mengikut PTJ')
+        ->assertDontSee('L2: Data Perjawatan Kontrak');
 });

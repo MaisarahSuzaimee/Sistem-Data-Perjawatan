@@ -39,6 +39,7 @@ Route::get('/export-penamatan-perkhidmatan', [PenamatanPerkhidmatanExportControl
 
 // L1
 Route::get('/export-data-keseluruhan', [DataKeseluruhanExportController::class, 'export'])
+    ->middleware('auth')
     ->name('export.dataKeseluruhan');
 
 // L2
