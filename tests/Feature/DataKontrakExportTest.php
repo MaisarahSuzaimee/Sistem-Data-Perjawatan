@@ -10,6 +10,7 @@ use App\Models\Pegawai;
 use App\Models\PegawaiKontrak;
 use App\Models\Program;
 use App\Models\Ptj;
+use App\Models\User;
 use App\Models\WaranJawatan;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -26,9 +27,21 @@ beforeEach(function () {
         'jawatan__greds',
         'greds',
         'jawatans',
+        'users',
     ] as $table) {
         Schema::dropIfExists($table);
     }
+
+    Schema::create('users', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->string('password');
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->tinyInteger('role')->default(3);
+        $table->tinyInteger('status')->default(1);
+        $table->timestamps();
+    });
 
     Schema::create('jawatans', function (Blueprint $table) {
         $table->id();
@@ -105,6 +118,7 @@ beforeEach(function () {
         $table->unsignedBigInteger('ptj_id')->nullable();
         $table->unsignedBigInteger('bahagian_id')->nullable();
         $table->unsignedBigInteger('aktiviti_id')->nullable();
+        $table->unsignedBigInteger('pegawai_id')->nullable();
         $table->json('jawatan_ids')->nullable();
         $table->json('gred_ids')->nullable();
         $table->string('status')->nullable();
@@ -252,4 +266,72 @@ test('data kontrak export uses bahagian rows for jkn under ibu pejabat', functio
     expect($dataRow[1])->toBe('BAHAGIAN PENGURUSAN')
         ->and($dataRow[2])->toBe(1)
         ->and($dataRow[3])->toBe(1);
+});
+
+test('role 3 data kontrak export only includes the user ptj', function () {
+    $jawatan = Jawatan::query()->create(['desc_jawatan' => 'PEGAWAI PERUBATAN']);
+    $ud41 = Gred::query()->create(['kod_gred' => 'UD9', 'desc_gred' => 'UD41']);
+    $jg = Jawatan_Gred::query()->create([
+        'jawatan_id' => $jawatan->id,
+        'gred_id' => $ud41->id,
+    ]);
+
+    $ownPtj = Ptj::query()->create([
+        'nama_ptj' => 'HOSPITAL JITRA',
+        'is_jkn' => false,
+    ]);
+    $otherPtj = Ptj::query()->create([
+        'nama_ptj' => 'HOSPITAL SULTANAH BAHIYAH',
+        'is_jkn' => false,
+    ]);
+    $program = Program::query()->create([
+        'nama_program' => 'PROGRAM 2',
+        'desc_program' => 'PENGURUSAN HOSPITAL',
+    ]);
+    $aktiviti = Aktiviti::query()->create([
+        'program_id' => $program->id,
+        'nama_aktiviti' => 'Aktiviti Hospital',
+    ]);
+
+    foreach ([$ownPtj, $otherPtj] as $ptj) {
+        WaranJawatan::query()->create([
+            'ptj_id' => $ptj->id,
+            'aktiviti_id' => $aktiviti->id,
+            'status' => 'active',
+        ]);
+
+        $pegawai = Pegawai::query()->create([
+            'ptj_id' => $ptj->id,
+            'jawatan_gred_id' => $jg->id,
+            'is_kontrak' => true,
+        ]);
+        PegawaiKontrak::query()->create([
+            'pegawai_id' => $pegawai->id,
+            'program_id' => $program->id,
+        ]);
+    }
+
+    $user = User::query()->create([
+        'name' => 'PTJ User',
+        'email' => 'ptj-user@test.com',
+        'password' => bcrypt('password'),
+        'ptj_id' => $ownPtj->id,
+        'role' => 3,
+        'status' => 1,
+    ]);
+
+    $this->actingAs($user);
+
+    $export = new DataKontrakExport;
+    $rows = $export->collection();
+
+    $dataLabels = collect($export->dataRows)
+        ->map(fn (int $rowNumber) => $rows[$rowNumber - 1][1])
+        ->all();
+
+    expect($dataLabels)->toBe(['HOSPITAL JITRA'])
+        ->and($dataLabels)->not->toContain('HOSPITAL SULTANAH BAHIYAH');
+
+    $totalRow = $rows[$export->totalRow - 1];
+    expect($totalRow[2])->toBe(1);
 });
