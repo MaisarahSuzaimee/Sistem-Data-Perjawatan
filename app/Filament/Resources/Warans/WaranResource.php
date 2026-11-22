@@ -74,6 +74,7 @@ class WaranResource extends Resource
     {
         return WaranInfolist::configure($schema);
     }
+    
     public static function table(Table $table): Table
     {
         return WaransTable::configure($table);

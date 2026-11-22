@@ -10,18 +10,10 @@
 
 /* ===== e-SDaP Login Page - Bright Pastel Theme ===== */
 
-@font-face {
-    font-family: 'HYWenHei';
-    src: url('/fonts/hywenhei/HYWenHei.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
 .esdap-login-header span,
 .esdap-login-title,
 .esdap-right-tagline {
-    font-family: 'HYWenHei', 'Inter', sans-serif;
+    font-family: 'Public Sans', Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .fi-simple-layout:has(.esdap-login-wrapper) {
