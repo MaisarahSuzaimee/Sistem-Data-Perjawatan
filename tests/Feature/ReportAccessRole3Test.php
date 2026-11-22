@@ -50,7 +50,7 @@ it('allows report page access for admin role users', function () {
     expect(Report::canAccess())->toBeTrue();
 });
 
-it('shows only L1 and L2 for role 3 users on the report page', function () {
+it('shows only L1, L2 and L3 for role 3 users on the report page', function () {
     config(['app.env' => 'local']);
 
     $user = User::create([
@@ -70,10 +70,11 @@ it('shows only L1 and L2 for role 3 users on the report page', function () {
         ->values()
         ->all();
 
-    expect($ids)->toBe([1, 2]);
+    expect($ids)->toBe([1, 2, 3]);
 
     $component
         ->assertSee('L1: Data Keseluruhan Mengikut PTJ')
         ->assertSee('L2: Data Perjawatan Kontrak')
-        ->assertDontSee('L3: Data Mengikut Kumpulan Mengikut PTJ');
+        ->assertSee('L3: Data Mengikut Kumpulan Mengikut PTJ')
+        ->assertDontSee('L4: Data Keseluruhan Mengikut Jawatan');
 });
