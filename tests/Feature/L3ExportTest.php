@@ -1,18 +1,196 @@
 <?php
 
 use App\Exports\L3Export;
+use App\Models\Aktiviti;
+use App\Models\Jawatan;
+use App\Models\Jawatan_Gred;
+use App\Models\Kumpulan;
+use App\Models\Program;
+use App\Models\Ptj;
+use App\Models\User;
+use App\Models\WaranJawatan;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
-test('l3 export returns a blank excel workbook', function () {
-    $export = new L3Export;
+beforeEach(function () {
+    foreach ([
+        'waran_jawatans',
+        'pegawais',
+        'aktivitis',
+        'program_ptj',
+        'programs',
+        'bahagians',
+        'ptjs',
+        'jawatan__greds',
+        'jawatans',
+        'kumpulans',
+        'users',
+    ] as $table) {
+        Schema::dropIfExists($table);
+    }
 
-    expect($export->collection())->toBeEmpty();
+    Schema::create('users', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->string('password');
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->tinyInteger('role')->default(3);
+        $table->tinyInteger('status')->default(1);
+        $table->timestamps();
+    });
+
+    Schema::create('kumpulans', function (Blueprint $table): void {
+        $table->id();
+        $table->string('nama_kumpulan')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('jawatans', function (Blueprint $table): void {
+        $table->id();
+        $table->string('desc_jawatan')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('jawatan__greds', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('jawatan_id')->nullable();
+        $table->unsignedBigInteger('gred_id')->nullable();
+        $table->unsignedBigInteger('kumpulan_id')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('ptjs', function (Blueprint $table): void {
+        $table->id();
+        $table->string('nama_ptj')->nullable();
+        $table->boolean('is_jkn')->default(false);
+        $table->timestamps();
+    });
+
+    Schema::create('bahagians', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->string('nama_bahagian')->nullable();
+        $table->timestamps();
+        $table->softDeletes();
+    });
+
+    Schema::create('programs', function (Blueprint $table): void {
+        $table->id();
+        $table->string('nama_program')->nullable();
+        $table->string('desc_program')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('program_ptj', function (Blueprint $table): void {
+        $table->unsignedBigInteger('program_id');
+        $table->unsignedBigInteger('ptj_id');
+        $table->timestamps();
+    });
+
+    Schema::create('aktivitis', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('program_id')->nullable();
+        $table->string('nama_aktiviti')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('pegawais', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->unsignedBigInteger('bahagian_id')->nullable();
+        $table->unsignedBigInteger('jawatan_gred_id')->nullable();
+        $table->timestamps();
+        $table->softDeletes();
+    });
+
+    Schema::create('waran_jawatans', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->unsignedBigInteger('aktiviti_id')->nullable();
+        $table->unsignedBigInteger('pegawai_id')->nullable();
+        $table->unsignedBigInteger('jawatan_gred_id')->nullable();
+        $table->json('jawatan_ids')->nullable();
+        $table->json('gred_ids')->nullable();
+        $table->string('status')->nullable();
+        $table->timestamps();
+        $table->softDeletes();
+    });
+});
+
+test('l3 export returns only the grand total row when empty', function () {
+    $export = new L3Export;
+    $rows = $export->collection();
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0][0])->toBe('JUMLAH KESELURUHAN')
+        ->and($export->dataRows)->toBeEmpty();
 
     Excel::fake();
 
     Excel::download($export, 'L3.xlsx');
 
-    Excel::assertDownloaded('L3.xlsx', function (L3Export $export) {
-        return $export->collection()->isEmpty();
-    });
+    Excel::assertDownloaded('L3.xlsx');
+});
+
+test('role 3 l3 export only includes the user ptj', function () {
+    $kumpulan = Kumpulan::query()->create(['nama_kumpulan' => 'Pengurusan']);
+    $jawatan = Jawatan::query()->create(['desc_jawatan' => 'PEGAWAI TADBIR']);
+    $jg = Jawatan_Gred::query()->create([
+        'jawatan_id' => $jawatan->id,
+        'gred_id' => 1,
+        'kumpulan_id' => $kumpulan->id,
+    ]);
+
+    $ownPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL JITRA']);
+    $otherPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL SULTANAH BAHIYAH']);
+    $program = Program::query()->create([
+        'nama_program' => 'PROGRAM 2',
+        'desc_program' => 'PENGURUSAN HOSPITAL',
+    ]);
+    $program->ptjs()->attach([$ownPtj->id, $otherPtj->id]);
+
+    $aktiviti = Aktiviti::query()->create([
+        'program_id' => $program->id,
+        'nama_aktiviti' => 'Aktiviti Hospital',
+    ]);
+
+    foreach ([$ownPtj, $otherPtj] as $ptj) {
+        WaranJawatan::query()->create([
+            'ptj_id' => $ptj->id,
+            'aktiviti_id' => $aktiviti->id,
+            'jawatan_gred_id' => $jg->id,
+            'status' => 'active',
+        ]);
+    }
+
+    $user = User::query()->create([
+        'name' => 'PTJ User',
+        'email' => 'l3-ptj-user@test.com',
+        'password' => bcrypt('password'),
+        'ptj_id' => $ownPtj->id,
+        'role' => 3,
+        'status' => 1,
+    ]);
+
+    $this->actingAs($user);
+
+    $export = new L3Export;
+    $rows = $export->collection();
+
+    // collection() rows are 0-indexed relative to startCell A4, while dataRows
+    // track absolute spreadsheet row numbers starting at 4.
+    $labels = collect($export->dataRows)
+        ->map(function (int $absoluteRow) use ($rows) {
+            $index = $absoluteRow - 4;
+
+            return $rows[$index][1] ?? null;
+        })
+        ->filter()
+        ->values()
+        ->all();
+
+    expect($labels)->toBe(['HOSPITAL JITRA'])
+        ->and($labels)->not->toContain('HOSPITAL SULTANAH BAHIYAH');
 });

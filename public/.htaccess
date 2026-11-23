@@ -5,6 +5,12 @@
 
     RewriteEngine On
 
+    # Block obvious scanner / CMS probes (return 403)
+    RewriteRule ^(?:wp-admin|wp-login\.php|wp-content|wp-includes|xmlrpc\.php)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:wordpress|wlwmanifest\.xml)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:graphql|api/graphql)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:manager/html|CDGServer3|realms/)(?:/|$) - [F,L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
