@@ -17,7 +17,7 @@ class L4ExportController extends Controller
 
         return Excel::download(
             new L4Export((int) $validated['kumpulan_id']),
-            'L4.xlsx'
+            'Data_Perjawatan_Mengikut_Kumpulan.xlsx'
         );
     }
 }

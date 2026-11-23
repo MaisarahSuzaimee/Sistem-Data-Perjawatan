@@ -30,14 +30,14 @@ class Report extends Page implements HasTable
     {
         $user = auth()->user();
 
-        return $user !== null && in_array((int) $user->role, [1, 2], true);
+        return $user !== null && in_array((int) $user->role, [1, 2, 3], true);
     }
 
     public static function canAccess(): bool
     {
         $user = auth()->user();
 
-        return $user !== null && in_array((int) $user->role, [1, 2], true);
+        return $user !== null && in_array((int) $user->role, [1, 2, 3], true);
     }
 
     protected string $view = 'filament.pages.report';
@@ -153,10 +153,7 @@ class Report extends Page implements HasTable
                             5 => [
                                 Select::make('jawatan_id')
                                     ->label('Pilih Jawatan')
-                                    ->options(
-                                        Jawatan::orderBy('desc_jawatan')
-                                            ->pluck('desc_jawatan', 'id')
-                                    )
+                                    ->options(fn (): array => $this->l7JawatanOptions())
                                     ->searchable()
                                     ->required(),
                             ],
@@ -164,10 +161,7 @@ class Report extends Page implements HasTable
                             6 => [
                                 Select::make('jawatan_id')
                                     ->label('Pilih Jawatan')
-                                    ->options(
-                                        Jawatan::orderBy('desc_jawatan')
-                                            ->pluck('desc_jawatan', 'id')
-                                    )
+                                    ->options(fn (): array => $this->l7JawatanOptions())
                                     ->searchable()
                                     ->live()
                                     ->afterStateUpdated(fn (Set $set) => $set('gred_combination', null))
@@ -178,6 +172,23 @@ class Report extends Page implements HasTable
                                     ->options(fn (Get $get): array => $this->gredCombinationOptionsForJawatan($get('jawatan_id')))
                                     ->searchable()
                                     ->required(),
+                            ],
+
+                            7 => [
+                                Select::make('jawatan_id')
+                                    ->label('Pilih Jawatan')
+                                    ->options(fn (): array => $this->l7JawatanOptions())
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(fn (Set $set) => $set('gred_ids', null))
+                                    ->required(),
+                                Select::make('gred_ids')
+                                    ->label('Pilih Gred (Waran)')
+                                    ->multiple()
+                                    ->options(fn (Get $get): array => $this->l7GredOptions($get('jawatan_id')))
+                                    ->searchable()
+                                    ->visible(fn (Get $get): bool => filled($get('jawatan_id')))
+                                    ->required(fn (Get $get): bool => filled($get('jawatan_id'))),
                             ],
 
                             8 => [
@@ -224,7 +235,10 @@ class Report extends Page implements HasTable
                                 'gred_combination' => $data['gred_combination'],
                             ]),
 
-                            7 => redirect()->route('export.l7'),
+                            7 => redirect()->route('export.l7', [
+                                'jawatan_id' => $data['jawatan_id'],
+                                'gred_ids' => $data['gred_ids'],
+                            ]),
 
                             8 => redirect()->route('export.l8', [
                                 'program_id' => $data['program_id'],
@@ -292,6 +306,82 @@ class Report extends Page implements HasTable
             ->sortByDesc(fn (string $label) => collect(explode('/', $label))
                 ->map(fn (string $code) => (int) substr($code, 1))
                 ->max())
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function l7JawatanOptions(): array
+    {
+        $waranQuery = WaranJawatan::query()
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'));
+
+        $user = auth()->user();
+        if ($user && $user->isUser() && filled($user->ptj_id)) {
+            $waranQuery->where(function ($query) use ($user): void {
+                $query->where('ptj_id', $user->ptj_id)
+                    ->orWhereHas('pegawai', fn ($pegawaiQuery) => $pegawaiQuery
+                        ->where('ptj_id', $user->ptj_id));
+            });
+        }
+
+        $jawatanIds = $waranQuery
+            ->get(['jawatan_ids'])
+            ->flatMap(fn (WaranJawatan $waran): array => array_map('intval', $waran->jawatan_ids ?? []))
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($jawatanIds->isEmpty()) {
+            return [];
+        }
+
+        return Jawatan::query()
+            ->whereIn('id', $jawatanIds)
+            ->orderBy('desc_jawatan')
+            ->pluck('desc_jawatan', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function l7GredOptions(mixed $jawatanId): array
+    {
+        if (blank($jawatanId)) {
+            return [];
+        }
+
+        $waranQuery = WaranJawatan::query()
+            ->whereJsonContains('jawatan_ids', (int) $jawatanId)
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'));
+
+        $user = auth()->user();
+        if ($user && $user->isUser() && filled($user->ptj_id)) {
+            $waranQuery->where(function ($query) use ($user): void {
+                $query->where('ptj_id', $user->ptj_id)
+                    ->orWhereHas('pegawai', fn ($pegawaiQuery) => $pegawaiQuery
+                        ->where('ptj_id', $user->ptj_id));
+            });
+        }
+
+        $gredIds = $waranQuery
+            ->get(['gred_ids'])
+            ->flatMap(fn (WaranJawatan $waran): array => array_map('intval', $waran->gred_ids ?? []))
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($gredIds->isEmpty()) {
+            return [];
+        }
+
+        return Gred::query()
+            ->whereIn('id', $gredIds)
+            ->get()
+            ->sortBy(fn (Gred $gred): int => (int) substr($gred->kod_gred, 1))
+            ->mapWithKeys(fn (Gred $gred): array => [$gred->id => $gred->kod_gred])
             ->all();
     }
 

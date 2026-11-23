@@ -63,7 +63,7 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
         }
 
         $user = auth()->user();
-        $isScoped = $user && (int) ($user->role ?? 0) === 3 && $user->ptj_id;
+        $isScoped = $user && $user->isPtjScoped();
         $scopedPtjId = $isScoped ? (int) $user->ptj_id : null;
 
         // Active posts only: exclude soft-deleted (default) and removed placements.

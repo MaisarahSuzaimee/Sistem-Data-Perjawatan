@@ -20,30 +20,36 @@ beforeEach(function () {
     });
 });
 
-it('blocks report page access for role 3 users', function () {
+it('allows report page access for role 3 users', function () {
     $user = User::create([
         'name' => 'Role 3 User',
         'email' => 'role3@test.com',
         'password' => bcrypt('password'),
+        'ptj_id' => 10,
         'role' => 3,
         'status' => 1,
     ]);
 
     auth()->login($user);
 
-    expect(Report::canAccess())->toBeFalse();
+    expect(Report::canAccess())->toBeTrue()
+        ->and($user->canAccessAllPtj())->toBeFalse()
+        ->and($user->isPtjScoped())->toBeTrue();
 });
 
 it('allows report page access for admin role users', function () {
-    $user = User::create([
-        'name' => 'Admin User',
-        'email' => 'admin@test.com',
-        'password' => bcrypt('password'),
-        'role' => 1,
-        'status' => 1,
-    ]);
+    foreach ([1, 2] as $role) {
+        $user = User::create([
+            'name' => "Admin Role {$role}",
+            'email' => "admin{$role}@test.com",
+            'password' => bcrypt('password'),
+            'role' => $role,
+            'status' => 1,
+        ]);
 
-    auth()->login($user);
+        auth()->login($user);
 
-    expect(Report::canAccess())->toBeTrue();
+        expect(Report::canAccess())->toBeTrue()
+            ->and($user->canAccessAllPtj())->toBeTrue();
+    }
 });

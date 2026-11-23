@@ -79,10 +79,14 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         );
     }
 
-        // app/Models/User.php
+    // app/Models/User.php
     public function canAccessAllPtj(): bool
     {
-        return in_array($this->role, ['admin', 'superadmin']);
+        return $this->isSuperAdmin() || $this->isAdmin();
     }
 
+    public function isPtjScoped(): bool
+    {
+        return $this->isUser() && filled($this->ptj_id);
+    }
 }
