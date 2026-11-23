@@ -32,9 +32,11 @@ Route::get('/export-users', [UserExportController::class, 'export'])
 //     ->name('export.letakJawatan');
 
 Route::get('/export-letak-jawatan', [LetakJawatanExportController::class, 'export'])
+    ->middleware('auth')
     ->name('export.letakJawatan');
 
 Route::get('/export-penamatan-perkhidmatan', [PenamatanPerkhidmatanExportController::class, 'export'])
+    ->middleware('auth')
     ->name('export.penamatanPerkhidmatan');
 
 // L1

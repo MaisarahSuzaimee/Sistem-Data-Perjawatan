@@ -186,9 +186,11 @@ class L4Export implements FromCollection, WithEvents
                 ?: strnatcasecmp($a['name'], $b['name']);
         });
 
+        $locationName = $this->headerLocationName();
+
         $rows = collect([[
             'DATA PERJAWATAN '.mb_strtoupper($kumpulan->nama_kumpulan)
-                .' MENGIKUT SKIM PERKHIDMATAN DI JKN KEDAH SEHINGGA '
+                .' MENGIKUT SKIM PERKHIDMATAN DI '.$locationName.' SEHINGGA '
                 .strtoupper(Carbon::now()->translatedFormat('d F Y')),
             '', '', '', '', '', '',
         ], [
@@ -294,6 +296,21 @@ class L4Export implements FromCollection, WithEvents
         }
 
         return number_format($percentage, 2).'%';
+    }
+
+    private function headerLocationName(): string
+    {
+        $user = auth()->user();
+
+        if ($user && $user->isPtjScoped() && $user->ptj_id) {
+            $ptjName = trim((string) ($user->ptj?->nama_ptj ?? ''));
+
+            if ($ptjName !== '') {
+                return mb_strtoupper($ptjName);
+            }
+        }
+
+        return 'JKN KEDAH';
     }
 
     public function registerEvents(): array

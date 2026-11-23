@@ -100,7 +100,7 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
         $rowNumber = 4;
         $grand = ['J' => 0, 'I' => 0, 'K' => 0];
         $user = auth()->user();
-        $scopedPtjId = $user && (int) ($user->role ?? 0) === 3 && $user->ptj_id
+        $scopedPtjId = $user && $user->isPtjScoped()
             ? (int) $user->ptj_id
             : null;
 

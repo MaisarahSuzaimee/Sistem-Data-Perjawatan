@@ -6,6 +6,8 @@ use App\Models\Jawatan;
 use App\Models\Jawatan_Gred;
 use App\Models\Kumpulan;
 use App\Models\Pegawai;
+use App\Models\Ptj;
+use App\Models\User;
 use App\Models\WaranJawatan;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,9 +15,26 @@ use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 beforeEach(function () {
-    foreach (['waran_jawatans', 'pegawais', 'jawatan__greds', 'greds', 'jawatans', 'kumpulans'] as $table) {
+    foreach (['waran_jawatans', 'pegawais', 'jawatan__greds', 'greds', 'jawatans', 'kumpulans', 'users', 'ptjs'] as $table) {
         Schema::dropIfExists($table);
     }
+
+    Schema::create('ptjs', function (Blueprint $table): void {
+        $table->id();
+        $table->string('nama_ptj');
+        $table->timestamps();
+    });
+
+    Schema::create('users', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('email');
+        $table->string('password');
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->tinyInteger('role')->default(3);
+        $table->tinyInteger('status')->default(1);
+        $table->timestamps();
+    });
 
     Schema::create('kumpulans', function (Blueprint $table): void {
         $table->id();
@@ -54,6 +73,7 @@ beforeEach(function () {
 
     Schema::create('waran_jawatans', function (Blueprint $table): void {
         $table->id();
+        $table->unsignedBigInteger('ptj_id')->nullable();
         $table->unsignedBigInteger('pegawai_id')->nullable();
         $table->unsignedBigInteger('jawatan_gred_id')->nullable();
         $table->json('jawatan_ids')->nullable();
@@ -236,4 +256,38 @@ test('L4 preserves the selected grade order in the position label', function () 
 
     expect($rows[3][2])->toBe('PEGAWAI PERUBATAN, Gred UD13/UD14/Pakar UD15')
         ->and($rows[4][1])->toBe('Jumlah');
+});
+
+test('L4 uses the role 3 user PTJ name in the Excel header', function () {
+    $ptj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL BALING']);
+    $user = User::query()->create([
+        'name' => 'Role 3 User',
+        'email' => 'role3-l4@test.com',
+        'password' => bcrypt('password'),
+        'ptj_id' => $ptj->id,
+        'role' => 3,
+        'status' => 1,
+    ]);
+    auth()->login($user);
+
+    $kumpulan = Kumpulan::query()->create(['nama_kumpulan' => 'Pelaksana']);
+    $jawatan = Jawatan::query()->create(['desc_jawatan' => 'PEMBANTU OPERASI']);
+    $gred = Gred::query()->create(['kod_gred' => 'N6']);
+
+    Jawatan_Gred::query()->create([
+        'jawatan_id' => $jawatan->id,
+        'gred_id' => $gred->id,
+        'kumpulan_id' => $kumpulan->id,
+    ]);
+    WaranJawatan::query()->create([
+        'ptj_id' => $ptj->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$gred->id],
+    ]);
+
+    $rows = (new L4Export($kumpulan->id))->collection();
+
+    expect($rows[0][0])->toContain('DATA PERJAWATAN PELAKSANA MENGIKUT SKIM PERKHIDMATAN DI HOSPITAL BALING SEHINGGA ');
+
+    auth()->logout();
 });

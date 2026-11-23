@@ -57,11 +57,12 @@ it('redirects guests away from all export routes', function () use ($exportRoute
     }
 });
 
-it('forbids role 3 users from all export routes', function () use ($exportRoutes) {
+it('allows role 3 users past export authentication and role gating', function () use ($exportRoutes) {
     $this->actingAs(exportUser(3));
 
     foreach ($exportRoutes as $routeName) {
-        $this->get(route($routeName))->assertForbidden();
+        $status = $this->get(route($routeName))->getStatusCode();
+        expect($status)->not->toBe(403);
     }
 });
 
@@ -74,9 +75,9 @@ it('allows admin and superadmin past the export role gate', function () use ($ex
 
             expect($status)->not->toBe(403);
 
-            // L4, L6 and L8 require report selections and redirect back with
+            // L4, L6, L7 and L8 require report selections and redirect back with
             // validation errors when those selections are missing.
-            if (! in_array($routeName, ['export.l4', 'export.l6', 'export.l8'], true)) {
+            if (! in_array($routeName, ['export.l4', 'export.l6', 'export.l7', 'export.l8'], true)) {
                 expect($status)->not->toBe(302, "Unexpected validation redirect for {$routeName}");
             }
         }
