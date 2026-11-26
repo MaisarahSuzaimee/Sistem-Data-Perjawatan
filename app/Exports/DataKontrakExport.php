@@ -22,7 +22,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
  *   Row 1 : DATA PERJAWATAN KONTRAK JKN KEDAH SEHINGGA <tarikh> (title, merged)
  *   Row 2 : BIL | PUSAT TANGGUNGJAWAB | JUMLAH JAWATAN | <satu lajur per jawatan/gred>
  *   Rows 3+ : per program: section header, unit (PTJ / Bahagian JKN) rows,
- *             JUMLAH subtotal row; then a blank row and JUMLAH KESELURUHAN
+ *             JUMLAH subtotal row; then JUMLAH KESELURUHAN
  *
  * Hanya pegawai dengan is_kontrak = 1 dikira. Lajur hijau (jawatan) dibina
  * secara dinamik: setiap gabungan jawatan + gred yang wujud pada pegawai
@@ -133,9 +133,6 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
             $rows->push($row);
             $this->jumlahRows[] = $rows->count();
         }
-
-        // Blank row, then grand total row
-        $rows->push(array_fill(0, $this->lastColumnIndex, ''));
 
         $row = array_fill(0, $this->lastColumnIndex, '');
         $row[0] = 'JUMLAH KESELURUHAN';
@@ -250,11 +247,10 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
         foreach ($warans as $waran) {
             $unit = $this->unitFor($waran->ptj, $waran->bahagian);
             if ($unit && ! $units->has($unit['key'])) {
-                $program = $waran->aktiviti?->program;
-                $unit['programId'] = $program?->id;
-                $unit['programLabel'] = $this->programLabel($program);
-                $unit['programSort'] = $this->programSortKey($program);
-                $units->put($unit['key'], $unit);
+                $units->put(
+                    $unit['key'],
+                    $this->withProgramSection($unit, $waran->ptj, $waran->aktiviti?->program),
+                );
             }
         }
 
@@ -264,6 +260,30 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
     protected function isJkn($ptj): bool
     {
         return (bool) ($ptj && ($ptj->is_jkn || $ptj->nama_ptj === 'JABATAN KESIHATAN NEGERI KEDAH'));
+    }
+
+    /**
+     * All is_jkn bahagian go under one trailing "IBU PEJABAT JKN" section,
+     * not under Program 1/2/3 from the waran/pegawai program link.
+     *
+     * @param  array{key: string, label: string, programId: mixed, programLabel: string, programSort: string}  $unit
+     * @return array{key: string, label: string, programId: mixed, programLabel: string, programSort: string}
+     */
+    protected function withProgramSection(array $unit, $ptj, $program = null): array
+    {
+        if ($this->isJkn($ptj)) {
+            $unit['programId'] = null;
+            $unit['programLabel'] = 'IBU PEJABAT JKN';
+            $unit['programSort'] = '~~~~';
+
+            return $unit;
+        }
+
+        $unit['programId'] = $program?->id;
+        $unit['programLabel'] = $this->programLabel($program);
+        $unit['programSort'] = $this->programSortKey($program);
+
+        return $unit;
     }
 
     protected function unitFor($ptj, $bahagian = null): ?array
@@ -281,8 +301,8 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
                 'key' => 'b'.$bahagian->id,
                 'label' => $bahagian->nama_bahagian,
                 'programId' => null,
-                'programLabel' => 'TANPA PROGRAM',
-                'programSort' => 'ZZZ',
+                'programLabel' => 'IBU PEJABAT JKN',
+                'programSort' => '~~~~',
             ];
         }
 
@@ -299,11 +319,6 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
     {
         if (! $program) {
             return 'TANPA PROGRAM';
-        }
-
-        // Same convention as DataKeseluruhanExport: PROGRAM 1 = ibu pejabat JKN
-        if ($program->nama_program === 'PROGRAM 1') {
-            return 'IBU PEJABAT JKN';
         }
 
         return "{$program->nama_program} : {$program->desc_program}";
@@ -334,16 +349,15 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
 
             $program = $p->pegawaiKontrak?->program;
             if (! $units->has($unit['key'])) {
-                $unit['programId'] = $program?->id;
-                $unit['programLabel'] = $this->programLabel($program);
-                $unit['programSort'] = $this->programSortKey($program);
-                $units->put($unit['key'], $unit);
-            } elseif ($program && ($units[$unit['key']]['programId'] ?? null) === null) {
-                $existing = $units->get($unit['key']);
-                $existing['programId'] = $program->id;
-                $existing['programLabel'] = $this->programLabel($program);
-                $existing['programSort'] = $this->programSortKey($program);
-                $units->put($unit['key'], $existing);
+                $units->put(
+                    $unit['key'],
+                    $this->withProgramSection($unit, $p->ptj, $program),
+                );
+            } elseif (! $this->isJkn($p->ptj) && $program && ($units[$unit['key']]['programId'] ?? null) === null) {
+                $units->put(
+                    $unit['key'],
+                    $this->withProgramSection($units->get($unit['key']), $p->ptj, $program),
+                );
             }
 
             $counts[$unit['key']] ??= $this->emptyCounts();
@@ -439,7 +453,7 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
 
     protected function styleHeader($sheet, string $lastCol): void
     {
-        $sheet->getStyle("A2:{$lastCol}2")->applyFromArray([
+        $headerBase = [
             'font' => [
                 'name' => 'Calibri',
                 'bold' => true,
@@ -451,17 +465,33 @@ class DataKontrakExport implements FromCollection, WithEvents, WithStrictNullCom
                 'vertical' => Alignment::VERTICAL_CENTER,
                 'wrapText' => true,
             ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '70AD47'],
-            ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
                     'color' => ['rgb' => '000000'],
                 ],
             ],
+        ];
+
+        // BIL, PUSAT TANGGUNGJAWAB, JUMLAH JAWATAN
+        $sheet->getStyle('A2:C2')->applyFromArray([
+            ...$headerBase,
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '999999'],
+            ],
         ]);
+
+        // Jawatan/gred columns stay green when present.
+        if ($this->lastColumnIndex > 3) {
+            $sheet->getStyle("D2:{$lastCol}2")->applyFromArray([
+                ...$headerBase,
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '70AD47'],
+                ],
+            ]);
+        }
 
         $sheet->getRowDimension(2)->setRowHeight(34);
     }

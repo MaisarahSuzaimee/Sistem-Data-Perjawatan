@@ -148,7 +148,9 @@ test('jik by jawatan columns come from waran jawatan gred combinations not jawat
     $export = new JikByJawatanExport($jawatan->id);
     $rows = $export->collection();
 
-    expect($export->greds)->toHaveCount(3)
+    expect($rows[0][2])->toBe(':'.mb_strtoupper($jawatan->desc_jawatan))
+        ->and($rows[1][2])->toStartWith(':')
+        ->and($export->greds)->toHaveCount(3)
         ->and(collect($export->greds)->pluck('label')->all())->toBe(['N4', 'N3', 'N1/N2/N3']);
 
     $header = $rows[3];
@@ -167,4 +169,81 @@ test('jik by jawatan columns come from waran jawatan gred combinations not jawat
         1, 0, 1,
         3, 1, 2,
     ]);
+});
+
+test('jik by jawatan adds jumlah keseluruhan by program before grand total', function () {
+    $jawatan = Jawatan::query()->create([
+        'kod_jawatan' => 'U',
+        'desc_jawatan' => 'JURURAWAT',
+    ]);
+    $u6 = Gred::query()->create(['kod_gred' => 'U6', 'desc_gred' => 'U6']);
+
+    $ptjHq = Ptj::query()->create(['nama_ptj' => 'JKN HQ']);
+    $ptjHospital = Ptj::query()->create(['nama_ptj' => 'HOSPITAL JITRA']);
+
+    $program1 = Program::query()->create([
+        'nama_program' => 'PROGRAM 1',
+        'desc_program' => 'PENGURUSAN',
+    ]);
+    $program2 = Program::query()->create([
+        'nama_program' => 'PROGRAM 2',
+        'desc_program' => 'PERUBATAN',
+    ]);
+    $aktiviti1 = Aktiviti::query()->create([
+        'program_id' => $program1->id,
+        'nama_aktiviti' => 'Aktiviti HQ',
+    ]);
+    $aktiviti2 = Aktiviti::query()->create([
+        'program_id' => $program2->id,
+        'nama_aktiviti' => 'Aktiviti Hospital',
+    ]);
+    $pegawai = Pegawai::query()->create([
+        'is_tetap' => true,
+        'is_kontrak_interim' => false,
+    ]);
+
+    WaranJawatan::query()->create([
+        'ptj_id' => $ptjHq->id,
+        'aktiviti_id' => $aktiviti1->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$u6->id],
+        'status' => 'active',
+    ]);
+    WaranJawatan::query()->create([
+        'ptj_id' => $ptjHospital->id,
+        'aktiviti_id' => $aktiviti2->id,
+        'pegawai_id' => $pegawai->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$u6->id],
+        'status' => 'active',
+    ]);
+    WaranJawatan::query()->create([
+        'ptj_id' => $ptjHospital->id,
+        'aktiviti_id' => $aktiviti2->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$u6->id],
+        'status' => 'active',
+    ]);
+
+    $export = new JikByJawatanExport($jawatan->id);
+    $rows = $export->collection();
+
+    $summaryLabels = collect($export->programSummaryRows)
+        ->map(fn (int $rowNumber) => $rows[$rowNumber - 1][0])
+        ->all();
+
+    expect($summaryLabels)->toBe([
+        'PROGRAM 1 : PENGURUSAN',
+        'PROGRAM 2 : PERUBATAN',
+    ]);
+
+    $program1Summary = $rows[$export->programSummaryRows[0] - 1];
+    $program2Summary = $rows[$export->programSummaryRows[1] - 1];
+    $grandTotal = $rows[$export->totalRow - 1];
+
+    // U6 only: J I K | total J I K
+    expect($program1Summary)->toBe(['PROGRAM 1 : PENGURUSAN', '', 1, 0, 1, 1, 0, 1])
+        ->and($program2Summary)->toBe(['PROGRAM 2 : PERUBATAN', '', 2, 1, 1, 2, 1, 1])
+        ->and($grandTotal)->toBe(['JUMLAH KESELURUHAN', '', 3, 1, 2, 3, 1, 2])
+        ->and($export->totalRow)->toBeGreaterThan($export->programSummaryRows[1]);
 });

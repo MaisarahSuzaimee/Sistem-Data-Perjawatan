@@ -12,7 +12,7 @@ class L3ExportController extends Controller
     {
         return Excel::download(
             new L3Export,
-            'L3.xlsx'
+            'Data Mengikut Kumpulan Mengikut PTJ.xlsx'
         );
     }
 }

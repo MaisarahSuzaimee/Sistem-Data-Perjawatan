@@ -44,7 +44,7 @@ class L8ExportController extends Controller
 
         return Excel::download(
             new L8Export($aktivitiId),
-            'L8.xlsx'
+            'Kedudukan Perjawatan Dan Pengisian Mengikut Program - Aktiviti.xlsx'
         );
     }
 }

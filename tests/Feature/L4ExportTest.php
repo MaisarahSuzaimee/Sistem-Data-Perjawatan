@@ -154,9 +154,9 @@ test('L4 exports positions grouped by scheme with filled, vacant, percentage and
     $export = new L4Export($paramedicSkim->id);
     $rows = $export->collection();
 
-    expect($rows[3])->toBe(['', 1, 'PENOLONG PEGAWAI PERUBATAN (Open Post), Gred U7', 1, 0, 1, '0%'])
-        ->and($rows[4])->toBe(['', 2, 'PENOLONG PEGAWAI PERUBATAN, Gred U7', 1, 1, 0, '100%'])
-        ->and($rows[5])->toBe(['', 3, 'PENOLONG PEGAWAI PERUBATAN, Gred U6', 1, 0, 1, '0%'])
+    expect($rows[3])->toBe(['', 1, 'PENOLONG PEGAWAI PERUBATAN, Gred U6', 1, 0, 1, '0%'])
+        ->and($rows[4])->toBe(['', 2, 'PENOLONG PEGAWAI PERUBATAN (Open Post), Gred U7', 1, 0, 1, '0%'])
+        ->and($rows[5])->toBe(['', 3, 'PENOLONG PEGAWAI PERUBATAN, Gred U7', 1, 1, 0, '100%'])
         ->and($rows[6])->toBe(['', 'Jumlah', '', 3, 1, 2, '33.33%'])
         ->and($rows[8])->toBe(['', 1, 'PENOLONG PEGAWAI KESIHATAN PERSEKITARAN, Gred U5', 1, 1, 0, '100%'])
         ->and($rows[9])->toBe(['', 'Jumlah', '', 1, 1, 0, '100%'])
@@ -171,10 +171,15 @@ test('L4 exports positions grouped by scheme with filled, vacant, percentage and
 
         expect($sheet->getCell('A1')->getValue())
             ->toContain('DATA PERJAWATAN PARAMEDIK & AUXILIARI MENGIKUT SKIM PERKHIDMATAN DI JKN KEDAH SEHINGGA ')
+            ->and($sheet->getStyle('A1')->getFont()->getName())->toBe('Calibri')
+            ->and($sheet->getStyle('A1')->getFont()->getSize())->toBe(12.0)
+            ->and($sheet->getStyle('A1')->getFont()->getBold())->toBeTrue()
+            ->and($sheet->getStyle('A2')->getFont()->getName())->toBe('Calibri')
+            ->and($sheet->getStyle('C4')->getFont()->getName())->toBe('Calibri')
             ->and($sheet->getCell('B2')->getValue())->toBe('SKIM PERKHIDMATAN/NAMA & GRED JAWATAN')
-            ->and($sheet->getCell('C4')->getValue()->getPlainText())
+            ->and($sheet->getCell('C5')->getValue()->getPlainText())
             ->toBe('PENOLONG PEGAWAI PERUBATAN (Open Post), Gred U7')
-            ->and($sheet->getCell('C4')->getValue()->getRichTextElements()[1]->getFont()->getColor()->getARGB())
+            ->and($sheet->getCell('C5')->getValue()->getRichTextElements()[1]->getFont()->getColor()->getARGB())
             ->toBe('FFFF0000')
             ->and($sheet->getCell('D4')->getValue())->toBe(1)
             ->and($sheet->getCell('B7')->getValue())->toBe('Jumlah')
@@ -232,14 +237,15 @@ test('L4 places the state health director scheme first for the medical officer g
         ->and($rows[5][1])->toBe('PEGAWAI PERUBATAN');
 });
 
-test('L4 preserves the selected grade order in the position label', function () {
+test('L4 sorts grades ascending in the position label', function () {
     $kumpulan = Kumpulan::query()->create(['nama_kumpulan' => 'PEGAWAI PERUBATAN']);
     $jawatan = Jawatan::query()->create(['desc_jawatan' => 'PEGAWAI PERUBATAN']);
-    $ud13 = Gred::query()->create(['kod_gred' => 'UD13']);
-    $ud14 = Gred::query()->create(['kod_gred' => 'UD14']);
-    $pakarUd15 = Gred::query()->create(['kod_gred' => 'Pakar UD15']);
+    $uf13 = Gred::query()->create(['kod_gred' => 'UF13']);
+    $uf9 = Gred::query()->create(['kod_gred' => 'UF9']);
+    $uf11 = Gred::query()->create(['kod_gred' => 'UF11']);
+    $uf10 = Gred::query()->create(['kod_gred' => 'UF10']);
 
-    foreach ([$ud13, $ud14, $pakarUd15] as $gred) {
+    foreach ([$uf13, $uf9, $uf11, $uf10] as $gred) {
         Jawatan_Gred::query()->create([
             'jawatan_id' => $jawatan->id,
             'gred_id' => $gred->id,
@@ -249,12 +255,12 @@ test('L4 preserves the selected grade order in the position label', function () 
 
     WaranJawatan::query()->create([
         'jawatan_ids' => [$jawatan->id],
-        'gred_ids' => [$ud13->id, $ud14->id, $pakarUd15->id],
+        'gred_ids' => [$uf13->id, $uf9->id, $uf11->id, $uf10->id],
     ]);
 
     $rows = (new L4Export($kumpulan->id))->collection();
 
-    expect($rows[3][2])->toBe('PEGAWAI PERUBATAN, Gred UD13/UD14/Pakar UD15')
+    expect($rows[3][2])->toBe('PEGAWAI PERUBATAN, Gred UF9/UF10/UF11/UF13')
         ->and($rows[4][1])->toBe('Jumlah');
 });
 

@@ -27,6 +27,12 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
     /** @var list<int> */
     public array $jumlahRows = [];
 
+    /** Row number of the JUMLAH PROGRAM summary header. */
+    public int $programSummaryHeaderRow = 0;
+
+    /** @var list<int> */
+    public array $programSummaryRows = [];
+
     public int $totalRow = 0;
 
     protected string $title = '';
@@ -46,6 +52,8 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
         $this->programRows = [];
         $this->dataRows = [];
         $this->jumlahRows = [];
+        $this->programSummaryHeaderRow = 0;
+        $this->programSummaryRows = [];
         $this->totalRow = 0;
 
         $jawatan = Jawatan::query()->findOrFail($this->jawatanId);
@@ -99,6 +107,7 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
         $rows = collect();
         $rowNumber = 4;
         $grand = ['J' => 0, 'I' => 0, 'K' => 0];
+        $programTotals = [];
         $user = auth()->user();
         $scopedPtjId = $user && $user->isPtjScoped()
             ? (int) $user->ptj_id
@@ -119,44 +128,64 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
                 $programCounts = array_intersect_key($programCounts, [$scopedPtjId => true]);
             }
 
-            if ($programCounts === []) {
-                continue;
-            }
-
-            $ptjs = $ptjs->sortBy(fn ($ptj) => strtolower((string) $ptj->nama_ptj));
-            $programLabel = trim($program->nama_program.($program->desc_program ? ' : '.$program->desc_program : ''));
-
-            $rows->push([$programLabel]);
-            $this->programRows[] = $rowNumber++;
-
             $subtotal = ['J' => 0, 'I' => 0, 'K' => 0];
-            $bil = 0;
 
-            foreach ($ptjs as $ptj) {
-                $bil++;
-                $counts = $programCounts[$ptj->id] ?? ['J' => 0, 'I' => 0];
-                $counts['K'] = $counts['J'] - $counts['I'];
+            if ($programCounts !== []) {
+                $ptjs = $ptjs->sortBy(fn ($ptj) => strtolower((string) $ptj->nama_ptj));
+                $programLabel = trim($program->nama_program.($program->desc_program ? ' : '.$program->desc_program : ''));
 
-                foreach (['J', 'I', 'K'] as $key) {
-                    $subtotal[$key] += $counts[$key];
-                    $grand[$key] += $counts[$key];
+                $rows->push([$programLabel]);
+                $this->programRows[] = $rowNumber++;
+
+                $bil = 0;
+
+                foreach ($ptjs as $ptj) {
+                    $bil++;
+                    $counts = $programCounts[$ptj->id] ?? ['J' => 0, 'I' => 0];
+                    $counts['K'] = $counts['J'] - $counts['I'];
+
+                    foreach (['J', 'I', 'K'] as $key) {
+                        $subtotal[$key] += $counts[$key];
+                        $grand[$key] += $counts[$key];
+                    }
+
+                    $rows->push([
+                        $bil,
+                        strtoupper((string) $ptj->nama_ptj),
+                        $counts['J'] > 0 ? $counts['J'] : '',
+                        $counts['J'] > 0 ? $counts['I'] : '',
+                        $counts['J'] > 0 ? $counts['K'] : '',
+                    ]);
+                    $this->dataRows[] = $rowNumber++;
                 }
 
-                $rows->push([
-                    $bil,
-                    strtoupper((string) $ptj->nama_ptj),
-                    $counts['J'] > 0 ? $counts['J'] : '',
-                    $counts['J'] > 0 ? $counts['I'] : '',
-                    $counts['J'] > 0 ? $counts['K'] : '',
-                ]);
-                $this->dataRows[] = $rowNumber++;
+                $rows->push(['JUMLAH '.$program->nama_program, '', $subtotal['J'], $subtotal['I'], $subtotal['K']]);
+                $this->jumlahRows[] = $rowNumber++;
             }
 
-            $rows->push(['JUMLAH '.$program->nama_program, '', $subtotal['J'], $subtotal['I'], $subtotal['K']]);
-            $this->jumlahRows[] = $rowNumber++;
+            $programTotals[] = [
+                'label' => (string) $program->nama_program,
+                'counts' => $subtotal,
+            ];
         }
 
-        $rows->push(['JUMLAH KESELURUHAN', '', $grand['J'], $grand['I'], $grand['K']]);
+        // Jumlah by program summary (all programs), then grand total.
+        $rows->push(['', 'JUMLAH PROGRAM', '', '', '']);
+        $this->programSummaryHeaderRow = $rowNumber++;
+
+        foreach ($programTotals as $index => $summary) {
+            $hasPosts = $summary['counts']['J'] > 0;
+            $rows->push([
+                $index + 1,
+                $summary['label'],
+                $hasPosts ? $summary['counts']['J'] : '',
+                $hasPosts ? $summary['counts']['I'] : '',
+                $hasPosts ? $summary['counts']['K'] : '',
+            ]);
+            $this->programSummaryRows[] = $rowNumber++;
+        }
+
+        $rows->push(['', 'JUMLAH KESELURUHAN', $grand['J'], $grand['I'], $grand['K']]);
         $this->totalRow = $rowNumber;
 
         return $rows;
@@ -253,18 +282,47 @@ class L6Export implements FromCollection, WithCustomStartCell, WithEvents
                     ]);
                 }
 
+                if ($this->programSummaryHeaderRow > 0) {
+                    $row = $this->programSummaryHeaderRow;
+                    $sheet->getStyle("A{$row}:E{$row}")->applyFromArray([
+                        'font' => ['name' => 'Calibri', 'bold' => true, 'size' => 11],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '6FA7DB']],
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                        'borders' => ['allBorders' => $thin],
+                    ]);
+                    $sheet->getStyle("B{$row}")->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                }
+
+                foreach ($this->programSummaryRows as $row) {
+                    $sheet->getStyle("A{$row}:E{$row}")->applyFromArray([
+                        'font' => ['name' => 'Calibri', 'size' => 11],
+                        'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+                        'borders' => ['allBorders' => $thin],
+                    ]);
+                    $sheet->getStyle("A{$row}")->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle("C{$row}:E{$row}")->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
+
                 if ($this->totalRow > 0) {
-                    $sheet->mergeCells("A{$this->totalRow}:B{$this->totalRow}");
                     $sheet->getStyle("A{$this->totalRow}:E{$this->totalRow}")->applyFromArray([
                         'font' => ['name' => 'Calibri', 'bold' => true, 'size' => 11],
-                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '00B0F0']],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '6FA7DB']],
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                         'borders' => ['allBorders' => $thin],
                     ]);
                 }
 
                 $sheet->freezePane('C4');
-                $sheet->setAutoFilter('A3:E3');
+
+                // Only the PTJ column is filterable.
+                $filterEndRow = $this->jumlahRows !== []
+                    ? max($this->jumlahRows)
+                    : 3;
+                $sheet->setAutoFilter("B3:B{$filterEndRow}");
+
                 $sheet->getPageSetup()->setFitToWidth(1)->setFitToHeight(0);
                 $sheet->getPageSetup()->setPrintArea("A1:E{$lastRow}");
             },

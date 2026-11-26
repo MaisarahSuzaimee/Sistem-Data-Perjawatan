@@ -9,8 +9,8 @@ use App\Models\Jawatan_Gred;
 use App\Models\Pegawai;
 use App\Models\Program;
 use App\Models\Ptj;
-use App\Models\WaranJawatan;
 use App\Models\Unit;
+use App\Models\WaranJawatan;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
@@ -255,7 +255,7 @@ it('exports active waran rows with counts, linked pegawai data, and grouped head
             $otherAktiviti->id => '02 - PENGURUSAN KLINIK',
         ])
         ->and($rows[0])->toBe([
-            'PROGRAM 1 / 01 - PENGURUSAN HOSPITAL',
+            '01',
             'A - DIISI',
             'JURURAWAT',
             'U9',
@@ -267,7 +267,7 @@ it('exports active waran rows with counts, linked pegawai data, and grouped head
             1,
             'NAMA PEGAWAI',
             '001234567890',
-            'Perempuan',
+            'P',
             'PTJ ASAL / UNIT ASAL',
             'PROGRAM 1 / 01 - PENGURUSAN HOSPITAL',
             'PTJ WARAN / UNIT WARAN',
@@ -288,8 +288,15 @@ it('exports active waran rows with counts, linked pegawai data, and grouped head
 
         expect($sheet->getCell('A1')->getValue())
             ->toBe('KEDUDUKAN PERJAWATAN DAN PENGISIAN MENGIKUT PROGRAM / AKTIVITI')
+            ->and($sheet->getStyle('A1')->getAlignment()->getHorizontal())->toBe('center')
+            ->and($sheet->getStyle('A2')->getAlignment()->getHorizontal())->toBe('center')
             ->and($sheet->getCell('B3')->getValue())->toBeNull()
-            ->and($sheet->getCell('A6')->getValue())->toBe('PROGRAM 1 / 01 - PENGURUSAN HOSPITAL')
+            ->and($sheet->getCell('A6')->getValue())->toBe('01')
+            ->and($sheet->getStyle('A6')->getAlignment()->getHorizontal())->toBe('center')
+            ->and($sheet->getCell('B6')->getValue())->toBe('A - DIISI')
+            ->and($sheet->getStyle('B6')->getAlignment()->getHorizontal())->toBe('center')
+            ->and($sheet->getCell('M6')->getValue())->toBe('P')
+            ->and($sheet->getStyle('M6')->getAlignment()->getHorizontal())->toBe('center')
             ->and($sheet->getCell('F6')->getValue())->toBe(1)
             ->and($sheet->getCell('G6')->getValue())->toBe(1)
             ->and($sheet->getCell('L6')->getValue())->toBe('001234567890')

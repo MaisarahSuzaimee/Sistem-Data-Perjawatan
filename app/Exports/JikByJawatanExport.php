@@ -25,7 +25,8 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
  *   Row 3 : blank
  *   Rows 4-5 : BIL | PTJ | <J/I/K per gred combination> | JUMLAH KESELURUHAN (J/I/K)
  *   Rows 6+  : per program: program header, PTJ rows, JUMLAH PROGRAM subtotal
- *   Last     : blank row, then JUMLAH KESELURUHAN grand total
+ *   Last     : blank row, program summary rows (jumlah keseluruhan by program),
+ *              then JUMLAH KESELURUHAN grand total
  *
  * Columns come from distinct gred_ids sets on waran_jawatan rows that include
  * the selected jawatan. A single-gred waran (N4) becomes one column; a
@@ -61,6 +62,9 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
     /** Row numbers of JUMLAH PROGRAM subtotal rows. */
     public array $jumlahRows = [];
 
+    /** Row numbers of end-of-sheet program summary rows (jumlah keseluruhan by program). */
+    public array $programSummaryRows = [];
+
     /** Row number of the JUMLAH KESELURUHAN grand total row. */
     public int $totalRow = 0;
 
@@ -74,6 +78,12 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
 
     public function collection()
     {
+        $this->programRows = [];
+        $this->ptjRows = [];
+        $this->jumlahRows = [];
+        $this->programSummaryRows = [];
+        $this->totalRow = 0;
+
         Carbon::setLocale('ms');
         $today = strtoupper(Carbon::now()->translatedFormat('d F Y'));
 
@@ -89,11 +99,11 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
 
         $rows = collect();
 
-        // Row 1 – title
-        $rows->push(['MAKLUMAT PERJAWATAN', '', ':', $jawatan->desc_jawatan, '']);
+        // Row 1 – title (jawatan name in C1, e.g. :JURURAWAT)
+        $rows->push(['MAKLUMAT PERJAWATAN', '', ':'.mb_strtoupper((string) $jawatan->desc_jawatan), '', '']);
 
-        // Row 2 – date
-        $rows->push(['DATA SEHINGGA', '', ':', $today, '']);
+        // Row 2 – date (in C2, e.g. :28 FEBRUARI 2026)
+        $rows->push(['DATA SEHINGGA', '', ':'.$today, '', '']);
 
         // Row 3 – blank
         $rows->push(array_fill(0, $this->lastColumnIndex, ''));
@@ -127,6 +137,7 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
             ->sortKeys(SORT_NATURAL);
 
         $grand = $this->emptyCounts();
+        $programSummaries = [];
 
         foreach ($programs as $programName => $items) {
             $program = $items->first()->aktiviti?->program;
@@ -169,10 +180,23 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
             $this->fillCounts($row, $programCounts);
             $rows->push($row);
             $this->jumlahRows[] = $rows->count();
+
+            $programSummaries[] = [
+                'label' => $namaProgram,
+                'counts' => $programCounts,
+            ];
         }
 
-        // Blank row, then grand total row
+        // Blank row, then jumlah keseluruhan by program, then grand total
         $rows->push(array_fill(0, $this->lastColumnIndex, ''));
+
+        foreach ($programSummaries as $summary) {
+            $row = array_fill(0, $this->lastColumnIndex, '');
+            $row[0] = $summary['label'];
+            $this->fillCounts($row, $summary['counts']);
+            $rows->push($row);
+            $this->programSummaryRows[] = $rows->count();
+        }
 
         $row = array_fill(0, $this->lastColumnIndex, '');
         $row[0] = 'JUMLAH KESELURUHAN';
@@ -361,6 +385,10 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
                     $this->styleSubtotalRow($sheet, $row, $lastCol);
                 }
 
+                foreach ($this->programSummaryRows as $row) {
+                    $this->styleProgramSummaryRow($sheet, $row, $lastCol);
+                }
+
                 $this->styleTotalRow($sheet, $this->totalRow, $lastCol);
             },
         ];
@@ -369,9 +397,9 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
     protected function styleTitle($sheet): void
     {
         $sheet->mergeCells('A1:B1');
-        $sheet->mergeCells('D1:E1');
+        $sheet->mergeCells('C1:E1');
         $sheet->mergeCells('A2:B2');
-        $sheet->mergeCells('D2:E2');
+        $sheet->mergeCells('C2:E2');
 
         $sheet->getStyle('A1:E2')->applyFromArray([
             'font' => [
@@ -539,6 +567,46 @@ class JikByJawatanExport implements FromCollection, WithEvents, WithStrictNullCo
                     'borderStyle' => Border::BORDER_THIN,
                     'color' => ['rgb' => '000000'],
                 ],
+            ],
+        ]);
+
+        $sheet->getRowDimension($row)->setRowHeight(26);
+    }
+
+    protected function styleProgramSummaryRow($sheet, int $row, string $lastCol): void
+    {
+        $sheet->mergeCells("A{$row}:B{$row}");
+
+        $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
+            'font' => [
+                'name' => 'Calibri',
+                'bold' => true,
+                'size' => 11,
+                'color' => ['rgb' => '000000'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'BFBFBF'],
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => '000000'],
+                ],
+            ],
+        ]);
+
+        $sheet->getStyle("A{$row}")->applyFromArray([
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_LEFT,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+
+        $sheet->getStyle("C{$row}:{$lastCol}{$row}")->applyFromArray([
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
             ],
         ]);
 

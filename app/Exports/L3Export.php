@@ -41,6 +41,11 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
 
     public function collection(): Collection
     {
+        $this->programRows = [];
+        $this->dataRows = [];
+        $this->jumlahRows = [];
+        $this->totalRow = 0;
+
         $this->kumpulans = Kumpulan::orderBy('id')->get();
         $kCount = max(1, $this->kumpulans->count());
         $this->lastColumnIndex = 2 + ($kCount * 2) + 2;
@@ -165,7 +170,12 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
 
         $groupedByProgram = collect($computed)->groupBy('program_id');
 
-        $programs = Program::with('ptjs')->orderBy('nama_program')->get();
+        // PROGRAM 1 (Ibu Pejabat JKN) always trails after all other programs.
+        $programs = Program::with('ptjs')->orderBy('nama_program')->get()
+            ->sortBy(fn (Program $program) => $program->nama_program === 'PROGRAM 1'
+                ? '~~~~'
+                : ($program->nama_program ?? 'ZZZ'))
+            ->values();
 
         $rows = collect();
         $currentRow = 4; // startCell A4
@@ -393,7 +403,7 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
                 $sheet->getStyle("A2:{$lastCol}3")->applyFromArray([
                     'font' => ['name' => 'Calibri', 'bold' => true, 'size' => 11],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BFBFBF']],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '999999']],
                     'borders' => ['allBorders' => $thin],
                 ]);
                 $sheet->getRowDimension(2)->setRowHeight(30);
@@ -410,14 +420,14 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
                     $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
                     $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
                         'font' => ['name' => 'Calibri', 'bold' => true, 'size' => 11],
-                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '9BC0E2']],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '6FA7DB']],
                         'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
                         'borders' => ['allBorders' => $thin],
                     ]);
                     $sheet->getRowDimension($row)->setRowHeight(26);
                 }
 
-                // Data rows
+                // Data rows — taller so wrapped PTJ names stay readable
                 foreach ($this->dataRows as $row) {
                     $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
                         'font' => ['name' => 'Calibri', 'size' => 11],
@@ -427,10 +437,13 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
                     $sheet->getStyle("A{$row}")->applyFromArray([
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                     ]);
+                    $sheet->getStyle("B{$row}")->applyFromArray([
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+                    ]);
                     $sheet->getStyle("C{$row}:{$lastCol}{$row}")->applyFromArray([
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                     ]);
-                    $sheet->getRowDimension($row)->setRowHeight(22);
+                    $sheet->getRowDimension($row)->setRowHeight(34);
                 }
 
                 // JUMLAH per program
@@ -438,7 +451,7 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
                     $sheet->mergeCells("A{$row}:B{$row}");
                     $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
                         'font' => ['name' => 'Calibri', 'bold' => true, 'size' => 11],
-                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'CA9EB3']],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F4CCCC']],
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                         'borders' => ['allBorders' => $thin],
                     ]);
@@ -458,8 +471,8 @@ class L3Export implements FromCollection, WithCustomStartCell, WithEvents
                     $sheet->getRowDimension($row)->setRowHeight(26);
                 }
 
-                $sheet->freezePane('C4');
-                $sheet->setAutoFilter("A3:{$lastCol}3");
+                // Freeze header rows only — freezing at C4 draws a grey line on B's right edge.
+                $sheet->freezePane('A4');
             },
         ];
     }

@@ -209,7 +209,7 @@ test('green columns come only from kontrak pegawai jawatan and gred', function (
         ->and($totalRow[2])->toBe(3);
 });
 
-test('data kontrak export uses bahagian rows for jkn under ibu pejabat', function () {
+test('data kontrak export puts all is_jkn bahagian under trailing ibu pejabat section', function () {
     $jawatan = Jawatan::query()->create(['desc_jawatan' => 'PEGAWAI PERUBATAN']);
     $ud41 = Gred::query()->create(['kod_gred' => 'UD9', 'desc_gred' => 'UD41']);
     $jg = Jawatan_Gred::query()->create([
@@ -221,51 +221,91 @@ test('data kontrak export uses bahagian rows for jkn under ibu pejabat', functio
         'nama_ptj' => 'JABATAN KESIHATAN NEGERI KEDAH',
         'is_jkn' => true,
     ]);
-    $bahagian = Bahagian::query()->create([
+    $hospital = Ptj::query()->create([
+        'nama_ptj' => 'HOSPITAL JITRA',
+        'is_jkn' => false,
+    ]);
+    $bahagianPengurusan = Bahagian::query()->create([
         'ptj_id' => $jkn->id,
         'nama_bahagian' => 'BAHAGIAN PENGURUSAN',
     ]);
-    $program = Program::query()->create([
+    $bahagianPerubatan = Bahagian::query()->create([
+        'ptj_id' => $jkn->id,
+        'nama_bahagian' => 'BAHAGIAN PERUBATAN',
+    ]);
+    $program1 = Program::query()->create([
         'nama_program' => 'PROGRAM 1',
         'desc_program' => 'PROGRAM PENGURUSAN',
     ]);
-    $aktiviti = Aktiviti::query()->create([
-        'program_id' => $program->id,
+    $program2 = Program::query()->create([
+        'nama_program' => 'PROGRAM 2',
+        'desc_program' => 'PENGURUSAN HOSPITAL',
+    ]);
+    $aktiviti1 = Aktiviti::query()->create([
+        'program_id' => $program1->id,
         'nama_aktiviti' => 'Aktiviti HQ',
+    ]);
+    $aktiviti2 = Aktiviti::query()->create([
+        'program_id' => $program2->id,
+        'nama_aktiviti' => 'Aktiviti Hospital',
     ]);
 
     WaranJawatan::query()->create([
         'ptj_id' => $jkn->id,
-        'bahagian_id' => $bahagian->id,
-        'aktiviti_id' => $aktiviti->id,
+        'bahagian_id' => $bahagianPengurusan->id,
+        'aktiviti_id' => $aktiviti1->id,
+        'status' => 'active',
+    ]);
+    WaranJawatan::query()->create([
+        'ptj_id' => $jkn->id,
+        'bahagian_id' => $bahagianPerubatan->id,
+        'aktiviti_id' => $aktiviti2->id,
+        'status' => 'active',
+    ]);
+    WaranJawatan::query()->create([
+        'ptj_id' => $hospital->id,
+        'aktiviti_id' => $aktiviti2->id,
         'status' => 'active',
     ]);
 
-    $pegawai = Pegawai::query()->create([
-        'ptj_id' => $jkn->id,
-        'bahagian_id' => $bahagian->id,
-        'jawatan_gred_id' => $jg->id,
-        'is_kontrak' => true,
-    ]);
-    PegawaiKontrak::query()->create([
-        'pegawai_id' => $pegawai->id,
-        'program_id' => $program->id,
-    ]);
+    foreach ([
+        [$jkn->id, $bahagianPengurusan->id, $program1->id],
+        [$jkn->id, $bahagianPerubatan->id, $program2->id],
+        [$hospital->id, null, $program2->id],
+    ] as [$ptjId, $bahagianId, $programId]) {
+        $pegawai = Pegawai::query()->create([
+            'ptj_id' => $ptjId,
+            'bahagian_id' => $bahagianId,
+            'jawatan_gred_id' => $jg->id,
+            'is_kontrak' => true,
+        ]);
+        PegawaiKontrak::query()->create([
+            'pegawai_id' => $pegawai->id,
+            'program_id' => $programId,
+        ]);
+    }
 
     $export = new DataKontrakExport;
     $rows = $export->collection();
 
-    expect(collect($export->columns)->pluck('label')->all())->toBe([
-        'PEGAWAI PERUBATAN UD9',
+    $sections = collect($export->sectionRows)
+        ->map(fn (int $rowNumber) => $rows[$rowNumber - 1][0])
+        ->all();
+
+    expect($sections)->toBe([
+        'PROGRAM 2 : PENGURUSAN HOSPITAL',
+        'IBU PEJABAT JKN',
     ]);
 
-    $section = $rows[$export->sectionRows[0] - 1];
-    expect($section[0])->toBe('IBU PEJABAT JKN');
+    $dataLabels = collect($export->dataRows)
+        ->map(fn (int $rowNumber) => $rows[$rowNumber - 1][1])
+        ->all();
 
-    $dataRow = $rows[$export->dataRows[0] - 1];
-    expect($dataRow[1])->toBe('BAHAGIAN PENGURUSAN')
-        ->and($dataRow[2])->toBe(1)
-        ->and($dataRow[3])->toBe(1);
+    expect($dataLabels)->toBe([
+        'HOSPITAL JITRA',
+        'BAHAGIAN PENGURUSAN',
+        'BAHAGIAN PERUBATAN',
+    ]);
 });
 
 test('role 3 data kontrak export only includes the user ptj', function () {

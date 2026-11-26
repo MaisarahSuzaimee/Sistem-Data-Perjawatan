@@ -175,7 +175,7 @@ class Report extends Page implements HasTable
                                     ->required(),
                                 // L5-style exact waran gred_ids combinations, e.g. U9/U10.
                                 Select::make('gred_combination')
-                                    ->label('Pilih Kombinasi Gred')
+                                    ->label('Pilih Gred Mengikut Waran')
                                     ->options(fn (Get $get): array => $this->gredCombinationOptionsForJawatan($get('jawatan_id')))
                                     ->searchable()
                                     ->required(),
