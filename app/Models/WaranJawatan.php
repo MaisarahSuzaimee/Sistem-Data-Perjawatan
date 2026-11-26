@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -24,9 +25,9 @@ class WaranJawatan extends Model
         'gred_ids',
         'butiran',
         'paparan_jawatan',
-        'tarikh_kuatkuasa',
         'is_kup',
         'waran_tolak_id',
+        'menggantikan_waran_id',
         'catatan_jawatan',
         'status',
     ];
@@ -34,6 +35,65 @@ class WaranJawatan extends Model
     public function waran()
     {
         return $this->belongsTo(Waran::class, 'waran_id');
+    }
+
+    public function waranTolak()
+    {
+        return $this->belongsTo(Waran::class, 'waran_tolak_id');
+    }
+
+    public function menggantikanWaran()
+    {
+        return $this->belongsTo(Waran::class, 'menggantikan_waran_id');
+    }
+
+    public function tradeOffJawatans(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            self::class,
+            'waran_jawatan_trade_offs',
+            'waran_jawatan_id',
+            'trade_off_waran_jawatan_id',
+        )
+            ->withTimestamps()
+            ->withoutGlobalScopes([SoftDeletingScope::class]);
+    }
+
+    public function tradeOffLabel(): string
+    {
+        return collect([
+            filled($this->butiran) ? trim((string) $this->butiran) : null,
+            $this->ptj?->nama_ptj,
+            $this->jawatan_list ?: null,
+            $this->gred_list ?: null,
+        ])->filter()->implode(' · ') ?: ('#'.$this->getKey());
+    }
+
+    /**
+     * @param  array<int|string>|null  $ids
+     */
+    public function syncValidTradeOffJawatans(?array $ids): void
+    {
+        if (blank($this->menggantikan_waran_id) || blank($ids)) {
+            $this->tradeOffJawatans()->sync([]);
+
+            return;
+        }
+
+        $validIds = static::query()
+            ->withTrashed()
+            ->where('waran_id', $this->menggantikan_waran_id)
+            ->whereKey($ids)
+            ->where('status', 'removed')
+            ->whereNotNull('deleted_at')
+            ->when(
+                $this->exists,
+                fn (Builder $query): Builder => $query->whereKeyNot($this->getKey()),
+            )
+            ->pluck('id')
+            ->all();
+
+        $this->tradeOffJawatans()->sync($validIds);
     }
 
     public function ptj()

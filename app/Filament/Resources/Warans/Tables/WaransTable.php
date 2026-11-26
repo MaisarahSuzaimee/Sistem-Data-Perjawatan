@@ -137,14 +137,32 @@ class WaransTable
                             });
                     }),
 
-                TextColumn::make('jik_count')
+                TextColumn::make('jik')
                     ->label('J')
-                    ->formatStateUsing(function ($state, $record) {
+                    ->getStateUsing(function (Waran $record): string {
+                        $parts = [];
+                        $user = auth()->user();
 
-                        return $record->jenis === 'Tolak'
-                            ? '-'.$state
-                            : '+'.$state;
-                    }),
+                        if ($user?->isUser() && filled($user->ptj_id)) {
+                            $ditambah = $record->ptjDitambahCount((int) $user->ptj_id);
+                            $ditolak = $record->ptjDitolakCount((int) $user->ptj_id);
+                        } else {
+                            $ditambah = (int) ($record->jik ?? 0);
+                            $ditolak = (int) ($record->jik_tolak ?? 0);
+                        }
+
+                        if ($ditambah > 0) {
+                            $parts[] = '+'.$ditambah;
+                        }
+
+                        if ($ditolak > 0) {
+                            $parts[] = '-'.$ditolak;
+                        }
+
+                        return $parts === [] ? '0' : implode('<br>', $parts);
+                    })
+                    ->html()
+                    ->alignment('center'),
 
                 TextColumn::make('isi_count')
                     ->label('I'),

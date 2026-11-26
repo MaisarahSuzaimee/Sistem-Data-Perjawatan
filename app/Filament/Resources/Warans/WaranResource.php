@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\Warans;
 
-use App\Filament\Resources\WaranJawatans\Pages\CreateWaranJawatan;
 use App\Filament\Resources\Warans\Pages\CreateWaran;
 use App\Filament\Resources\Warans\Pages\CustomTable;
 use App\Filament\Resources\Warans\Pages\EditWaran;
 use App\Filament\Resources\Warans\Pages\ListWarans;
 use App\Filament\Resources\Warans\Pages\ViewWaran;
+use App\Filament\Resources\Warans\RelationManagers\WaranJawatanDitolakRelationManager;
 use App\Filament\Resources\Warans\RelationManagers\WaranJawatansRelationManager;
 use App\Filament\Resources\Warans\Schemas\WaranForm;
 use App\Filament\Resources\Warans\Schemas\WaranInfolist;
@@ -35,7 +35,6 @@ class WaranResource extends Resource
     protected static ?string $pluralModelLabel = 'Waran';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Buku Waran';
-
 
     protected static ?int $navigationSort = 1;
 
@@ -74,7 +73,6 @@ class WaranResource extends Resource
     {
         return WaranInfolist::configure($schema);
     }
-    
     public static function table(Table $table): Table
     {
         return WaransTable::configure($table);
@@ -88,6 +86,7 @@ class WaranResource extends Resource
 
         return [
             WaranJawatansRelationManager::class,
+            WaranJawatanDitolakRelationManager::class,
         ];
     }
 
