@@ -141,8 +141,15 @@ class WaransTable
                     ->label('J')
                     ->getStateUsing(function (Waran $record): string {
                         $parts = [];
-                        $ditambah = (int) ($record->jik ?? 0);
-                        $ditolak = (int) ($record->jik_tolak ?? 0);
+                        $user = auth()->user();
+
+                        if ($user?->isUser() && filled($user->ptj_id)) {
+                            $ditambah = $record->ptjDitambahCount((int) $user->ptj_id);
+                            $ditolak = $record->ptjDitolakCount((int) $user->ptj_id);
+                        } else {
+                            $ditambah = (int) ($record->jik ?? 0);
+                            $ditolak = (int) ($record->jik_tolak ?? 0);
+                        }
 
                         if ($ditambah > 0) {
                             $parts[] = '+'.$ditambah;

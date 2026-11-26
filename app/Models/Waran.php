@@ -271,18 +271,43 @@ class Waran extends Model
     //         ->toArray();
     // }
 
+    public function ptjDitambahCount(int $ptjId): int
+    {
+        return WaranJawatan::query()
+            ->where('waran_id', $this->id)
+            ->where('ptj_id', $ptjId)
+            ->whereNull('deleted_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('status')
+                    ->orWhere('status', '!=', 'removed');
+            })
+            ->count();
+    }
+
+    public function ptjDitolakCount(int $ptjId): int
+    {
+        return WaranJawatan::query()
+            ->withTrashed()
+            ->where('waran_tolak_id', $this->id)
+            ->where('ptj_id', $ptjId)
+            ->where('status', 'removed')
+            ->whereNotNull('deleted_at')
+            ->count();
+    }
+
     public function getJikCountAttribute()
     {
         $user = auth()->user();
-        $query = $this->waranJawatanQuery();
 
-        if ($user->isUser()) {
-            return $query
-                ->where('ptj_id', $user->ptj_id)
-                ->count();
-        } elseif ($user->isSuperadmin() || $user->isAdmin()) {
+        if ($user?->isUser() && filled($user->ptj_id)) {
+            return $this->ptjDitambahCount((int) $user->ptj_id);
+        }
+
+        if ($user?->isSuperadmin() || $user?->isAdmin()) {
             return $this->jik;
         }
+
+        return 0;
     }
 
     public function getIsiCountAttribute()
