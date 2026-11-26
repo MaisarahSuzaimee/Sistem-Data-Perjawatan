@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\Bahagian;
 use App\Models\Pegawai;
 use App\Models\WaranJawatan;
 use Illuminate\Support\Collection;
@@ -22,176 +23,117 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
 
     public function collection()
     {
-        $programs = WaranJawatan::with([
+        $this->mergeRows = [];
+
+        $warans = WaranJawatan::with([
             'aktiviti.program',
             'ptj',
+            'bahagian',
             'pegawai',
-        ])
-            ->get()
-            ->groupBy(fn ($item) => $item->aktiviti?->program?->nama_program);
+        ])->get();
+
+        $jknWarans = $warans->filter(fn ($item) => $this->isJkn($item->ptj));
+        $otherWarans = $warans->reject(fn ($item) => $this->isJkn($item->ptj));
 
         $rows = collect();
-
         $currentRow = 5; // because startCell = A5
 
-        foreach ($programs as $programId => $items) {
-            $programRow = $currentRow;
+        $programs = $otherWarans
+            ->groupBy(fn ($item) => $item->aktiviti?->program?->nama_program)
+            ->sortBy(function (Collection $items, $key) {
+                if (preg_match('/(\d+)/', (string) $key, $matches)) {
+                    return (int) $matches[1];
+                }
 
-            $program = $items->first()->aktiviti->program;
+                return PHP_INT_MAX;
+            });
 
-            $namaProgram = $programId == 'PROGRAM 1'
-                ? 'IBU PEJABAT JKN'
-                : $program->nama_program.': '.$program->desc_program;
+        foreach ($programs as $programKey => $items) {
+            $program = $items->first()?->aktiviti?->program;
+            $namaProgram = $program
+                ? $program->nama_program.': '.$program->desc_program
+                : ($programKey ?: 'TANPA PROGRAM');
 
-            $rows->push([
+            $unitGroups = $items->groupBy('ptj_id')->map(function (Collection $ptjItems) {
+                $ptj = $ptjItems->first()?->ptj;
+
+                return [
+                    'label' => $ptj?->nama_ptj,
+                    'items' => $ptjItems,
+                    'kontrak' => Pegawai::query()
+                        ->where('ptj_id', $ptj?->id)
+                        ->where('is_kontrak', true)
+                        ->count() ?: '0',
+                ];
+            })->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+            $currentRow = $this->appendSection(
+                $rows,
+                $currentRow,
                 $namaProgram,
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-            ]);
-
-            //
-            $currentRow++;
-
-            // PTJ rows
-            $ptjs = $items->groupBy('ptj_id');
-            $ptjRows = [];
-            $index = 1;
-            foreach ($ptjs as $ptjItems) {
-
-                $perjawatanTetap = $ptjItems->count() ?: '0';
-
-                $pengisianTetap = $ptjItems->filter(function ($item) {
-                    $pegawai = $item->pegawai;
-
-                    return $pegawai && (
-                        $pegawai->is_tetap ||
-                        $pegawai->is_kontrak_interim
-                    );
-                })->count() ?: '0';
-
-                $kosongTetap = $perjawatanTetap - $pengisianTetap ?: '0';
-
-                $peratusPengisianTetap = $perjawatanTetap > 0 ? round(($pengisianTetap / $perjawatanTetap) * 100, 2).'%' : '0%';
-
-                $kontrak = Pegawai::whereIn('ptj_id', $ptjItems->pluck('ptj_id'))
+                $unitGroups,
+                Pegawai::query()
+                    ->whereIn('ptj_id', $items->pluck('ptj_id')->unique()->filter()->all())
                     ->where('is_kontrak', true)
-                    ->count() ?: '0';
-
-                $jumlahPengisian = ($pengisianTetap + $kontrak) ?: '0';
-
-                $ptjRows[] = $currentRow;
-
-                $ptj = $ptjItems->first()->ptj;
-
-                $nama = $ptj?->nama_ptj;
-
-                $rows->push([
-                    $index, // BIL
-                    // $ptj->nama_ptj,
-                    $nama,
-                    $perjawatanTetap,
-                    $pengisianTetap,
-                    $kosongTetap,
-                    $peratusPengisianTetap,
-                    // $ptjItems->pegawai?->where('is_kontrak', true)->count() ? : '0',
-                    $kontrak,
-                    $jumlahPengisian,
-                ]);
-
-                $currentRow++;
-                $index++;
-
-            }
-
-            // JUMLAH ROW
-            $jumlahRow = $currentRow;
-
-            $jumlahperjawatanTetap = $ptjs->sum(function ($ptjItems) {
-                return $ptjItems->count() ?: '0';
-            });
-            $jumlahPengisianTetap = $ptjs->sum(function ($ptjItems) {
-                return $ptjItems->filter(function ($item) {
-                    $pegawai = $item->pegawai;
-
-                    return $pegawai && (
-                        $pegawai->is_tetap ||
-                        $pegawai->is_kontrak_interim
-                    );
-                })->count() ?: '0';
-            });
-
-            $jumlahKosongTetap = ($jumlahperjawatanTetap - $jumlahPengisianTetap) ?: '0';
-            $jumlahPeratusPengisianTetap = $jumlahperjawatanTetap > 0 ? round(($jumlahPengisianTetap / $jumlahperjawatanTetap) * 100, 2).'%' : '0%';
-            $jumlahKontrak = Pegawai::whereIn(
-                'ptj_id',
-                $items->pluck('ptj_id')->unique()
-            )
-                ->where('is_kontrak', true)
-                ->count() ?: '0';
-
-            $rows->push([
-                'JUMLAH',
-                '',
-                $jumlahperjawatanTetap,
-                $jumlahPengisianTetap,
-                $jumlahKosongTetap,
-                $jumlahPeratusPengisianTetap,
-                $jumlahKontrak,
-                $jumlahPengisianTetap + $jumlahKontrak,
-            ]);
-
-            // $currentRow++;
-
-            // blank row
-            $rows->push([]);
-            $currentRow++;
-
-            // store merge info
-            $this->mergeRows[] = [
-                'program_row' => $programRow,
-                'ptj_rows' => $ptjRows,
-                'jumlah_row' => $jumlahRow,
-                // 'last_row' => $lastRow
-            ];
+                    ->count() ?: '0',
+            );
         }
 
-        $jkPerjawatanTetap = $programs->sum(function ($items) {
-            return $items->count();
-        });
-
-        $jkIsiTetap = $programs->sum(function ($items) {
-            return $items->filter(function ($item) {
-                $pegawai = $item->pegawai;
-
-                return $pegawai && (
-                    $pegawai->is_tetap ||
-                    $pegawai->is_kontrak_interim
-                );
-            })->count();
-        });
-
-        $jkKosongTetap = ($jkPerjawatanTetap - $jkIsiTetap) ?: '0';
-
-        $jkPeratusPengisianTetap = $jkPerjawatanTetap > 0 ? round(($jkIsiTetap / $jkPerjawatanTetap) * 100, 2).'%' : '0%';
-
-        // $jkIsiKontrak = Pegawai::addBinding($programs->pluck('ptj_id')->flatten()->unique())
-        //     ->whereIn('ptj_id', $programs->pluck('ptj_id')->flatten()->unique())
-        //     ->where('is_kontrak', true)
-        //     ->count() ? : '0';
-
-        $ptjIds = $programs->pluck('ptj_id')
-            ->flatten()
+        // is_jkn PTJs: all bahagian under one trailing Ibu Pejabat section only.
+        $jknPtjIds = $warans
+            ->filter(fn ($item) => $this->isJkn($item->ptj))
+            ->pluck('ptj_id')
             ->unique()
-            ->values()
-            ->toArray();
+            ->filter()
+            ->values();
+
+        $bahagians = Bahagian::query()
+            ->whereIn('ptj_id', $jknPtjIds->isNotEmpty() ? $jknPtjIds->all() : [0])
+            ->orderBy('id')
+            ->get();
+
+        if ($bahagians->isNotEmpty()) {
+            $waransByBahagian = $jknWarans->groupBy('bahagian_id');
+
+            $unitGroups = $bahagians->map(function (Bahagian $bahagian) use ($waransByBahagian) {
+                return [
+                    'label' => $bahagian->nama_bahagian,
+                    'items' => $waransByBahagian->get($bahagian->id, collect()),
+                    'kontrak' => Pegawai::query()
+                        ->where('bahagian_id', $bahagian->id)
+                        ->where('is_kontrak', true)
+                        ->count() ?: '0',
+                ];
+            });
+
+            $currentRow = $this->appendSection(
+                $rows,
+                $currentRow,
+                'IBU PEJABAT JKN',
+                $unitGroups,
+                Pegawai::query()
+                    ->whereIn('ptj_id', $jknPtjIds->isNotEmpty() ? $jknPtjIds->all() : [0])
+                    ->where('is_kontrak', true)
+                    ->count() ?: '0',
+                [
+                    'perjawatan' => $jknWarans->count(),
+                    'pengisian' => $this->pengisianTetapCount($jknWarans),
+                ],
+                isIbuPejabat: true,
+            );
+        }
+
+        $jkPerjawatanTetap = $warans->count();
+        $jkIsiTetap = $this->pengisianTetapCount($warans);
+        $jkKosongTetap = ($jkPerjawatanTetap - $jkIsiTetap) ?: '0';
+        $jkPeratusPengisianTetap = $jkPerjawatanTetap > 0
+            ? round(($jkIsiTetap / $jkPerjawatanTetap) * 100, 2).'%'
+            : '0%';
+
+        $ptjIds = $warans->pluck('ptj_id')->unique()->filter()->values()->all();
 
         $jkIsiKontrak = Pegawai::query()
-            ->whereIn('ptj_id', $ptjIds)
+            ->whereIn('ptj_id', $ptjIds !== [] ? $ptjIds : [0])
             ->where('is_kontrak', true)
             ->count() ?: '0';
 
@@ -207,6 +149,114 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
         ]);
 
         return $rows;
+    }
+
+    protected function isJkn($ptj): bool
+    {
+        return (bool) ($ptj && ($ptj->is_jkn || $ptj->nama_ptj === 'JABATAN KESIHATAN NEGERI KEDAH'));
+    }
+
+    protected function pengisianTetapCount(Collection $items): int
+    {
+        return $items->filter(function ($item) {
+            $pegawai = $item->pegawai;
+
+            return $pegawai && ($pegawai->is_tetap || $pegawai->is_kontrak_interim);
+        })->count();
+    }
+
+    /**
+     * @param  Collection<int, array{label: ?string, items: Collection, kontrak: int|string}>  $unitGroups
+     * @param  array{perjawatan?: int, pengisian?: int}|null  $totalOverride
+     */
+    protected function appendSection(
+        Collection $rows,
+        int $currentRow,
+        string $sectionLabel,
+        Collection $unitGroups,
+        int|string $sectionKontrak,
+        ?array $totalOverride = null,
+        bool $isIbuPejabat = false,
+    ): int {
+        $programRow = $currentRow;
+        $rows->push([
+            $sectionLabel,
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+        ]);
+        $currentRow++;
+
+        $unitRows = [];
+        $index = 1;
+        $jumlahPerjawatanTetap = 0;
+        $jumlahPengisianTetap = 0;
+
+        foreach ($unitGroups as $unit) {
+            /** @var Collection $items */
+            $items = $unit['items'];
+            $perjawatanTetap = $items->count() ?: '0';
+            $pengisianTetap = $this->pengisianTetapCount($items) ?: '0';
+            $kosongTetap = ((int) $perjawatanTetap - (int) $pengisianTetap) ?: '0';
+            $peratusPengisianTetap = (int) $perjawatanTetap > 0
+                ? round(((int) $pengisianTetap / (int) $perjawatanTetap) * 100, 2).'%'
+                : '0%';
+            $kontrak = $unit['kontrak'];
+            $jumlahPengisian = ((int) $pengisianTetap + (int) $kontrak) ?: '0';
+
+            $unitRows[] = $currentRow;
+            $rows->push([
+                $index,
+                $unit['label'],
+                $perjawatanTetap,
+                $pengisianTetap,
+                $kosongTetap,
+                $peratusPengisianTetap,
+                $kontrak,
+                $jumlahPengisian,
+            ]);
+            $currentRow++;
+            $index++;
+
+            $jumlahPerjawatanTetap += (int) $perjawatanTetap;
+            $jumlahPengisianTetap += (int) $pengisianTetap;
+        }
+
+        if ($totalOverride !== null) {
+            $jumlahPerjawatanTetap = $totalOverride['perjawatan'] ?? $jumlahPerjawatanTetap;
+            $jumlahPengisianTetap = $totalOverride['pengisian'] ?? $jumlahPengisianTetap;
+        }
+
+        $jumlahKosongTetap = ($jumlahPerjawatanTetap - $jumlahPengisianTetap) ?: '0';
+        $jumlahPeratusPengisianTetap = $jumlahPerjawatanTetap > 0
+            ? round(($jumlahPengisianTetap / $jumlahPerjawatanTetap) * 100, 2).'%'
+            : '0%';
+
+        $jumlahRow = $currentRow;
+        $rows->push([
+            'JUMLAH',
+            '',
+            $jumlahPerjawatanTetap,
+            $jumlahPengisianTetap,
+            $jumlahKosongTetap,
+            $jumlahPeratusPengisianTetap,
+            $sectionKontrak,
+            $jumlahPengisianTetap + (int) $sectionKontrak,
+        ]);
+        $currentRow++;
+
+        $this->mergeRows[] = [
+            'program_row' => $programRow,
+            'ptj_rows' => $unitRows,
+            'jumlah_row' => $jumlahRow,
+            'is_ibu_pejabat' => $isIbuPejabat,
+        ];
+
+        return $currentRow;
     }
 
     public function startCell(): string
@@ -247,7 +297,7 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
 
                 $sheet->mergeCells('A2:H2');
 
-                $sheet->setCellValue('A2', '(Jumlah perjawatan tetap termasuk jawatan tanpa waran-kod 11000)');
+                $sheet->setCellValue('A2', '(Jumlah perjawatan tetap termasuk jawatan tanpa waran kod 11000)');
 
                 $sheet->getStyle('A2:H2')->applyFromArray([
                     'font' => [
@@ -353,7 +403,7 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
 
                 $sheet->getColumnDimension('C')->setWidth(13);
 
-                $sheet->setCellValue('D4', 'Pengisisan');
+                $sheet->setCellValue('D4', 'Pengisian');
                 $sheet->getStyle('D4')->applyFromArray([
                     'font' => [
                         'name' => 'Calibri',
@@ -374,7 +424,7 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
 
                 $sheet->getColumnDimension('D')->setWidth(13);
 
-                $sheet->setCellValue('E4', 'Kosong');
+                $sheet->setCellValue('E4', 'Kosong Perjawatan');
                 $sheet->getStyle('E4')->applyFromArray([
                     'font' => [
                         'name' => 'Calibri',
@@ -384,6 +434,7 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
                     'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
                         'vertical' => Alignment::VERTICAL_CENTER,
+                        'wrapText' => true,
                     ],
                     'borders' => [
                         'allBorders' => [
@@ -393,7 +444,7 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
                     ],
                 ]);
 
-                $sheet->getColumnDimension('E')->setWidth(13);
+                $sheet->getColumnDimension('E')->setWidth(15);
 
                 $sheet->setCellValue('F4', 'Peratus Pengisian');
                 $sheet->getStyle('F4')->applyFromArray([
@@ -514,8 +565,9 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
                 $sheet = $event->sheet->getDelegate();
 
                 foreach ($export->mergeRows as $row) {
+                    $sectionFill = ! empty($row['is_ibu_pejabat']) ? '808080' : '9bc0e2';
 
-                    // PROGRAM ROW (A to H merge)
+                    // PROGRAM / IBU PEJABAT ROW (A to H merge)
                     $sheet->mergeCells("A{$row['program_row']}:H{$row['program_row']}");
                     $sheet->setCellValue("A{$row['program_row']}", $sheet->getCell("A{$row['program_row']}")->getValue());
                     $sheet->getStyle("A{$row['program_row']}:H{$row['program_row']}")->applyFromArray([
@@ -528,7 +580,7 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
                         'fill' => [
                             'fillType' => Fill::FILL_SOLID,
                             'startColor' => [
-                                'rgb' => '9bc0e2',
+                                'rgb' => $sectionFill,
                             ],
                         ],
                         'borders' => [
@@ -611,36 +663,34 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
                     ]);
 
                     $sheet->getRowDimension($row['jumlah_row'])->setRowHeight(30);
+                }
 
-                    // Total
-
-                    $sheet->mergeCells("A{$lastRow}:B{$lastRow}");
-                    $sheet->getStyle("A{$lastRow}:H{$lastRow}")->applyFromArray([
-                        'font' => [
-                            'name' => 'Calibri',
-                            'bold' => true,
-                            'size' => 11,
+                $sheet->mergeCells("A{$lastRow}:B{$lastRow}");
+                $sheet->getStyle("A{$lastRow}:H{$lastRow}")->applyFromArray([
+                    'font' => [
+                        'name' => 'Calibri',
+                        'bold' => true,
+                        'size' => 11,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
                             'color' => ['rgb' => '000000'],
                         ],
-                        'alignment' => [
-                            'horizontal' => Alignment::HORIZONTAL_CENTER,
-                            'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => [
+                            'rgb' => '00b0f0',
                         ],
-                        'borders' => [
-                            'allBorders' => [
-                                'borderStyle' => Border::BORDER_THIN,
-                                'color' => ['rgb' => '000000'],
-                            ],
-                        ],
-                        'fill' => [
-                            'fillType' => Fill::FILL_SOLID,
-                            'startColor' => [
-                                'rgb' => '00b0f0',
-                            ],
-                        ],
-                    ]);
-                    $sheet->getRowDimension($lastRow)->setRowHeight(30);
-                }
+                    ],
+                ]);
+                $sheet->getRowDimension($lastRow)->setRowHeight(30);
             },
         ];
     }

@@ -51,7 +51,7 @@ class L6ExportController extends Controller
 
         return Excel::download(
             new L6Export((int) $validated['jawatan_id'], $gredIds),
-            'L6.xlsx'
+            'Laporan JIK Mengikut Gred.xlsx'
         );
     }
 }

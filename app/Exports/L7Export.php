@@ -19,10 +19,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
-class L7Export extends DefaultValueBinder implements
-    FromCollection,
-    WithCustomValueBinder,
-    WithEvents
+class L7Export extends DefaultValueBinder implements FromCollection, WithCustomValueBinder, WithEvents
 {
     /** @var list<int> */
     public array $programRows = [];
@@ -33,11 +30,20 @@ class L7Export extends DefaultValueBinder implements
     /** @var list<int> */
     public array $jumlahRows = [];
 
+    /** @var list<int> */
+    public array $programSummaryRows = [];
+
     public int $grandTotalRow = 0;
 
     public int $lastRow = 4;
 
-    protected string $title = '';
+    public const LAST_COL = 'T';
+
+    public const COLUMN_COUNT = 20;
+
+    protected string $titleLine1 = '';
+
+    protected string $titleLine2 = '';
 
     public function __construct(
         private int $jawatanId,
@@ -54,6 +60,8 @@ class L7Export extends DefaultValueBinder implements
         $this->programRows = [];
         $this->dataRows = [];
         $this->jumlahRows = [];
+        $this->programSummaryRows = [];
+        $this->grandTotalRow = 0;
 
         $jawatan = Jawatan::query()->findOrFail($this->jawatanId);
         $gredLabels = Gred::query()
@@ -62,10 +70,10 @@ class L7Export extends DefaultValueBinder implements
             ->sortBy(fn (Gred $gred): int => (int) substr($gred->kod_gred, 1))
             ->pluck('kod_gred')
             ->implode('/');
-        $this->title = 'MAKLUMAT PERJAWATAN DAN PENYANDANG BAGI JAWATAN '
+        $this->titleLine1 = 'MAKLUMAT PERJAWATAN DAN PENYANDANG BAGI JAWATAN '
             .mb_strtoupper(trim((string) $jawatan->desc_jawatan))
-            .' GRED '.mb_strtoupper($gredLabels)
-            .' DI '.$this->headerLocationName()
+            .' GRED '.mb_strtoupper($gredLabels);
+        $this->titleLine2 = 'DI '.$this->headerLocationName()
             .' SEHINGGA '.strtoupper(Carbon::now()->translatedFormat('d F Y'));
 
         $waranQuery = WaranJawatan::query()
@@ -135,8 +143,8 @@ class L7Export extends DefaultValueBinder implements
         $gredNames = Gred::query()->whereIn('id', $gredIds)->pluck('kod_gred', 'id');
 
         $rows = collect([
-            $this->titleRow($jawatan, $gredLabels),
-            $this->departmentRow(),
+            $this->padRow([$this->titleLine1]),
+            $this->padRow([$this->titleLine2]),
             $this->headerRow(),
         ]);
 
@@ -149,15 +157,16 @@ class L7Export extends DefaultValueBinder implements
         });
 
         $grand = ['J' => 0, 'I' => 0, 'K' => 0];
+        $programSummaries = [];
 
         foreach ($programGroups as $programId => $items) {
             $program = $items->first()?->aktiviti?->program;
             $programName = trim((string) ($program?->nama_program ?? 'TANPA PROGRAM'));
             $programLabel = $programId !== '0'
-                ? 'PROGRAM '.$programId.' : '.mb_strtoupper($programName)
+                ? trim($programName.($program?->desc_program ? ' : '.$program->desc_program : ''))
                 : 'TANPA PROGRAM';
 
-            $rows->push(array_merge([$programLabel], array_fill(0, 17, '')));
+            $rows->push($this->padRow([$programLabel]));
             $this->programRows[] = $rows->count();
             $programSubtotal = ['J' => 0, 'I' => 0, 'K' => 0];
             $bil = 0;
@@ -194,8 +203,6 @@ class L7Export extends DefaultValueBinder implements
                     [$dun, $parlimen] = $this->locationLabels($locationSource);
 
                     $opsyen = trim((string) ($pegawai?->opsyenPencen?->opsyen ?? ''));
-                    $tarikhPencen = $this->dateLabel($pegawai?->tarikh_pencen);
-                    $tarikhBersara = trim(implode(' / ', array_filter([$tarikhPencen, $opsyen ? 'OPSYEN '.$opsyen : ''])));
 
                     $rows->push([
                         $bil,
@@ -215,7 +222,9 @@ class L7Export extends DefaultValueBinder implements
                         $parlimen,
                         $this->dateLabel($pegawai?->tarikh_lantikan),
                         $this->dateLabel($pegawai?->tarikh_sah_jawatan),
-                        $tarikhBersara,
+                        $opsyen,
+                        $this->dateLabel($pegawai?->tarikh_pencen),
+                        trim((string) ($waran->catatan_jawatan ?? '')),
                     ]);
                     $this->dataRows[] = $rows->count();
 
@@ -236,9 +245,22 @@ class L7Export extends DefaultValueBinder implements
 
             $rows->push($this->subtotalRow('JUMLAH '.mb_strtoupper($programName), $programSubtotal));
             $this->jumlahRows[] = $rows->count();
+
+            $programSummaries[] = [
+                'label' => $programId !== '0' ? $programName : 'TANPA PROGRAM',
+                'counts' => $programSubtotal,
+            ];
         }
 
-        $rows->push($this->subtotalRow('JUMLAH KESELURUHAN PENGURUSAN', $grand));
+        // Gap, then jumlah by program, then grand total.
+        $rows->push($this->padRow(['']));
+
+        foreach ($programSummaries as $summary) {
+            $rows->push($this->subtotalRow($summary['label'], $summary['counts']));
+            $this->programSummaryRows[] = $rows->count();
+        }
+
+        $rows->push($this->subtotalRow('JUMLAH KESELURUHAN', $grand));
         $this->grandTotalRow = $rows->count();
         $this->lastRow = $rows->count();
 
@@ -351,20 +373,6 @@ class L7Export extends DefaultValueBinder implements
         }
     }
 
-    /**
-     * @return list<mixed>
-     */
-    private function titleRow(Jawatan $jawatan, string $gredLabels): array
-    {
-        return array_merge([
-            'MAKLUMAT PERJAWATAN DAN PENYANDANG BAGI JAWATAN '
-            .mb_strtoupper(trim((string) $jawatan->desc_jawatan))
-            .' GRED '.mb_strtoupper($gredLabels)
-            .' DI '.$this->headerLocationName()
-            .' SEHINGGA '.strtoupper(Carbon::now()->translatedFormat('d F Y')),
-        ], array_fill(0, 17, ''));
-    }
-
     private function headerLocationName(): string
     {
         $user = auth()->user();
@@ -381,13 +389,18 @@ class L7Export extends DefaultValueBinder implements
     }
 
     /**
+     * @param  list<mixed>  $row
      * @return list<mixed>
      */
-    private function departmentRow(): array
+    private function padRow(array $row): array
     {
-        return array_merge([
-            '',
-        ], array_fill(0, 17, ''));
+        $row = array_values($row);
+
+        while (count($row) < self::COLUMN_COUNT) {
+            $row[] = '';
+        }
+
+        return array_slice($row, 0, self::COLUMN_COUNT);
     }
 
     /**
@@ -402,8 +415,8 @@ class L7Export extends DefaultValueBinder implements
             'BUT.',
             'JAWATAN',
             'GRED WARAN',
-            'GRED (GRED PEGAWAI)',
-            'JUML. JNT',
+            'GRED PEGAWAI',
+            'JUM. JWT',
             'ISI',
             'KSG',
             'NAMA PENYANDANG',
@@ -411,9 +424,11 @@ class L7Export extends DefaultValueBinder implements
             'PENEMPATAN (UNIT)',
             'DUN',
             'PARLIMEN',
-            'TARIKH LANTIKAN',
-            'TARIKH SAH JAWATAN',
-            'TARIKH BERSARA (OPSYEN PENCEN 55/56/58/60)',
+            'TARIKH LANTIK',
+            'TARIKH SAH',
+            'TARIKH BERSARA WAJIB (OPSYEN PENCEN 55/56/58/60)',
+            'TARIKH DIJANGKA BERSARA',
+            'Catatan',
         ];
     }
 
@@ -423,7 +438,7 @@ class L7Export extends DefaultValueBinder implements
      */
     private function subtotalRow(string $label, array $totals): array
     {
-        $row = array_fill(0, 18, '');
+        $row = array_fill(0, self::COLUMN_COUNT, '');
         $row[0] = $label;
         $row[7] = $totals['J'];
         $row[8] = $totals['I'];
@@ -442,12 +457,14 @@ class L7Export extends DefaultValueBinder implements
                     'color' => ['rgb' => '000000'],
                 ];
 
-                $sheet->mergeCells('A1:R1');
-                $sheet->mergeCells('A2:R2');
-                $sheet->setCellValue('A1', $this->title);
-                $sheet->setCellValue('A2', '');
+                $lastCol = self::LAST_COL;
 
-                $sheet->getStyle('A1:R2')->applyFromArray([
+                $sheet->mergeCells("A1:{$lastCol}1");
+                $sheet->mergeCells("A2:{$lastCol}2");
+                $sheet->setCellValue('A1', $this->titleLine1);
+                $sheet->setCellValue('A2', $this->titleLine2);
+
+                $sheet->getStyle("A1:{$lastCol}2")->applyFromArray([
                     'font' => ['name' => 'Arial', 'bold' => true, 'size' => 10],
                     'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -458,7 +475,7 @@ class L7Export extends DefaultValueBinder implements
                 $sheet->getRowDimension(2)->setRowHeight(20);
                 $sheet->getRowDimension(3)->setRowHeight(42);
 
-                $sheet->getStyle('A3:R3')->applyFromArray([
+                $sheet->getStyle("A3:{$lastCol}3")->applyFromArray([
                     'font' => ['name' => 'Arial', 'bold' => true, 'size' => 8],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D9E2F3']],
                     'alignment' => [
@@ -469,23 +486,9 @@ class L7Export extends DefaultValueBinder implements
                     'borders' => ['allBorders' => $thin],
                 ]);
 
-                $headerColors = [
-                    'A' => 'D9E2F3', 'B' => 'D9E2F3', 'C' => 'D9E2F3', 'D' => 'D9E2F3',
-                    'E' => 'D9E2F3', 'F' => 'D9E2F3', 'G' => 'D9E2F3', 'H' => 'D9E2F3',
-                    'I' => 'D9E2F3', 'J' => 'D9E2F3', 'K' => 'D9E2F3', 'L' => 'D9E2F3',
-                    'M' => 'D9E2F3', 'N' => 'D9E2F3', 'O' => 'D9E2F3', 'P' => 'D9E2F3',
-                    'Q' => 'D9E2F3', 'R' => 'D9E2F3',
-                ];
-                foreach ($headerColors as $column => $color) {
-                    $sheet->getStyle("{$column}3")->getFill()
-                        ->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()
-                        ->setRGB($color);
-                }
-
                 foreach ($this->programRows as $row) {
-                    $sheet->mergeCells("A{$row}:R{$row}");
-                    $sheet->getStyle("A{$row}:R{$row}")->applyFromArray([
+                    $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+                    $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
                         'font' => ['name' => 'Arial', 'bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '7F5A36']],
                         'alignment' => [
@@ -498,7 +501,7 @@ class L7Export extends DefaultValueBinder implements
                 }
 
                 foreach ($this->dataRows as $row) {
-                    $sheet->getStyle("A{$row}:R{$row}")->applyFromArray([
+                    $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
                         'font' => ['name' => 'Arial', 'size' => 8],
                         'alignment' => [
                             'vertical' => Alignment::VERTICAL_CENTER,
@@ -508,14 +511,14 @@ class L7Export extends DefaultValueBinder implements
                     ]);
                     $sheet->getStyle("A{$row}:J{$row}")->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    $sheet->getStyle("N{$row}:Q{$row}")->getAlignment()
+                    $sheet->getStyle("N{$row}:S{$row}")->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     $sheet->getRowDimension($row)->setRowHeight(42);
                 }
 
                 foreach ($this->jumlahRows as $row) {
                     $sheet->mergeCells("A{$row}:G{$row}");
-                    $sheet->getStyle("A{$row}:R{$row}")->applyFromArray([
+                    $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
                         'font' => ['name' => 'Arial', 'bold' => true, 'size' => 8],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BF9000']],
                         'alignment' => [
@@ -527,24 +530,42 @@ class L7Export extends DefaultValueBinder implements
                     $sheet->getRowDimension($row)->setRowHeight(22);
                 }
 
+                $summaryStyle = [
+                    'font' => [
+                        'name' => 'Arial',
+                        'bold' => true,
+                        'size' => 8,
+                        'color' => ['rgb' => 'FFFF00'],
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => '595959'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => ['allBorders' => $thin],
+                ];
+
+                foreach ($this->programSummaryRows as $row) {
+                    $sheet->mergeCells("A{$row}:G{$row}");
+                    $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray($summaryStyle);
+                    $sheet->getRowDimension($row)->setRowHeight(22);
+                }
+
                 if ($this->grandTotalRow > 0) {
                     $sheet->mergeCells("A{$this->grandTotalRow}:G{$this->grandTotalRow}");
-                    $sheet->getStyle("A{$this->grandTotalRow}:R{$this->grandTotalRow}")->applyFromArray([
-                        'font' => ['name' => 'Arial', 'bold' => true, 'size' => 8],
-                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '00B0F0']],
-                        'alignment' => [
-                            'horizontal' => Alignment::HORIZONTAL_CENTER,
-                            'vertical' => Alignment::VERTICAL_CENTER,
-                        ],
-                        'borders' => ['allBorders' => $thin],
-                    ]);
+                    $sheet->getStyle("A{$this->grandTotalRow}:{$lastCol}{$this->grandTotalRow}")
+                        ->applyFromArray($summaryStyle);
+                    $sheet->getRowDimension($this->grandTotalRow)->setRowHeight(22);
                 }
 
                 $widths = [
                     'A' => 8, 'B' => 15, 'C' => 9, 'D' => 10, 'E' => 18,
                     'F' => 12, 'G' => 13, 'H' => 10, 'I' => 8, 'J' => 8,
                     'K' => 28, 'L' => 20, 'M' => 28, 'N' => 14, 'O' => 16,
-                    'P' => 14, 'Q' => 16, 'R' => 19,
+                    'P' => 14, 'Q' => 14, 'R' => 18, 'S' => 16, 'T' => 22,
                 ];
                 foreach ($widths as $column => $width) {
                     $sheet->getColumnDimension($column)->setWidth($width);
@@ -557,7 +578,7 @@ class L7Export extends DefaultValueBinder implements
                     ->setPaperSize(PageSetup::PAPERSIZE_A3)
                     ->setFitToWidth(1)
                     ->setFitToHeight(0);
-                $sheet->getPageSetup()->setPrintArea("A1:R{$this->lastRow}");
+                $sheet->getPageSetup()->setPrintArea("A1:{$lastCol}{$this->lastRow}");
             },
         ];
     }

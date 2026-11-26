@@ -167,8 +167,12 @@ test('l6 report uses the exact waran grade combination for the selected jawatan'
     expect($rows[0][0])->toBe('PROGRAM 2 : PENGURUSAN HOSPITAL')
         ->and($rows[1])->toBe([1, 'HOSPITAL BALING', 1, 1, 0])
         ->and($rows[2])->toBe(['JUMLAH PROGRAM 2', '', 1, 1, 0])
-        ->and($rows[3])->toBe(['JUMLAH KESELURUHAN', '', 1, 1, 0])
-        ->and($rows->flatten()->all())->not->toContain('PROGRAM 3 : NO MATCHING POSTS');
+        ->and($rows[3])->toBe(['', 'JUMLAH PROGRAM', '', '', ''])
+        ->and($rows[4])->toBe([1, 'PROGRAM 2', 1, 1, 0])
+        ->and($rows[5])->toBe([2, 'PROGRAM 3', '', '', ''])
+        ->and($rows[6])->toBe(['', 'JUMLAH KESELURUHAN', 1, 1, 0])
+        ->and($rows->flatten()->all())->not->toContain('PROGRAM 3 : NO MATCHING POSTS')
+        ->and($export->programSummaryRows)->toHaveCount(2);
 
     $xlsx = Excel::raw($export, Maatwebsite\Excel\Excel::XLSX);
     expect($xlsx)->not->toBeEmpty();
@@ -185,7 +189,9 @@ test('l6 report uses the exact waran grade combination for the selected jawatan'
             ->and($sheet->getCell('A2')->getValue())->toBe('DATA SEHINGGA')
             ->and($sheet->getCell('C2')->getValue())->toContain(': ')
             ->and($sheet->getMergeCells())->toHaveKeys(['C1:E1', 'C2:E2'])
-            ->and($sheet->getColumnDimension('B')->getWidth())->toBe(32.0);
+            ->and($sheet->getColumnDimension('B')->getWidth())->toBe(32.0)
+            ->and($sheet->getAutoFilter()->getRange())->toBe('B3:B6')
+            ->and(strtoupper($sheet->getStyle('B7')->getFill()->getStartColor()->getRGB()))->toBe('6FA7DB');
     } finally {
         if (is_file($temporaryFile)) {
             unlink($temporaryFile);

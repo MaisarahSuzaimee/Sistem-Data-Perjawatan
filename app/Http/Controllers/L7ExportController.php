@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\L7Export;
+use App\Models\Jawatan;
 use App\Models\WaranJawatan;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -48,9 +49,16 @@ class L7ExportController extends Controller
 
         abort_unless($hasPosition, 404);
 
+        $jawatanId = (int) $validated['jawatan_id'];
+        $jawatanName = trim((string) Jawatan::query()->whereKey($jawatanId)->value('desc_jawatan'));
+        $safeJawatanName = str_replace(['/', '\\'], '-', $jawatanName);
+        $filename = $safeJawatanName !== ''
+            ? "Maklumat Perjawatan Dan Penyandang Mengikut Jawatan ({$safeJawatanName}).xlsx"
+            : 'Maklumat Perjawatan Dan Penyandang Mengikut Jawatan.xlsx';
+
         return Excel::download(
-            new L7Export((int) $validated['jawatan_id'], $gredIds),
-            'Maklumat_Perjawatan_Penyandang_Mengikut_Jawatan.xlsx'
+            new L7Export($jawatanId, $gredIds),
+            $filename
         );
     }
 }

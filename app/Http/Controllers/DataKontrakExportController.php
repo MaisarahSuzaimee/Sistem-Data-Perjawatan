@@ -13,7 +13,7 @@ class DataKontrakExportController
     {
         return Excel::download(
             new DataKontrakExport(),
-            'data_kontrak.xlsx'
+            'Data Perjawatan Kontrak.xlsx'
         );
     }
 }
