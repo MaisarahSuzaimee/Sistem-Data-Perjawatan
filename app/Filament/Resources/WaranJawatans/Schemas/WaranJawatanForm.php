@@ -13,7 +13,6 @@ use App\Models\Ptj;
 use App\Models\Subunit;
 use App\Models\Unit;
 use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -157,14 +156,6 @@ class WaranJawatanForm
                                     ->required()
                                     ->maxLength(255)
                                     ->readonly(
-                                        fn () => ! auth()->user()?->isSuperadmin()
-                                        && ! auth()->user()?->isAdmin()
-                                    ),
-                                DatePicker::make('tarikh_kuatkuasa')
-                                    ->label('Tarikh Kuatkuasa Waran')
-                                    ->native(false)
-                                    ->displayFormat('d F Y')
-                                    ->disabled(
                                         fn () => ! auth()->user()?->isSuperadmin()
                                         && ! auth()->user()?->isAdmin()
                                     ),

@@ -19,6 +19,14 @@ class WaranInfolist
                     ->schema([
                         TextEntry::make('no_waran')
                             ->label('No Waran'),
+                        TextEntry::make('tarikh_kuatkuasa')
+                            ->label('Tarikh Kuatkuasa Waran')
+                            ->date('d F Y')
+                            ->placeholder('-'),
+                        TextEntry::make('nama_waran')
+                            ->label('Nama Waran')
+                            ->placeholder('-')
+                            ->columnSpanFull(),
                         TextEntry::make('jik')
                             ->label('Jumlah Jawatan Ditambah'),
                         TextEntry::make('jik_tolak')

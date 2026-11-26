@@ -34,6 +34,8 @@ beforeEach(function () {
     Schema::create('warans', function (Blueprint $table): void {
         $table->id();
         $table->string('no_waran')->nullable();
+        $table->text('nama_waran')->nullable();
+        $table->date('tarikh_kuatkuasa')->nullable();
         $table->string('jenis')->nullable();
         $table->integer('jik')->nullable();
         $table->integer('jik_tolak')->nullable();
@@ -73,6 +75,8 @@ it('creates a waran without jenis', function () {
     Livewire::test(CreateWaran::class)
         ->fillForm([
             'no_waran' => 'WP JENIS/2026',
+            'nama_waran' => 'Waran Jenis Test',
+            'tarikh_kuatkuasa' => '2026-03-15',
             'jik' => 2,
             'jik_tolak' => 1,
             'catatan' => 'Neutral waran',

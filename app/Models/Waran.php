@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
@@ -10,12 +11,28 @@ class Waran extends Model
 {
     protected $fillable = [
         'no_waran',
+        'nama_waran',
+        'tarikh_kuatkuasa',
         'jenis',
         'jik',
         'jik_tolak',
         'catatan',
         'parent_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'tarikh_kuatkuasa' => 'date',
+        ];
+    }
+
+    protected function namaWaran(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => filled($value) ? mb_strtoupper(trim((string) $value), 'UTF-8') : null,
+        );
+    }
 
     // public function ptj()
     // {

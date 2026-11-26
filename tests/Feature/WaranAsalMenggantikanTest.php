@@ -7,6 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
+    Schema::dropIfExists('waran_jawatan_trade_offs');
     Schema::dropIfExists('waran_jawatans');
     Schema::dropIfExists('warans');
     Schema::dropIfExists('users');
