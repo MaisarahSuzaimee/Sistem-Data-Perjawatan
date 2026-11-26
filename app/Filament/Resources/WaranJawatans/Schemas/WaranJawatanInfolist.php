@@ -30,6 +30,15 @@ class WaranJawatanInfolist
                     ->columnSpanFull(),
             ]);
 
+        $tradeOffTab = Tab::make('Trade Off')
+            ->icon('heroicon-o-arrows-right-left')
+            ->schema([
+                ViewEntry::make('maklumat_trade_off')
+                    ->hiddenLabel()
+                    ->view('filament.infolists.maklumat-trade-off-table')
+                    ->columnSpanFull(),
+            ]);
+
         return $schema
             ->components([
                 Tabs::make('Tabs')
@@ -37,8 +46,8 @@ class WaranJawatanInfolist
                         'class' => static::programWindowClass($record),
                     ])
                     ->tabs($jawatanTabFirst
-                        ? [$jawatanTab, $penyandangTab]
-                        : [$penyandangTab, $jawatanTab])
+                        ? [$jawatanTab, $penyandangTab, $tradeOffTab]
+                        : [$penyandangTab, $jawatanTab, $tradeOffTab])
                     ->columns(2)
                     ->columnSpanFull(),
             ]);

@@ -10,8 +10,10 @@ use Livewire\Livewire;
 beforeEach(function () {
     config(['app.env' => 'local']);
 
+    Schema::dropIfExists('waran_jawatans');
     Schema::dropIfExists('warans');
     Schema::dropIfExists('users');
+    Schema::dropIfExists('notifications');
 
     Schema::create('users', function (Blueprint $table): void {
         $table->id();
@@ -32,9 +34,30 @@ beforeEach(function () {
     Schema::create('warans', function (Blueprint $table): void {
         $table->id();
         $table->string('no_waran')->nullable();
+        $table->text('nama_waran')->nullable();
+        $table->date('tarikh_kuatkuasa')->nullable();
         $table->string('jenis')->nullable();
         $table->integer('jik')->nullable();
+        $table->integer('jik_tolak')->nullable();
         $table->text('catatan')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('waran_jawatans', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('waran_id')->nullable();
+        $table->unsignedBigInteger('aktiviti_id')->nullable();
+        $table->string('status')->nullable();
+        $table->softDeletes();
+        $table->timestamps();
+    });
+
+    Schema::create('notifications', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('type');
+        $table->morphs('notifiable');
+        $table->text('data');
+        $table->timestamp('read_at')->nullable();
         $table->timestamps();
     });
 
@@ -48,15 +71,23 @@ beforeEach(function () {
     ]));
 });
 
-it('requires jenis when creating a waran', function () {
+it('creates a waran without jenis', function () {
     Livewire::test(CreateWaran::class)
         ->fillForm([
             'no_waran' => 'WP JENIS/2026',
+            'nama_waran' => 'Waran Jenis Test',
+            'tarikh_kuatkuasa' => '2026-03-15',
             'jik' => 2,
-            'jenis' => null,
+            'jik_tolak' => 1,
+            'catatan' => 'Neutral waran',
         ])
         ->call('create')
-        ->assertHasFormErrors(['jenis' => 'required']);
+        ->assertHasNoFormErrors();
 
-    expect(Waran::query()->where('no_waran', 'WP JENIS/2026')->exists())->toBeFalse();
+    $waran = Waran::query()->where('no_waran', 'WP JENIS/2026')->first();
+
+    expect($waran)->not->toBeNull()
+        ->and($waran->jik)->toBe(2)
+        ->and($waran->jik_tolak)->toBe(1)
+        ->and($waran->jenis)->toBeNull();
 });

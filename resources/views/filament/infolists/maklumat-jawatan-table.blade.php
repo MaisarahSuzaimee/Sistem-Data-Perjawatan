@@ -23,7 +23,7 @@
     $rows = [
         ['icon' => 'heroicon-o-document-text', 'iconClass' => 'text-fg-indigo', 'label' => 'No Waran', 'value' => $record->waran?->no_waran ?: '-'],
         ['icon' => 'heroicon-o-clipboard-document-list', 'iconClass' => 'text-fg-pink', 'label' => 'Butiran', 'value' => $record->butiran ?: '-'],
-        ['icon' => 'heroicon-o-calendar-days', 'iconClass' => 'text-fg-brand', 'label' => 'Tarikh Kuatkuasa Waran', 'value' => $record->tarikh_kuatkuasa ? \Illuminate\Support\Carbon::parse($record->tarikh_kuatkuasa)->translatedFormat('d F Y') : 'Tiada'],
+        ['icon' => 'heroicon-o-calendar-days', 'iconClass' => 'text-fg-brand', 'label' => 'Tarikh Kuatkuasa Waran', 'value' => $record->waran?->tarikh_kuatkuasa ? \Illuminate\Support\Carbon::parse($record->waran->tarikh_kuatkuasa)->translatedFormat('d F Y') : 'Tiada'],
         ['icon' => 'heroicon-o-bolt', 'iconClass' => 'text-fg-warning-subtle', 'label' => 'Aktiviti', 'value' => $aktiviti],
         ['icon' => 'heroicon-o-briefcase', 'iconClass' => 'text-fg-purple', 'label' => 'Jawatan / Gred', 'value' => $jawatanGred],
         ['icon' => 'heroicon-o-building-office-2', 'iconClass' => 'text-fg-cyan', 'label' => 'PTJ', 'value' => $record->ptj?->nama_ptj ?: '-'],
