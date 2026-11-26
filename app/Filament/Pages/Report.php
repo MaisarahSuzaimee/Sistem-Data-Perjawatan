@@ -116,13 +116,6 @@ class Report extends Page implements HasTable
                     ],
                 ];
 
-                if (auth()->user()?->isUser()) {
-                    $data = array_values(array_filter(
-                        $data,
-                        fn (array $item): bool => in_array((int) $item['id'], [1, 2, 3], true),
-                    ));
-                }
-
                 if (! $search) {
                     return $data;
                 }
@@ -220,10 +213,6 @@ class Report extends Page implements HasTable
                     })
 
                     ->action(function ($record, array $data) {
-                        if (auth()->user()?->isUser() && ! in_array((int) $record['id'], [1, 2, 3], true)) {
-                            abort(403);
-                        }
-
                         return match ($record['id']) {
 
                             1 => redirect()->route('export.dataKeseluruhan'),
@@ -271,10 +260,16 @@ class Report extends Page implements HasTable
             return [];
         }
 
-        $warans = WaranJawatan::query()
+        $waranQuery = WaranJawatan::query()
             ->whereJsonContains('jawatan_ids', (int) $jawatanId)
-            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'))
-            ->get(['gred_ids', 'jawatan_gred_id']);
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'));
+
+        $user = auth()->user();
+        if ($user && $user->isPtjScoped()) {
+            $waranQuery->where('ptj_id', $user->ptj_id);
+        }
+
+        $warans = $waranQuery->get(['gred_ids', 'jawatan_gred_id']);
 
         $combinations = [];
 
@@ -454,10 +449,17 @@ class Report extends Page implements HasTable
      */
     protected function l8ActiveActivityIds(): array
     {
-        return WaranJawatan::query()
+        $waranQuery = WaranJawatan::query()
             ->listed()
             ->whereNotNull('aktiviti_id')
-            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'))
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'));
+
+        $user = auth()->user();
+        if ($user && $user->isPtjScoped()) {
+            $waranQuery->where('ptj_id', $user->ptj_id);
+        }
+
+        return $waranQuery
             ->distinct()
             ->pluck('aktiviti_id')
             ->map(fn ($id): int => (int) $id)

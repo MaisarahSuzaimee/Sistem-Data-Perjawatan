@@ -6,6 +6,7 @@ use App\Models\Bahagian;
 use App\Models\Pegawai;
 use App\Models\Program;
 use App\Models\Ptj;
+use App\Models\User;
 use App\Models\WaranJawatan;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -19,10 +20,22 @@ beforeEach(function () {
         'aktivitis',
         'programs',
         'bahagians',
+        'users',
         'ptjs',
     ] as $table) {
         Schema::dropIfExists($table);
     }
+
+    Schema::create('users', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->string('password');
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->tinyInteger('role')->default(3);
+        $table->tinyInteger('status')->default(1);
+        $table->timestamps();
+    });
 
     Schema::create('ptjs', function (Blueprint $table): void {
         $table->id();
@@ -277,4 +290,53 @@ test('data keseluruhan export styles ibu pejabat header grey on the correct exce
         ->and($sheet->getCell('B'.$secondBahagianRow)->getValue())->toBe('BAHAGIAN PERUBATAN')
         ->and(strtoupper($sheet->getStyle('A'.$secondBahagianRow)->getFill()->getStartColor()->getRGB()))->not->toBe('808080')
         ->and(strtoupper($sheet->getStyle('A'.$ibu['jumlah_row'])->getFill()->getStartColor()->getRGB()))->toBe('CA9EB3');
+});
+
+test('role 3 data keseluruhan export only includes the user ptj', function () {
+    $ownPtj = Ptj::query()->create([
+        'nama_ptj' => 'HOSPITAL JITRA',
+        'is_jkn' => false,
+    ]);
+    $otherPtj = Ptj::query()->create([
+        'nama_ptj' => 'HOSPITAL SULTANAH BAHIYAH',
+        'is_jkn' => false,
+    ]);
+    $program = Program::query()->create([
+        'nama_program' => 'PROGRAM 2',
+        'desc_program' => 'PENGURUSAN HOSPITAL',
+    ]);
+    $aktiviti = Aktiviti::query()->create([
+        'program_id' => $program->id,
+        'nama_aktiviti' => 'Aktiviti Hospital',
+    ]);
+
+    foreach ([$ownPtj, $otherPtj] as $ptj) {
+        WaranJawatan::query()->create([
+            'ptj_id' => $ptj->id,
+            'aktiviti_id' => $aktiviti->id,
+            'status' => 'active',
+        ]);
+    }
+
+    $user = User::query()->create([
+        'name' => 'PTJ User',
+        'email' => 'l1-ptj-user@test.com',
+        'password' => bcrypt('password'),
+        'ptj_id' => $ownPtj->id,
+        'role' => 3,
+        'status' => 1,
+    ]);
+
+    $this->actingAs($user);
+
+    $export = new DataKeseluruhanExport;
+    $rows = $export->collection();
+
+    $ptjLabels = collect($export->mergeRows)
+        ->flatMap(fn (array $section) => $section['ptj_rows'])
+        ->map(fn (int $rowNumber) => $rows[$rowNumber - 5][1])
+        ->all();
+
+    expect($ptjLabels)->toBe(['HOSPITAL JITRA'])
+        ->and($ptjLabels)->not->toContain('HOSPITAL SULTANAH BAHIYAH');
 });

@@ -30,11 +30,17 @@ class L8ExportController extends Controller
             ]);
         }
 
-        $hasActiveWaran = WaranJawatan::query()
+        $waranQuery = WaranJawatan::query()
             ->listed()
             ->where('aktiviti_id', $aktivitiId)
-            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'))
-            ->exists();
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'));
+
+        $user = $request->user();
+        if ($user && $user->isPtjScoped()) {
+            $waranQuery->where('ptj_id', $user->ptj_id);
+        }
+
+        $hasActiveWaran = $waranQuery->exists();
 
         if (! $hasActiveWaran) {
             throw ValidationException::withMessages([

@@ -25,12 +25,22 @@ class DataKeseluruhanExport implements FromCollection, WithCustomStartCell, With
     {
         $this->mergeRows = [];
 
+        $user = auth()->user();
+        $scopedPtjId = $user && $user->isPtjScoped()
+            ? (int) $user->ptj_id
+            : null;
+
         $warans = WaranJawatan::with([
             'aktiviti.program',
             'ptj',
             'bahagian',
             'pegawai',
-        ])->get();
+        ])
+            ->when(
+                $scopedPtjId !== null,
+                fn ($query) => $query->where('ptj_id', $scopedPtjId),
+            )
+            ->get();
 
         $jknWarans = $warans->filter(fn ($item) => $this->isJkn($item->ptj));
         $otherWarans = $warans->reject(fn ($item) => $this->isJkn($item->ptj));

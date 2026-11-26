@@ -55,7 +55,7 @@ it('allows report page access for admin role users', function () {
     }
 });
 
-it('shows only L1, L2 and L3 for role 3 users on the report page', function () {
+it('shows all reports for role 3 users on the report page', function () {
     config(['app.env' => 'local']);
 
     $user = User::create([
@@ -75,11 +75,15 @@ it('shows only L1, L2 and L3 for role 3 users on the report page', function () {
         ->values()
         ->all();
 
-    expect($ids)->toBe([1, 2, 3]);
+    expect($ids)->toBe([1, 2, 3, 4, 5, 6, 7, 8]);
 
     $component
         ->assertSee('L1: Data Keseluruhan Mengikut PTJ')
         ->assertSee('L2: Data Perjawatan Kontrak')
         ->assertSee('L3: Data Mengikut Kumpulan Mengikut PTJ')
-        ->assertDontSee('L4: Data Keseluruhan Mengikut Jawatan');
+        ->assertSee('L4: Data Keseluruhan Mengikut Jawatan')
+        ->assertSee('L5: Laporan JIK Mengikut Jawatan')
+        ->assertSee('L6: Laporan JIK Mengikut Gred')
+        ->assertSee('L7: Laporan Maklumat Perjawatan Dan Penyandang Mengikut Jawatan')
+        ->assertSee('L8: Laporan Kedudukan Perjawatan Dan Pengisian Mengikut Program / Aktiviti');
 });

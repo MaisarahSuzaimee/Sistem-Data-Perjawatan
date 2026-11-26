@@ -32,9 +32,16 @@ class L6ExportController extends Controller
             ]);
         }
 
-        $hasCombination = WaranJawatan::query()
+        $waranQuery = WaranJawatan::query()
             ->whereJsonContains('jawatan_ids', (int) $validated['jawatan_id'])
-            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'))
+            ->where(fn ($query) => $query->whereNull('status')->orWhere('status', '!=', 'removed'));
+
+        $user = $request->user();
+        if ($user && $user->isPtjScoped()) {
+            $waranQuery->where('ptj_id', $user->ptj_id);
+        }
+
+        $hasCombination = $waranQuery
             ->get(['gred_ids'])
             ->contains(function (WaranJawatan $waran) use ($gredIds): bool {
                 $waranGredIds = array_values(array_unique(array_map('intval', $waran->gred_ids ?? [])));
