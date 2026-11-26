@@ -10,6 +10,7 @@ use App\Models\Pegawai;
 use App\Models\Program;
 use App\Models\Ptj;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\WaranJawatan;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -28,10 +29,22 @@ beforeEach(function () {
         'programs',
         'units',
         'bahagians',
+        'users',
         'ptjs',
     ] as $table) {
         Schema::dropIfExists($table);
     }
+
+    Schema::create('users', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->string('password');
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->tinyInteger('role')->default(3);
+        $table->tinyInteger('status')->default(1);
+        $table->timestamps();
+    });
 
     Schema::create('programs', function (Blueprint $table): void {
         $table->id();
@@ -308,4 +321,49 @@ it('exports active waran rows with counts, linked pegawai data, and grouped head
             unlink($temporaryFile);
         }
     }
+});
+
+it('scopes role 3 L8 export rows to the user ptj', function () {
+    $program = Program::query()->create(['nama_program' => 'PROGRAM 1']);
+    $aktiviti = Aktiviti::query()->create([
+        'program_id' => $program->id,
+        'no_aktivit' => '01',
+        'nama_aktiviti' => 'PENGURUSAN HOSPITAL',
+    ]);
+    $ownPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL JITRA']);
+    $otherPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL SULTANAH BAHIYAH']);
+    $jawatan = Jawatan::query()->create(['desc_jawatan' => 'JURURAWAT']);
+    $gred = Gred::query()->create(['kod_gred' => 'U9']);
+
+    WaranJawatan::query()->create([
+        'aktiviti_id' => $aktiviti->id,
+        'ptj_id' => $ownPtj->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$gred->id],
+        'butiran' => 'OWN PTJ',
+        'status' => 'active',
+    ]);
+    WaranJawatan::query()->create([
+        'aktiviti_id' => $aktiviti->id,
+        'ptj_id' => $otherPtj->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$gred->id],
+        'butiran' => 'OTHER PTJ',
+        'status' => 'active',
+    ]);
+
+    $user = User::query()->create([
+        'name' => 'Role 3 User',
+        'email' => 'role3-l8@test.com',
+        'password' => bcrypt('password'),
+        'ptj_id' => $ownPtj->id,
+        'role' => 3,
+        'status' => 1,
+    ]);
+    $this->actingAs($user);
+
+    $rows = (new L8Export($aktiviti->id))->collection();
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0][1])->toBe('OWN PTJ');
 });

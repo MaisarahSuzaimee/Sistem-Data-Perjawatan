@@ -7,6 +7,7 @@ use App\Models\Jawatan;
 use App\Models\Pegawai;
 use App\Models\Program;
 use App\Models\Ptj;
+use App\Models\User;
 use App\Models\WaranJawatan;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,7 @@ beforeEach(function () {
         'pegawais',
         'aktivitis',
         'programs',
+        'users',
         'ptjs',
         'jawatan__greds',
         'greds',
@@ -24,6 +26,17 @@ beforeEach(function () {
     ] as $table) {
         Schema::dropIfExists($table);
     }
+
+    Schema::create('users', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->string('password');
+        $table->unsignedBigInteger('ptj_id')->nullable();
+        $table->tinyInteger('role')->default(3);
+        $table->tinyInteger('status')->default(1);
+        $table->timestamps();
+    });
 
     Schema::create('jawatans', function (Blueprint $table) {
         $table->id();
@@ -246,4 +259,53 @@ test('jik by jawatan adds jumlah keseluruhan by program before grand total', fun
         ->and($program2Summary)->toBe(['PROGRAM 2 : PERUBATAN', '', 2, 1, 1, 2, 1, 1])
         ->and($grandTotal)->toBe(['JUMLAH KESELURUHAN', '', 3, 1, 2, 3, 1, 2])
         ->and($export->totalRow)->toBeGreaterThan($export->programSummaryRows[1]);
+});
+
+test('role 3 jik by jawatan export only includes the user ptj', function () {
+    $jawatan = Jawatan::query()->create([
+        'kod_jawatan' => 'U',
+        'desc_jawatan' => 'JURURAWAT',
+    ]);
+    $u6 = Gred::query()->create(['kod_gred' => 'U6', 'desc_gred' => 'U6']);
+    $ownPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL JITRA']);
+    $otherPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL SULTANAH BAHIYAH']);
+    $program = Program::query()->create([
+        'nama_program' => 'PROGRAM 2',
+        'desc_program' => 'PERUBATAN',
+    ]);
+    $aktiviti = Aktiviti::query()->create([
+        'program_id' => $program->id,
+        'nama_aktiviti' => 'Aktiviti Hospital',
+    ]);
+
+    foreach ([$ownPtj, $otherPtj] as $ptj) {
+        WaranJawatan::query()->create([
+            'ptj_id' => $ptj->id,
+            'aktiviti_id' => $aktiviti->id,
+            'jawatan_ids' => [$jawatan->id],
+            'gred_ids' => [$u6->id],
+            'status' => 'active',
+        ]);
+    }
+
+    $user = User::query()->create([
+        'name' => 'Role 3 User',
+        'email' => 'role3-l5@test.com',
+        'password' => bcrypt('password'),
+        'ptj_id' => $ownPtj->id,
+        'role' => 3,
+        'status' => 1,
+    ]);
+    $this->actingAs($user);
+
+    $export = new JikByJawatanExport($jawatan->id);
+    $rows = $export->collection();
+
+    $ptjLabels = collect($export->ptjRows)
+        ->map(fn (int $rowNumber) => $rows[$rowNumber - 1][1])
+        ->all();
+
+    expect($ptjLabels)->toBe(['HOSPITAL JITRA'])
+        ->and($ptjLabels)->not->toContain('HOSPITAL SULTANAH BAHIYAH')
+        ->and($rows[$export->totalRow - 1])->toBe(['JUMLAH KESELURUHAN', '', 1, 0, 1, 1, 0, 1]);
 });

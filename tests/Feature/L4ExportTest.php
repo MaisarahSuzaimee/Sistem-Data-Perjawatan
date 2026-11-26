@@ -297,3 +297,49 @@ test('L4 uses the role 3 user PTJ name in the Excel header', function () {
 
     auth()->logout();
 });
+
+test('role 3 L4 export only includes the user ptj', function () {
+    $ownPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL JITRA']);
+    $otherPtj = Ptj::query()->create(['nama_ptj' => 'HOSPITAL SULTANAH BAHIYAH']);
+    $kumpulan = Kumpulan::query()->create(['nama_kumpulan' => 'Pelaksana']);
+    $jawatan = Jawatan::query()->create(['desc_jawatan' => 'PEMBANTU OPERASI']);
+    $gred = Gred::query()->create(['kod_gred' => 'N6']);
+
+    Jawatan_Gred::query()->create([
+        'jawatan_id' => $jawatan->id,
+        'gred_id' => $gred->id,
+        'kumpulan_id' => $kumpulan->id,
+    ]);
+
+    WaranJawatan::query()->create([
+        'ptj_id' => $ownPtj->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$gred->id],
+    ]);
+    WaranJawatan::query()->create([
+        'ptj_id' => $otherPtj->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$gred->id],
+    ]);
+    WaranJawatan::query()->create([
+        'ptj_id' => $otherPtj->id,
+        'jawatan_ids' => [$jawatan->id],
+        'gred_ids' => [$gred->id],
+    ]);
+
+    $user = User::query()->create([
+        'name' => 'Role 3 User',
+        'email' => 'role3-l4-scope@test.com',
+        'password' => bcrypt('password'),
+        'ptj_id' => $ownPtj->id,
+        'role' => 3,
+        'status' => 1,
+    ]);
+    $this->actingAs($user);
+
+    $rows = (new L4Export($kumpulan->id))->collection();
+
+    expect($rows[3])->toBe(['', 1, 'PEMBANTU OPERASI, Gred N6', 1, 0, 1, '0%'])
+        ->and($rows[4])->toBe(['', 'Jumlah', '', 1, 0, 1, '0%'])
+        ->and($rows[5])->toBe(['JUMLAH KESELURUHAN', '', '', 1, 0, 1, '0%']);
+});
